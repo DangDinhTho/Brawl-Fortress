@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1524397734226780715
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1524397734226780717}
+  - component: {fileID: 1524397734226780716}
+  m_Layer: 0
+  m_Name: PoolingManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1524397734226780717
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1524397734226780715}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.022956371, y: 0.4234004, z: 1.2210201}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1524397734226780716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1524397734226780715}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a035d37a02dd1494d8ec35fb79177e46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pooledPrefabs:
+  - Name: Grenade_GrenadeLauncher
+    Prefab: {fileID: 8997955310747178205, guid: dfcfbf6a92c825c4ca3354ab75e6912a, type: 3}
+    Lenght: 15
+  - Name: Explosion
+    Prefab: {fileID: 6512945994564088673, guid: dcdfd7d439cb45645ae16087d6eceb8c, type: 3}
+    Lenght: 10
+  - Name: StickyBomb
+    Prefab: {fileID: 8997955310747178205, guid: b8e1f45bb2d44406b9ffd77347a5b883, type: 3}
+    Lenght: 15
+  - Name: MinigunBullet
+    Prefab: {fileID: 5152538599517759926, guid: 6f3c1d0eb17cc664fbc7dab58dc132f8, type: 3}
+    Lenght: 40
+  - Name: Rocket
+    Prefab: {fileID: 5736685920356618263, guid: faf49e3442241a44b887266afc8ccf27, type: 3}
+    Lenght: 15
+  - Name: BulletExplosion
+    Prefab: {fileID: 195742, guid: 6fb070cdaa5721e438c130cf92254605, type: 3}
+    Lenght: 30
+  - Name: RocketExplosion
+    Prefab: {fileID: 132352, guid: 9f16dabd03d8d764faafc192dad11c66, type: 3}
+    Lenght: 10
+  - Name: SyringeBullet
+    Prefab: {fileID: 6404034543198083122, guid: 95c885be867a1af4d8049766a2fbc0af, type: 3}
+    Lenght: 15
+  - Name: SyringExplosion
+    Prefab: {fileID: 195742, guid: 04f316acc1e58a34895cdebdaaba7a49, type: 3}
+    Lenght: 15
+  - Name: BigExplosion
+    Prefab: {fileID: 1121192042590650, guid: 04da21ddcb8328647a8cecb50c695201, type: 3}
+    Lenght: 5
+  - Name: ShotgunBullet
+    Prefab: {fileID: 5152538599517759926, guid: 3c46a41e2e2607c4c935fa7dbe6fd56f, type: 3}
+    Lenght: 20
