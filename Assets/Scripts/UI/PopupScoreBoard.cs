@@ -15,6 +15,12 @@ public class PopupScoreBoard : PopupBase
     public Text[] txtTeamScores;
     public GameObject goHomeBtn;
 
+    [Tooltip("Seconds before leaving automatically once the result is shown")]
+    public float autoQuitDelay = 30f;
+
+    private bool leaving;
+    private Coroutine autoQuitRoutine;
+
     private void Awake()
     {
         playerScoreItemPref.gameObject.SetActive(false);
@@ -26,8 +32,6 @@ public class PopupScoreBoard : PopupBase
         {
             cantDismiss = (bool)args[0];
         }
-
-        //goHomeBtn.SetActive(cantDismiss);
 
         txtTeamScores[0].text = ArenaManager.Instance.teamScores[Team.red].ToString();
         txtTeamScores[1].text = ArenaManager.Instance.teamScores[Team.blue].ToString();
@@ -60,23 +64,38 @@ public class PopupScoreBoard : PopupBase
 
     public void GoHome()
     {
+        if (leaving) return; // button + auto-quit could both fire
+        leaving = true;
+        if (autoQuitRoutine != null) StopCoroutine(autoQuitRoutine);
+        goHomeBtn.SetActive(false);
         StartCoroutine(WaitLeaveRoom());
-       
+    }
+
+    public void StartAutoQuit()
+    {
+        if (autoQuitRoutine == null && !leaving)
+            autoQuitRoutine = StartCoroutine(WaitAutoQuickGame());
     }
 
     public IEnumerator WaitAutoQuickGame()
     {
-        yield return new WaitForSeconds(30);
+        yield return new WaitForSeconds(autoQuitDelay);
+        autoQuitRoutine = null;
         GoHome();
     }
 
     IEnumerator WaitLeaveRoom()
     {
-        PhotonNetwork.LeaveRoom();
         GUIManager.instan.CreatePopup<PopupLoading>();
-        while (PhotonNetwork.CurrentRoom != null)
+        if (PhotonNetwork.InRoom)
         {
-            yield return null;
+            PhotonNetwork.LeaveRoom();
+            float timeout = 10f;
+            while (PhotonNetwork.CurrentRoom != null && timeout > 0f)
+            {
+                timeout -= Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
         SceneManager.LoadScene("MedalScene");
     }

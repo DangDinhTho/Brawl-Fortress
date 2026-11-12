@@ -606,32 +606,31 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         int cPlayer = 0;
         int maxP = maxPlayer;
         if (gameMode != GameMode.MannVsMachine)
-            cPlayer = teamMembers[mainPlayer.team].Count - teamMembers[ConfigManager.GetEnemyTeam(mainPlayer.team)].Count;
+        {
+            if (teamMembers.TryGetValue(mainPlayer.team, out var myTeam) &&
+                teamMembers.TryGetValue(ConfigManager.GetEnemyTeam(mainPlayer.team), out var enemyTeam))
+                cPlayer = myTeam.Count - enemyTeam.Count;
+        }
         else
         {
             maxP = ConfigManager.maxPlayerPerRoom;
         }
-        if (teamScores[Team.red] == teamScores[Team.blue])
-        {
-            score += 2 * maxP;
-        }
-        else
-        {
-            Team teamWin = GetTeamWin();
-            if (mainPlayer.team == teamWin) score += 3 * maxP;
-            else score += maxP;
-        }
+        if (maxP <= 0) maxP = ConfigManager.maxPlayerPerRoom; // avoid division by zero
+
+        Team teamWin = GetTeamWin();
+        if (teamWin == Team.None) score += 2 * maxP;          // draw
+        else if (mainPlayer.team == teamWin) score += 3 * maxP; // win
+        else score += maxP;                                     // lose
 
         if (characterScores.TryGetValue(mainPlayer.viewID, out var playerScore))
         {
             score += playerScore.CaculateScore();
         }
 
+        // Bonus/penalty for unbalanced teams
         score *= ((maxP / 2f) - cPlayer) / (maxP / 2f);
-        if (score < 0) score = 0;
-        Debug.Log($"Score: {score}");
+        if (float.IsNaN(score) || score < 0) score = 0;
         return Mathf.RoundToInt(score);
-        
     }
     
     public void ShowReward(RewardData rewardData)

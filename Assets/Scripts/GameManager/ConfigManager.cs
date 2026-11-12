@@ -224,16 +224,15 @@ public class ConfigManager
     public static Medal GetMedal(int score)
     {
         Medal medal = Medal.Newbie;
+        int best = int.MinValue;
         foreach (var md in medals)
         {
-            if (score < md.Value.exp)
+            if (score >= md.Value.exp && md.Value.exp >= best)
             {
-                break;
+                best = md.Value.exp;
+                medal = md.Key;
             }
-
-            medal = md.Key;
         }
-
         return medal;
     }
 

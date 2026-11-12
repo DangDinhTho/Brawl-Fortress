@@ -388,7 +388,7 @@ public class GameManager : MonoBehaviour
         });
     }
 
-    public void RequestOnEndGame(GameMode gameMode, bool isWin, int score, Action<RewardData> CallBack)
+    public void RequestOnEndGame(GameMode gameMode, bool isWin, int score, Action<RewardData> CallBack, Action onError = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
@@ -403,11 +403,15 @@ public class GameManager : MonoBehaviour
         }, result =>
         {
             GetUserInventory();
-            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
-            RewardData rewardData = ParseReward(rewardJson);
+            RewardData rewardData = TryGetCloudScriptMessage(result, out var rewardJson) ? ParseReward(rewardJson) : null;
             if (rewardData != null) CallBack?.Invoke(rewardData);
+            else onError?.Invoke();
         },
-        error => Debug.Log(error.GenerateErrorReport()));
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            onError?.Invoke();
+        });
     }
 
     public void RequestCrate(Action<ItemId> CallBack, Action CallBack2)
