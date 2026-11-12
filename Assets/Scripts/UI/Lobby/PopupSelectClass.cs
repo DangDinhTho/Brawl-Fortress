@@ -145,10 +145,12 @@ public class PopupSelectClass : PopupBase
     {
         if (siglePlayer)
         {
-            if (PhotonNetwork.IsConnectedAndReady)
+            if (singleStarting) return; // double tap on Done
+            if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InRoom)
             {
+                singleStarting = true;
                 LobbyManager.instance.singlePlayer = true;
-                string roomName = $"{GameManager.instan.userData.userName}'s room {Random.Range(10, 100)}";
+                string roomName = null; // let the server generate a unique name (a fixed name could collide)
 
                  ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable
             {
@@ -176,6 +178,8 @@ public class PopupSelectClass : PopupBase
         
     }
 
+    private bool singleStarting;
+
     IEnumerator WaitPlaySingle()
     {
         float timeOut = 0;
@@ -185,6 +189,9 @@ public class PopupSelectClass : PopupBase
             if(timeOut > 10)
             {
                 popupLoading.Dismiss();
+                singleStarting = false;
+                LobbyManager.instance.singlePlayer = false;
+                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
                 yield break;
             }
             yield return null;

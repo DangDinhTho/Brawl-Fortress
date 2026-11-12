@@ -230,7 +230,9 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         }
 
         object[] info = { tf2Class, _team, playerName, slotEquipts.ToArray(), itemEquipts.ToArray()};
-        GameObject bot = PhotonNetwork.Instantiate($"Bot_{gameMode}", spawnPos.position, spawnPos.rotation,
+        // Room object: owned by the room (not by the master), so it is not destroyed when the master leaves
+        // and control passes to the new master automatically (TF2Bot.OnMasterSwitched re-inits the AI).
+        GameObject bot = PhotonNetwork.InstantiateRoomObject($"Bot_{gameMode}", spawnPos.position, spawnPos.rotation,
             0, info);
         return bot;
     }
@@ -300,7 +302,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     public override void OnLeftRoom()
     {
-        PhotonNetwork.Disconnect();
+        // Stay connected to the master server: Home reuses the connection instead of reconnecting.
     }
 
     public override void OnMasterClientSwitched(Player newMasterClient)
@@ -311,10 +313,20 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         }
     }
 
-    //public override void OnPlayerLeftRoom(Player otherPlayer)
-    //{
-    //    CheckEndOfGame();
-    //}
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        // The leaving player's character is destroyed by Photon (CleanupCacheOnLeave): drop our references to it.
+        if (allRealPlayers.TryGetValue(otherPlayer.ActorNumber, out var left))
+        {
+            allRealPlayers.Remove(otherPlayer.ActorNumber);
+            if (left != null && teamPlayerCount.ContainsKey(left.team))
+                teamPlayerCount[left.team] = Mathf.Max(0, teamPlayerCount[left.team] - 1);
+        }
+        foreach (var members in teamMembers.Values)
+        {
+            members.RemoveAll(m => m == null || (!m.isBot && m.photonView != null && m.photonView.OwnerActorNr == otherPlayer.ActorNumber));
+        }
+    }
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
     {

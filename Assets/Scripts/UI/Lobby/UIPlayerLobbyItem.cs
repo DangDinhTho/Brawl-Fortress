@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using ExitGames.Client.Photon;
 using Photon.Pun;
-using Photon.Pun.UtilityScripts;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,16 +15,12 @@ public class UIPlayerLobbyItem : MonoBehaviour
     public Button kickBtn;
     public Image imgReady;
 
-    private bool isPlayerReady;
     [HideInInspector]
     public Team team;
     private Player player;
     public GameObject masterClientObj;
 
-    public void OnEnable()
-    {
-        PlayerNumbering.OnPlayerNumberingChanged += OnPlayerNumberingChanged;
-    }
+    public Player Player => player;
 
     public void SetData(Player player, Team team)
     {
@@ -37,68 +30,33 @@ public class UIPlayerLobbyItem : MonoBehaviour
 
         if (player.CustomProperties.TryGetValue(TF2GameProps.ClassKey, out var classObj))
         {
-            TF2Class tF2Class = (TF2Class)classObj;
-            SetClass(tF2Class);
+            SetClass((TF2Class)classObj);
         }
-        
-        SetPlayerData();
+
+        RefreshMasterState();
     }
 
     public void SetClass(TF2Class tF2Class)
     {
         imgCharacter.sprite = GUIManager.instan.GetAvatar(tF2Class, team);
     }
-    
-    public void SetPlayerData()
+
+    /// <summary>
+    /// Background, kick button and master icon. Must be refreshed when the master client changes.
+    /// (Does not touch the player's READY property anymore: changing team used to reset it to false.)
+    /// </summary>
+    public void RefreshMasterState()
     {
-        if (PhotonNetwork.LocalPlayer.ActorNumber != player.ActorNumber)
-        {
-            bgr.sprite = otherBgr;
-            if (PhotonNetwork.IsMasterClient)
-            {
-                kickBtn.gameObject.SetActive(true);
-            }
-        }
-        else
-        {
-            kickBtn.gameObject.SetActive(false);
-            bgr.sprite = mineBgr;
-            Hashtable initialProps = new Hashtable()
-            {
-                { TF2GameProps.PLAYER_READY, isPlayerReady },
-                //{ TF2GameProps.PLAYER_LIVES, AsteroidsGame.PLAYER_MAX_LIVES }
-            };
-            PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
-            
-        }
-        
+        if (player == null) return;
+        bool isMine = player.IsLocal;
+        bgr.sprite = isMine ? mineBgr : otherBgr;
+        kickBtn.gameObject.SetActive(!isMine && PhotonNetwork.IsMasterClient);
         masterClientObj.SetActive(player.IsMasterClient);
-
-    }
-
-    public void OnDisable()
-    {
-        PlayerNumbering.OnPlayerNumberingChanged -= OnPlayerNumberingChanged;
-    }
-
-
-    private void OnPlayerNumberingChanged()
-    {
-        foreach (Player p in PhotonNetwork.PlayerList)
-        {
-            if (p.ActorNumber == player.ActorNumber)
-            {
-                //PlayerColorImage.color = AsteroidsGame.GetColor(p.GetPlayerNumber());
-            }
-        }
     }
 
     public void SetPlayerReady(bool playerReady)
     {
         imgReady.gameObject.SetActive(playerReady);
-        //readyButton.GetComponentInChildren<Text>().text =
-        //    playerReady ? LocalizationManager.Localize("ready") : LocalizationManager.Localize("ready?");
-        //imgReady.enabled = playerReady;
     }
 
     public void OnKickClick()
@@ -111,6 +69,8 @@ public class UIPlayerLobbyItem : MonoBehaviour
 
     private void KickPlayer()
     {
-        PhotonNetwork.CloseConnection(PhotonNetwork.CurrentRoom.GetPlayer(player.ActorNumber));
+        if (!PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null || player == null) return;
+        var target = PhotonNetwork.CurrentRoom.GetPlayer(player.ActorNumber);
+        if (target != null) PhotonNetwork.CloseConnection(target);
     }
 }

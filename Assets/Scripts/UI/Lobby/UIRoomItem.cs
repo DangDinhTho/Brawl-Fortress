@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
@@ -11,14 +9,12 @@ public class UIRoomItem : MonoBehaviour
     public Text txtPlayerCount;
     public Text txtGameMode;
     public Text txtMap;
-    //public Image imgMap;
-    //public Image imgGameMode;
     private RoomInfo roomInfo;
     public Image[] gameModeIcons;
-    
+
     public void SetData(RoomInfo _roomInfo)
     {
-        this.roomInfo = _roomInfo;
+        roomInfo = _roomInfo;
         txtRoomName.text = _roomInfo.Name;
         txtPlayerCount.text = $"{_roomInfo.PlayerCount}/{_roomInfo.MaxPlayers}";
 
@@ -26,26 +22,30 @@ public class UIRoomItem : MonoBehaviour
         {
             txtMap.text = LocalizationManager.Localize(((Map)mapObj).ToString());
         }
-        
+
         if (_roomInfo.CustomProperties.TryGetValue(TF2GameProps.GameModeKey, out var gameModeObj))
         {
             GameMode gameMode = (GameMode)gameModeObj;
             txtGameMode.text = LocalizationManager.Localize(gameMode.ToString());
-            //imgGameMode.sprite = GUIManager.instan.iconAtlas.GetSprite(((GameMode)gameModeObj).ToString());
-            for(int i = 0; i < gameModeIcons.Length; i++)
+            for (int i = 0; i < gameModeIcons.Length; i++)
             {
                 gameModeIcons[i].gameObject.SetActive(i == (int)gameMode);
             }
         }
-
-        
     }
 
     public void JoinRoomClick()
     {
-        if (PhotonNetwork.InLobby)
+        if (roomInfo == null) return;
+        // Joining a room leaves the lobby automatically; calling LeaveLobby first makes JoinRoom fail
+        // because the client is still in the "Leaving" state.
+        if (!PhotonNetwork.IsConnectedAndReady || PhotonNetwork.InRoom ||
+            PhotonNetwork.NetworkClientState == ClientState.Joining) return;
+
+        if (roomInfo.MaxPlayers > 0 && roomInfo.PlayerCount >= roomInfo.MaxPlayers)
         {
-            PhotonNetwork.LeaveLobby();
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("max_player_per_team"));
+            return;
         }
 
         PhotonNetwork.JoinRoom(roomInfo.Name);

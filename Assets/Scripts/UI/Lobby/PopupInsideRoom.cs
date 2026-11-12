@@ -1,9 +1,7 @@
-//using System.Collections;
 using System;
 using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
-using Photon.Pun.Demo.Asteroids;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,15 +12,15 @@ public class PopupInsideRoom : MonoBehaviour
 
     public Transform[] playerContainers;
 
-    private Dictionary<int, GameObject> playerListEntries;
+    private readonly Dictionary<int, UIPlayerLobbyItem> playerListEntries = new Dictionary<int, UIPlayerLobbyItem>();
     public GameObject StartGameButton;
-    //public GameObject readyButton;
-    //public GameObject cancelButton;
     public Toggle readyToggle;
 
     public GameObject panel;
     public Dropdown teamDropdown;
     private bool ready;
+    private bool starting;
+    private bool subscribed;
 
     public GameObject uiChatItemPref;
     public Transform chatContainer;
@@ -41,90 +39,114 @@ public class PopupInsideRoom : MonoBehaviour
     public Text txtGameMap;
     public Image gameModeSelected;
 
-    // Start is called before the first frame update
     void Start()
     {
-        //InitData();
         uiPlayerItemPref.SetActive(false);
         panel.SetActive(false);
         uiChatItemPref.SetActive(false);
+        if (chatInput != null) chatInput.characterLimit = LobbyManager.MaxChatLength;
     }
 
     public void Open()
     {
-        //if (PhotonNetwork.IsMasterClient)
-        //{
-        //    Hashtable props = new Hashtable
-        //    {
-        //        {TF2GameProps.GameModeKey, gameMode},
-        //        {TF2GameProps.Map, map}
-        //    };
-        //    PhotonNetwork.CurrentRoom.SetCustomProperties(props);
-        //}
-
         panel.SetActive(true);
+        starting = false;
+        ready = false;
         readyToggle.SetIsOnWithoutNotify(false);
         InitData();
-        HomeManager.instance.OnCharavterPrefChanged += OnCharacterPrefChange;
+        if (!subscribed)
+        {
+            HomeManager.instance.OnCharavterPrefChanged += OnCharacterPrefChange;
+            subscribed = true;
+        }
     }
 
     public void Close()
     {
         panel.SetActive(false);
-        HomeManager.instance.OnCharavterPrefChanged -= OnCharacterPrefChange;
+        if (subscribed)
+        {
+            HomeManager.instance.OnCharavterPrefChanged -= OnCharacterPrefChange;
+            subscribed = false;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (subscribed && HomeManager.instance != null)
+            HomeManager.instance.OnCharavterPrefChanged -= OnCharacterPrefChange;
+    }
+
+    private static Team GetTeam(Player p)
+    {
+        return p.CustomProperties.TryGetValue(TF2GameProps.TeamKey, out var teamObj) ? (Team)teamObj : Team.red;
+    }
+
+    /// <summary>Counts players of a team from the room state (not from the UI hierarchy).</summary>
+    private static int CountPlayersInTeam(Team team, bool excludeLocal)
+    {
+        int count = 0;
+        foreach (var p in PhotonNetwork.PlayerList)
+        {
+            if (excludeLocal && p.IsLocal) continue;
+            if (GetTeam(p) == team) count++;
+        }
+        return count;
+    }
+
+    private static int MaxPerTeam => Mathf.Max(1, Mathf.RoundToInt(PhotonNetwork.CurrentRoom.MaxPlayers / 2f));
+
+    private UIPlayerLobbyItem AddOrUpdateEntry(Player p)
+    {
+        Team team = GetTeam(p);
+        if (!playerListEntries.TryGetValue(p.ActorNumber, out var item))
+        {
+            GameObject entry = Instantiate(uiPlayerItemPref, playerContainers[(int)team]);
+            entry.SetActive(true);
+            item = entry.GetComponent<UIPlayerLobbyItem>();
+            playerListEntries.Add(p.ActorNumber, item);
+        }
+        else if (item.team != team)
+        {
+            item.transform.SetParent(playerContainers[(int)team], false);
+        }
+        item.SetData(p, team);
+        item.SetPlayerReady(p.CustomProperties.TryGetValue(TF2GameProps.PLAYER_READY, out var r) && (bool)r);
+        return item;
+    }
+
+    private void ClearEntries()
+    {
+        foreach (var entry in playerListEntries.Values)
+        {
+            if (entry != null) Destroy(entry.gameObject);
+        }
+        playerListEntries.Clear();
     }
 
     public void InitData()
     {
         txtRoomName.text = PhotonNetwork.CurrentRoom.Name;
-        if (playerListEntries == null)
-        {
-            playerListEntries = new Dictionary<int, GameObject>();
-        }
+        ClearEntries();
 
-        if(PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(TF2GameProps.GameModeKey, out var gameModeObj))
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(TF2GameProps.GameModeKey, out var gameModeObj))
         {
             gameMode = (GameMode)gameModeObj;
         }
-
         if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(TF2GameProps.Map, out var gameMapObj))
         {
             map = (Map)gameMapObj;
         }
-
         OnChangeMap(gameMode, map);
 
         foreach (Player p in PhotonNetwork.PlayerList)
         {
-            Team team = 0;
-            if (p.CustomProperties.TryGetValue(TF2GameProps.TeamKey, out var teamObj))
-            {
-                team = (Team)teamObj;
-            }
-            {
-                GameObject entry = Instantiate(uiPlayerItemPref, playerContainers[(int)team]);
-                entry.SetActive(true);
-                UIPlayerLobbyItem item = entry.GetComponent<UIPlayerLobbyItem>();
-                item.SetData(p, team);
-
-                object isPlayerReady;
-                if (p.CustomProperties.TryGetValue(TF2GameProps.PLAYER_READY, out isPlayerReady))
-                {
-                    item.SetPlayerReady((bool)isPlayerReady);
-                }
-                else
-                {
-                    item.SetPlayerReady(false);
-                }
-
-                playerListEntries.Add(p.ActorNumber, entry);
-            }
+            AddOrUpdateEntry(p);
         }
 
-        StartGameButton.gameObject.SetActive(CheckPlayersReady());
-
+        // Pick a team that still has room (other players only: our own props are not set yet).
         Team teamOwner = HomeManager.instance.team;
-        if(playerContainers[(int)teamOwner].childCount >= Mathf.RoundToInt((float)PhotonNetwork.CurrentRoom.MaxPlayers / 2))
+        if (CountPlayersInTeam(teamOwner, true) >= MaxPerTeam)
         {
             teamOwner = ConfigManager.GetEnemyTeam(teamOwner);
             HomeManager.instance.team = teamOwner;
@@ -132,110 +154,81 @@ public class PopupInsideRoom : MonoBehaviour
         }
         tF2Class = HomeManager.instance.characterPref.tF2Class;
         Hashtable props = new Hashtable
-            {
-                {TF2GameProps.PLAYER_LOADED_LEVEL, false},
-                {TF2GameProps.ClassKey, tF2Class},
-                {TF2GameProps.TeamKey, teamOwner},
-
-            };
+        {
+            {TF2GameProps.PLAYER_LOADED_LEVEL, false},
+            {TF2GameProps.PLAYER_READY, false},
+            {TF2GameProps.ClassKey, tF2Class},
+            {TF2GameProps.TeamKey, teamOwner},
+        };
         PhotonNetwork.LocalPlayer.SetCustomProperties(props);
 
         UpdateCharacterSelectedAvt();
-        //readyButton.SetActive(true);
-        //cancelButton.SetActive(false);
-       
         teamDropdown.SetValueWithoutNotify((int)teamOwner);
-
+        StartGameButton.gameObject.SetActive(CheckPlayersReady());
     }
-
 
     public void OnLeftRoom()
     {
-        foreach (GameObject entry in playerListEntries.Values)
-        {
-            Destroy(entry.gameObject);
-        }
-
-        playerListEntries.Clear();
-        playerListEntries = null;
+        ClearEntries();
+        foreach (var c in chatStack) if (c != null) Destroy(c);
+        chatStack.Clear();
         Close();
-      
     }
 
     public void OnPlayerEnteredRoom(Player newPlayer)
     {
-        Team team = 0;
-        if (newPlayer.CustomProperties.TryGetValue(TF2GameProps.TeamKey, out var teamObj))
-        {
-            team = (Team)teamObj;
-        }
-        
-
-        GameObject entry = Instantiate(uiPlayerItemPref, playerContainers[(int)team]);
-        entry.SetActive(true);
-        UIPlayerLobbyItem item = entry.GetComponent<UIPlayerLobbyItem>();
-        item.SetData(newPlayer, team);
-        item.SetPlayerReady(false);
-
-        playerListEntries.Add(newPlayer.ActorNumber, entry);
-
+        if (!panel.activeSelf) return;
+        AddOrUpdateEntry(newPlayer);
         StartGameButton.gameObject.SetActive(CheckPlayersReady());
     }
 
     public void OnPlayerLeftRoom(Player otherPlayer)
     {
-        Destroy(playerListEntries[otherPlayer.ActorNumber].gameObject);
-        playerListEntries.Remove(otherPlayer.ActorNumber);
-
+        if (playerListEntries.TryGetValue(otherPlayer.ActorNumber, out var item))
+        {
+            if (item != null) Destroy(item.gameObject);
+            playerListEntries.Remove(otherPlayer.ActorNumber);
+        }
         StartGameButton.gameObject.SetActive(CheckPlayersReady());
     }
 
     public void OnMasterClientSwitched(Player newMasterClient)
     {
-        if (PhotonNetwork.LocalPlayer.ActorNumber == newMasterClient.ActorNumber)
+        // Kick buttons and the master icon depend on who the master is.
+        foreach (var item in playerListEntries.Values)
         {
-            StartGameButton.gameObject.SetActive(CheckPlayersReady());
+            if (item != null) item.RefreshMasterState();
         }
+        StartGameButton.gameObject.SetActive(CheckPlayersReady());
     }
 
     public void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
     {
-        if (playerListEntries == null)
-        {
-            playerListEntries = new Dictionary<int, GameObject>();
-        }
+        if (!panel.activeSelf) return;
 
-        GameObject entry;
-        if (playerListEntries.TryGetValue(targetPlayer.ActorNumber, out entry))
+        if (playerListEntries.TryGetValue(targetPlayer.ActorNumber, out var item))
         {
-            UIPlayerLobbyItem item = entry.GetComponent<UIPlayerLobbyItem>();
-
-            object isPlayerReady;
-            if (changedProps.TryGetValue(TF2GameProps.PLAYER_READY, out isPlayerReady))
+            if (changedProps.TryGetValue(TF2GameProps.PLAYER_READY, out var isPlayerReady))
             {
-               item.SetPlayerReady((bool)isPlayerReady);
+                item.SetPlayerReady((bool)isPlayerReady);
             }
             if (changedProps.TryGetValue(TF2GameProps.TeamKey, out var teamProp))
             {
                 Team team = (Team)teamProp;
                 if (team != item.team)
                 {
-                    item.transform.SetParent(playerContainers[(int)team]);
+                    item.transform.SetParent(playerContainers[(int)team], false);
                     item.SetData(targetPlayer, team);
                 }
             }
             if (changedProps.TryGetValue(TF2GameProps.ClassKey, out var classProp))
             {
-                TF2Class tF2Class = (TF2Class)classProp;
-
-                item.SetClass(tF2Class);
-                
+                item.SetClass((TF2Class)classProp);
             }
         }
 
         StartGameButton.gameObject.SetActive(CheckPlayersReady());
     }
-
 
     public void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
     {
@@ -243,7 +236,6 @@ public class PopupInsideRoom : MonoBehaviour
         {
             gameMode = (GameMode)gameModeObj;
         }
-
         if (propertiesThatChanged.TryGetValue(TF2GameProps.Map, out var gameMapObj))
         {
             map = (Map)gameMapObj;
@@ -258,33 +250,25 @@ public class PopupInsideRoom : MonoBehaviour
 
     private bool CheckPlayersReady()
     {
-        if (!PhotonNetwork.IsMasterClient)
+        if (!PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null || starting)
         {
             return false;
         }
 
         foreach (Player p in PhotonNetwork.PlayerList)
         {
-            object isPlayerReady;
-            if (p.CustomProperties.TryGetValue(TF2GameProps.PLAYER_READY, out isPlayerReady))
-            {
-                if (!(bool)isPlayerReady)
-                {
-                    return false;
-                }
-            }
-            else
+            if (!(p.CustomProperties.TryGetValue(TF2GameProps.PLAYER_READY, out var isPlayerReady) && (bool)isPlayerReady))
             {
                 return false;
             }
         }
-
         return true;
     }
 
     public void OnCharacterPrefChange()
     {
-        if(tF2Class != HomeManager.instance.characterPref.tF2Class)
+        if (!PhotonNetwork.InRoom) return;
+        if (tF2Class != HomeManager.instance.characterPref.tF2Class)
         {
             tF2Class = HomeManager.instance.characterPref.tF2Class;
             Hashtable props = new Hashtable
@@ -303,32 +287,22 @@ public class PopupInsideRoom : MonoBehaviour
         txtClassSelectedName.text = LocalizationManager.Localize(HomeManager.instance.characterPref.tF2Class.ToString());
     }
 
-    private int CountPlayerOfTeam(int team)
-    {
-        int count = 0;
-        for(int i = 0; i < playerContainers[team].childCount; i++)
-        {
-            if (playerContainers[team].GetChild(i).gameObject.activeInHierarchy) count++;
-        }
-
-        return count;
-    }
-
     public void OnChangeTeam(int _team)
     {
-        if(CountPlayerOfTeam(_team) >= Mathf.RoundToInt((float)PhotonNetwork.CurrentRoom.MaxPlayers / 2))
+        Team team = (Team)_team;
+        if (team == HomeManager.instance.team) return;
+        if (CountPlayersInTeam(team, true) >= MaxPerTeam)
         {
-            teamDropdown.SetValueWithoutNotify(_team == 0 ? 1 : 0);
+            teamDropdown.SetValueWithoutNotify((int)HomeManager.instance.team);
             GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("max_player_per_team"));
             return;
         }
-        Team team = (Team)_team;
         HomeManager.instance.team = team;
         HomeManager.instance.OnCharavterPrefChanged?.Invoke();
         Hashtable props = new Hashtable
-            {
-                {TF2GameProps.TeamKey, team}
-            };
+        {
+            {TF2GameProps.TeamKey, team}
+        };
         PhotonNetwork.LocalPlayer.SetCustomProperties(props);
     }
 
@@ -337,7 +311,8 @@ public class PopupInsideRoom : MonoBehaviour
         if (readyToggle.isOn && !ConfigManager.CheckSelectMap(map))
         {
             GUIManager.instan.CreatePopup<PopupConfirm>(
-                string.Format(LocalizationManager.Localize("not_enough_ticket")), (Action)(() => {
+                string.Format(LocalizationManager.Localize("not_enough_ticket")), (Action)(() =>
+                {
                     GUIManager.instan.CreatePopup<PopupStore>();
                 }));
             readyToggle.SetIsOnWithoutNotify(false);
@@ -350,32 +325,27 @@ public class PopupInsideRoom : MonoBehaviour
     public void OnReadyChange(bool _readdy)
     {
         ready = _readdy;
-
-        //readyButton.SetActive(!ready);
-        //cancelButton.SetActive(ready);
-        //readyToggle.va
-
+        if (!PhotonNetwork.InRoom) return;
         Hashtable props = new Hashtable
-            {
-                {TF2GameProps.PLAYER_READY, ready}
-            };
+        {
+            {TF2GameProps.PLAYER_READY, ready}
+        };
         PhotonNetwork.LocalPlayer.SetCustomProperties(props);
     }
 
     public void LeaveRoomClick()
     {
         GUIManager.instan.CreatePopup<PopupConfirm>(LocalizationManager.Localize("leave_room_confirm"), (Action)LeaveRoom);
-        
     }
 
     public void LeaveRoom()
     {
-        PhotonNetwork.LeaveRoom();
+        if (PhotonNetwork.InRoom) PhotonNetwork.LeaveRoom();
     }
 
     public void SendChat()
     {
-        if (string.IsNullOrEmpty(chatInput.text)) return;
+        if (string.IsNullOrWhiteSpace(chatInput.text)) return;
         LobbyManager.instance.SendChat(chatInput.text);
         chatInput.text = "";
     }
@@ -386,7 +356,7 @@ public class PopupInsideRoom : MonoBehaviour
         chatItem.SetActive(true);
         chatItem.GetComponent<UIChatItem>().Init(sender, content);
         chatStack.Add(chatItem);
-        if(chatStack.Count > maxChatCache)
+        if (chatStack.Count > maxChatCache)
         {
             Destroy(chatStack[0]);
             chatStack.RemoveAt(0);
@@ -395,9 +365,14 @@ public class PopupInsideRoom : MonoBehaviour
 
     public void OnStartButtonClick()
     {
+        // Re-check: a player may have un-readied or left since the button was shown.
+        if (starting || !CheckPlayersReady()) return;
+        starting = true;
+        StartGameButton.gameObject.SetActive(false);
+
         CharacterSave.SaveTeam(HomeManager.instance.team);
         CharacterSave.SaveLastCharacter(HomeManager.instance.characterPref.tF2Class);
-        
+
         PhotonNetwork.CurrentRoom.IsOpen = false;
         PhotonNetwork.CurrentRoom.IsVisible = false;
 
@@ -406,19 +381,18 @@ public class PopupInsideRoom : MonoBehaviour
 
     public void ChangeGameModeClick()
     {
-        if(!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient) return;
         GUIManager.instan.CreatePopup<PopupSelectMap>(gameMode, map);
     }
 
     public void OnChangeMap(GameMode gameMode, Map map)
     {
-        if (!ConfigManager.CheckSelectMap(map))
+        if (!ConfigManager.CheckSelectMap(map) && ready)
         {
             readyToggle.SetIsOnWithoutNotify(false);
-            ready = false;
             OnReadyChange(false);
         }
-        
+
         this.gameMode = gameMode;
         this.map = map;
         txtGameMap.text = $"{LocalizationManager.Localize($"short_{gameMode}")} - {LocalizationManager.Localize(map.ToString())}";

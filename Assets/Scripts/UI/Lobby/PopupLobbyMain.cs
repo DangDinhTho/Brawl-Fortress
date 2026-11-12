@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
@@ -8,8 +7,9 @@ using UnityEngine.UI;
 
 public class PopupLobbyMain : MonoBehaviour
 {
-    private Dictionary<string, RoomInfo> cachedRoomList;
-    private Dictionary<string, GameObject> roomListEntries;
+    private readonly Dictionary<string, RoomInfo> cachedRoomList = new Dictionary<string, RoomInfo>();
+    private readonly Dictionary<string, UIRoomItem> roomListEntries = new Dictionary<string, UIRoomItem>();
+    private readonly Stack<UIRoomItem> pooledEntries = new Stack<UIRoomItem>();
 
     public GameObject uiRoomItemPref;
     public Transform roomListContainer;
@@ -25,20 +25,21 @@ public class PopupLobbyMain : MonoBehaviour
 
     public Dropdown dropDownRegions;
 
+    private string pendingRegion;
+    private bool creatingRoom;
+
     private void Awake()
     {
-        cachedRoomList = new Dictionary<string, RoomInfo>();
-        roomListEntries = new Dictionary<string, GameObject>();
         uiRoomItemPref.SetActive(false);
     }
 
     private void Start()
     {
         panel.SetActive(false);
+        regions.Clear();
         regions.Add("asia", "Asia");
         regions.Add("au", "Australia");
         regions.Add("cae", "Canada, East");
-        //regions.Add("cn", "Chinese Mainland");
         regions.Add("eu", "Europe");
         regions.Add("in", "India");
         regions.Add("jp", "Japan");
@@ -51,45 +52,57 @@ public class PopupLobbyMain : MonoBehaviour
         regions.Add("us", "USA, East");
         regions.Add("usw", "USA, West");
 
-        dropDownRegions.options.Clear();
-        foreach (var re in regions)
-        {
-            Dropdown.OptionData o = new Dropdown.OptionData(re.Value);
-            dropDownRegions.options.Add(o);
-        }
-       
+        dropDownRegions.ClearOptions();
+        dropDownRegions.AddOptions(regions.Values.ToList());
+        dropDownRegions.onValueChanged.AddListener(OnRegionSelected);
+    }
 
-        dropDownRegions.onValueChanged.AddListener((i) =>
+    private void OnRegionSelected(int index)
+    {
+        var region = regions.ElementAt(index).Key;
+        if (CurrentRegionCode() == region) return;
+
+        PlayerPrefs.SetString(LobbyManager.RegionPrefKey, region);
+        cachedRoomList.Clear();
+        ClearRoomListView();
+
+        if (PhotonNetwork.IsConnected)
         {
+            // Connect to the new region in LobbyManager.OnDisconnected, once this connection is closed.
+            pendingRegion = region;
             PhotonNetwork.Disconnect();
-            cachedRoomList.Clear();
-            ClearRoomListView();
-            UpdateRoomListView();
-            if (PhotonNetwork.InLobby)
-            {
-                PhotonNetwork.LeaveLobby();
-            }
-            var region = regions.Where(e => e.Value == dropDownRegions.options[i].text).First();
-            PhotonNetwork.ConnectToRegion(region.Key);
-            //PhotonNetwork.BestRegionSummaryInPreferences = region.Key;
+        }
+        else
+        {
+            PhotonNetwork.ConnectToRegion(region);
+        }
+    }
 
-        });
+    public bool TryConsumePendingRegion(out string region)
+    {
+        region = pendingRegion;
+        pendingRegion = null;
+        return !string.IsNullOrEmpty(region);
+    }
+
+    private static string CurrentRegionCode()
+    {
+        string re = PhotonNetwork.CloudRegion;
+        if (string.IsNullOrEmpty(re)) return null;
+        return re.Contains("/") ? re.Split('/')[0] : re;
     }
 
     public void OnConnectedToMaster()
     {
-        string re = PhotonNetwork.CloudRegion;
-        if (re == null) return;
-        if (re.Contains("/"))
+        creatingRoom = false;
+        string re = CurrentRegionCode();
+        if (re != null && regions.ContainsKey(re))
         {
-            re = re.Split('/')[0];
-        }
-        if (!string.IsNullOrEmpty(PhotonNetwork.CloudRegion) && (regions.ContainsKey(re)))
-        {
-            dropDownRegions.value = dropDownRegions.options.FindIndex(e => e.text == regions[re]);
+            int index = regions.Keys.ToList().IndexOf(re);
+            // Without notify: changing the value must not trigger a disconnect/reconnect.
+            dropDownRegions.SetValueWithoutNotify(index);
         }
     }
-
 
     public void Open()
     {
@@ -97,7 +110,7 @@ public class PopupLobbyMain : MonoBehaviour
         isOpen = true;
         if (!PhotonNetwork.IsConnected)
         {
-            PhotonNetwork.ConnectUsingSettings();
+            LobbyManager.Connect();
         }
     }
 
@@ -107,18 +120,14 @@ public class PopupLobbyMain : MonoBehaviour
         isOpen = false;
     }
 
-
     public void OnRoomListUpdate(List<RoomInfo> roomList)
     {
-        ClearRoomListView();
-
         UpdateCachedRoomList(roomList);
         UpdateRoomListView();
     }
 
     public void OnJoinedLobby()
     {
-        // whenever this joins a new lobby, clear any previous room lists
         cachedRoomList.Clear();
         ClearRoomListView();
     }
@@ -132,22 +141,19 @@ public class PopupLobbyMain : MonoBehaviour
 
     public void OnJoinedRoom()
     {
-        // joining (or entering) a room invalidates any cached lobby room list (even if LeaveLobby was not called due to just joining a room)
+        creatingRoom = false;
         cachedRoomList.Clear();
+        ClearRoomListView();
         Close();
-
-
     }
-
-
 
     private void ClearRoomListView()
     {
-        foreach (GameObject entry in roomListEntries.Values)
+        foreach (var entry in roomListEntries.Values)
         {
-            Destroy(entry.gameObject);
+            entry.gameObject.SetActive(false);
+            pooledEntries.Push(entry);
         }
-
         roomListEntries.Clear();
     }
 
@@ -155,38 +161,37 @@ public class PopupLobbyMain : MonoBehaviour
     {
         foreach (RoomInfo info in roomList)
         {
-            // Remove room from cached room list if it got closed, became invisible or was marked as removed
             if (!info.IsOpen || !info.IsVisible || info.RemovedFromList)
             {
-                if (cachedRoomList.ContainsKey(info.Name))
-                {
-                    cachedRoomList.Remove(info.Name);
-                }
-
+                cachedRoomList.Remove(info.Name);
                 continue;
             }
-
-            // Update cached room info
-            if (cachedRoomList.ContainsKey(info.Name))
-            {
-                cachedRoomList[info.Name] = info;
-            }
-            // Add new room info to cache
-            else
-            {
-                cachedRoomList.Add(info.Name, info);
-            }
+            cachedRoomList[info.Name] = info;
         }
     }
 
+    /// <summary>Only creates/removes the entries that changed (no Destroy/Instantiate of the whole list).</summary>
     private void UpdateRoomListView()
     {
+        foreach (var name in roomListEntries.Keys.Where(n => !cachedRoomList.ContainsKey(n)).ToList())
+        {
+            var entry = roomListEntries[name];
+            entry.gameObject.SetActive(false);
+            pooledEntries.Push(entry);
+            roomListEntries.Remove(name);
+        }
+
         foreach (RoomInfo info in cachedRoomList.Values)
         {
-            GameObject entry = Instantiate(uiRoomItemPref, roomListContainer);
-            entry.SetActive(true);
-            entry.GetComponent<UIRoomItem>().SetData(info);
-            roomListEntries.Add(info.Name, entry);
+            if (!roomListEntries.TryGetValue(info.Name, out var entry))
+            {
+                entry = pooledEntries.Count > 0
+                    ? pooledEntries.Pop()
+                    : Instantiate(uiRoomItemPref, roomListContainer).GetComponent<UIRoomItem>();
+                entry.gameObject.SetActive(true);
+                roomListEntries.Add(info.Name, entry);
+            }
+            entry.SetData(info);
         }
     }
 
@@ -199,23 +204,35 @@ public class PopupLobbyMain : MonoBehaviour
 
     public void CreateRoomClick()
     {
-        print(PhotonNetwork.NetworkClientState);
-        string roomName = roomNameInput.text;
-        roomName = (roomName.Equals(string.Empty)) ? "Room " + Random.Range(1000, 10000) : roomName;
+        if (creatingRoom) return;
+        if (!PhotonNetwork.IsConnectedAndReady)
+        {
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
+            return;
+        }
 
-        byte maxPlayers;
-        byte.TryParse(maxPlayerInput.text, out maxPlayers);
-        maxPlayers = (byte)Mathf.Clamp(maxPlayers, 1, 12);
+        string roomName = roomNameInput.text.Trim();
+        if (string.IsNullOrEmpty(roomName)) roomName = "Room " + Random.Range(1000, 10000);
+
+        byte.TryParse(maxPlayerInput.text, out byte maxPlayers);
+        maxPlayers = (byte)Mathf.Clamp(maxPlayers, 2, 12);
         ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable
-            {
-                {TF2GameProps.GameModeKey, GameMode.Competitive},
-                {TF2GameProps.Map, Map.Map_ARN_Tumble}
-            };
+        {
+            {TF2GameProps.GameModeKey, GameMode.Competitive},
+            {TF2GameProps.Map, Map.Map_ARN_Tumble}
+        };
 
         string[] customPropertiesForLobby = new string[] { TF2GameProps.GameModeKey, TF2GameProps.Map };
-        RoomOptions options = new RoomOptions { MaxPlayers = maxPlayers, PlayerTtl = 20000, CleanupCacheOnLeave = false, CustomRoomProperties = props, CustomRoomPropertiesForLobby = customPropertiesForLobby };
+        // No rejoin support: a leaving player is removed at once (PlayerTtl 0) and their character/buildables are
+        // cleaned up (CleanupCacheOnLeave). Bots are room objects, so they are not affected.
+        RoomOptions options = new RoomOptions { MaxPlayers = maxPlayers, PlayerTtl = 0, CleanupCacheOnLeave = true, CustomRoomProperties = props, CustomRoomPropertiesForLobby = customPropertiesForLobby };
 
-        PhotonNetwork.CreateRoom(roomName, options, null);
+        creatingRoom = PhotonNetwork.CreateRoom(roomName, options, null);
         createRoomPanel.SetActive(false);
+    }
+
+    public void OnCreateRoomFailed()
+    {
+        creatingRoom = false;
     }
 }
