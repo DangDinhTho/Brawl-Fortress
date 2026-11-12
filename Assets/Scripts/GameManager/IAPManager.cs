@@ -235,6 +235,13 @@ public class IAPManager : MonoBehaviour
                     FunctionParameter = new { itemId = it.itemId.ToString() }
                 }, result2 =>
                 {
+                    if (result2.Error != null)
+                    {
+                        Debug.LogError($"BuyPack CloudScript error: {result2.Error.Error} - {result2.Error.Message}");
+                        GameManager.instan.GetUserInventory();
+                        if (popupWaitingFocus) popupWaitingFocus.Dismiss();
+                        return;
+                    }
                     GameManager.instan.GetUserInventory();
                     RewardData rewardData = new RewardData();
                     if (it.itemProperties.packData != null)

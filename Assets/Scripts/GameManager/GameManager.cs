@@ -12,12 +12,8 @@ public class GameManager : MonoBehaviour
     public static GameManager instan;
     [HideInInspector]
     public UserData userData = new UserData();
-    //[HideInInspector]
-    //public List<CatalogItem> allItems;
     [HideInInspector]
-    public List<string> keyProductIds;
-    //[HideInInspector]
-    //public List<string> reciptCodeAccept = new List<string>();
+    public List<string> keyProductIds = new List<string>();
     [HideInInspector]
     public int toDayOfTheYear;
     [HideInInspector]
@@ -27,6 +23,9 @@ public class GameManager : MonoBehaviour
 
     [HideInInspector] public DateTime today;
     public FirebaseController firebaseController;
+
+    const int MaxLoadAttempts = 3;
+    const float RetryDelay = 2f;
 
     public static int matchCount
     {
@@ -38,13 +37,12 @@ public class GameManager : MonoBehaviour
         instan = this;
         DontDestroyOnLoad(this.gameObject);
     }
-    
+
     public void SetFPSTarget(int value)
     {
         Application.targetFrameRate = value;
     }
-    
-    // Start is called before the first frame update
+
     void Start()
     {
         int quanlityLevel = SettingHelper.GetGraphicValue();
@@ -52,105 +50,161 @@ public class GameManager : MonoBehaviour
         QualitySettings.SetQualityLevel(quanlityLevel);
         SetFPSTarget(SettingHelper.GetFPSValue());
         SettingHelper.OnFPSUpdate += SetFPSTarget;
-        
+
         LocalizationManager.Read();
         string language = SettingHelper.GetLanguage();
         LocalizationManager.Language = language;
-        Debug.Log(DateTimeOffset.UtcNow.AddDays(15).ToUnixTimeSeconds());
     }
 
-    public void GetUserInventory(Action callBack = null)
+    #region Helpers
+    void RetryLater(int attempt, Action retry, PlayFabError error, Action<PlayFabError> onFinalError)
+    {
+        if (attempt + 1 < MaxLoadAttempts)
+        {
+            Debug.LogWarning($"PlayFab call failed (attempt {attempt + 1}), retrying: {error.GenerateErrorReport()}");
+            StartCoroutine(DelayCall(RetryDelay, retry));
+        }
+        else
+        {
+            Debug.LogError(error.GenerateErrorReport());
+            onFinalError?.Invoke(error);
+        }
+    }
+
+    static IEnumerator DelayCall(float delay, Action action)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        action?.Invoke();
+    }
+
+    /// <summary>
+    /// Reads "messageValue" from a CloudScript result. Returns false (and logs) when the script
+    /// threw an error or did not return the expected object.
+    /// </summary>
+    public static bool TryGetCloudScriptMessage(ExecuteCloudScriptResult result, out object message)
+    {
+        message = null;
+        if (result == null) return false;
+        if (result.Error != null)
+        {
+            Debug.LogError($"CloudScript '{result.FunctionName}' error: {result.Error.Error} - {result.Error.Message}\n{result.Error.StackTrace}");
+            return false;
+        }
+        if (result.FunctionResult is JsonObject json && json.TryGetValue("messageValue", out message) && message != null)
+            return true;
+
+        Debug.LogWarning($"CloudScript '{result.FunctionName}' returned no messageValue");
+        return false;
+    }
+
+    static RewardData ParseReward(object json)
+    {
+        if (json == null) return null;
+        try { return JsonConvert.DeserializeObject<RewardData>(json.ToString()); }
+        catch (Exception e) { Debug.LogError("RewardData parse error: " + e.Message); return null; }
+    }
+
+    static int GetCurrency(Dictionary<string, int> vc, string code)
+    {
+        return vc != null && vc.TryGetValue(code, out var v) ? v : 0;
+    }
+    #endregion
+
+    #region Inventory
+    public void GetUserInventory(Action callBack = null) => GetUserInventory(callBack, null, 0);
+
+    public void GetUserInventory(Action callBack, Action<PlayFabError> onError, int attempt = 0)
     {
         PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(), result =>
         {
-            List<ItemInstance> itemInstances = result.Inventory;
-            userData.userItems.Clear();
-            for (int i = 0; i < itemInstances.Count; i++)
+            ApplyInventory(result.Inventory, result.VirtualCurrency);
+            callBack?.Invoke();
+        }, error => RetryLater(attempt, () => GetUserInventory(callBack, onError, attempt + 1), error, onError));
+    }
+
+    /// <summary>Also used with the combined login payload.</summary>
+    public void ApplyInventory(List<ItemInstance> itemInstances, Dictionary<string, int> virtualCurrency)
+    {
+        userData.userItems.Clear();
+        if (itemInstances != null)
+        {
+            foreach (var instance in itemInstances)
             {
-                UserItem item = ConfigManager.CreateUserItem(itemInstances[i]);
+                UserItem item = ConfigManager.CreateUserItem(instance);
+                if (item == null) continue;
                 if (item.itemId == ItemId.brawl_valley_remove_ads) userData.ads_removed = true;
                 userData.userItems.Add(item);
             }
-            userData.currency.UpdateVitualCurrency(result.VirtualCurrency["GK"], result.VirtualCurrency["CM"], result.VirtualCurrency["MM"]);
-            if (HomeManager.instance != null)
-            {
-                HomeManager.instance.SetNoAdsBtn();
-            }
-            callBack?.Invoke();
-
-        }, error => Debug.Log(error.GenerateErrorReport()));
+        }
+        userData.currency.UpdateVitualCurrency(GetCurrency(virtualCurrency, "GK"), GetCurrency(virtualCurrency, "CM"), GetCurrency(virtualCurrency, "MM"));
+        if (HomeManager.instance != null)
+        {
+            HomeManager.instance.SetNoAdsBtn();
+        }
     }
+    #endregion
 
-    public void GetCatalogs()
+    #region Catalog
+    public void GetCatalogs() => GetCatalogs(null, null, 0);
+
+    public void GetCatalogs(Action onDone, Action<PlayFabError> onError, int attempt = 0)
     {
         PlayFabClientAPI.GetCatalogItems(new GetCatalogItemsRequest(), result =>
         {
-            var allItems = result.Catalog;
-            //allItems.Sort((a, b) => (a.ItemId.CompareTo(b.ItemId)));
-
-            foreach (var item in allItems)
+            foreach (var item in result.Catalog)
             {
-                ItemId itemId;
-                if (Enum.TryParse(item.ItemId, true, out itemId))
+                if (!Enum.TryParse(item.ItemId, true, out ItemId itemId)) continue;
+                if (!Enum.TryParse(item.ItemClass, out ItemType itemType))
                 {
+                    Debug.LogWarning($"Catalog item '{item.ItemId}' has unknown ItemClass '{item.ItemClass}'");
+                    continue;
+                }
 
-                    ItemType itemType = (ItemType)Enum.Parse(typeof(ItemType), item.ItemClass);
-                    List<TF2Class> tf2Classes = null;
-                    if (itemType == ItemType.Pack || itemType == ItemType.remove_ads)
-                    {
+                List<TF2Class> tf2Classes = null;
+                if (itemType == ItemType.Pack || itemType == ItemType.remove_ads)
+                {
+                    if (!keyProductIds.Contains(item.ItemId))
                         keyProductIds.Add(item.ItemId);
-                    }
-                    else if (itemType == ItemType.ticket)
+                }
+                else if (itemType != ItemType.ticket)
+                {
+                    tf2Classes = new List<TF2Class>();
+                    if (item.Tags != null)
                     {
-
-                    }
-                    else
-                    {
-                        tf2Classes = new List<TF2Class>();
-                        for (int i = 0; i < item.Tags.Count; i++)
+                        foreach (var tag in item.Tags)
                         {
-                            TF2Class tf2cl = (TF2Class)Enum.Parse(typeof(TF2Class), item.Tags[i]);
-                            tf2Classes.Add(tf2cl);
+                            if (Enum.TryParse(tag, out TF2Class tf2cl)) tf2Classes.Add(tf2cl);
+                            else Debug.LogWarning($"Catalog item '{item.ItemId}' has unknown class tag '{tag}'");
                         }
                     }
-
-                    ItemProperties itemProperties = null;
-                    if (!string.IsNullOrEmpty(item.CustomData)) itemProperties = JsonConvert.DeserializeObject<ItemProperties>(item.CustomData);
-                    var itemCfg = new ItemConfig()
-                    {
-                        itemId = itemId, //(ItemId)Enum.Parse(typeof(ItemId), item.ItemId),
-                        slot = (ItemType)Enum.Parse(typeof(ItemType), item.ItemClass),
-                        tf2Classes = tf2Classes,
-                        catalogItem = item,
-                        itemProperties = itemProperties
-                    };
-
-                    if (!ConfigManager.itemConfigs.ContainsKey(itemCfg.itemId))
-                        ConfigManager.itemConfigs.Add(itemCfg.itemId, itemCfg);
                 }
+
+                ItemProperties itemProperties = null;
+                if (!string.IsNullOrEmpty(item.CustomData))
+                {
+                    try { itemProperties = JsonConvert.DeserializeObject<ItemProperties>(item.CustomData); }
+                    catch (Exception e) { Debug.LogError($"Catalog item '{item.ItemId}' CustomData parse error: {e.Message}"); }
+                }
+
+                ConfigManager.itemConfigs[itemId] = new ItemConfig()
+                {
+                    itemId = itemId,
+                    slot = itemType,
+                    tf2Classes = tf2Classes,
+                    catalogItem = item,
+                    itemProperties = itemProperties
+                };
             }
-
-            //for(ItemId i = ItemId.WEAPON; i < ItemId.END_WEAPON; i++)
-            //{
-            //    var itemCfg = new ItemConfig()
-            //    {
-            //        itemId = i,
-            //        slot = ItemType.WEAPON
-            //    };
-
-            //    ConfigManager.itemConfigs.Add(itemCfg.itemId, itemCfg);
-            //}
-
-            //IAPManager.instan.InitializePurchasing();
 
             if (LoginManager.instan != null)
             {
                 LoginManager.instan.loadedCategory = true;
             }
+            onDone?.Invoke();
 
-        }, error => Debug.Log(error.GenerateErrorReport()));
+        }, error => RetryLater(attempt, () => GetCatalogs(onDone, onError, attempt + 1), error, onError));
     }
-
+    #endregion
 
     public void OnStartMatch()
     {
@@ -162,46 +216,57 @@ public class GameManager : MonoBehaviour
         firebaseController.LogEvent("match", "number_match", matchCount.ToString());
     }
 
+    #region User data / statistics
     public void GetUserData()
     {
         PlayFabClientAPI.GetUserData(new GetUserDataRequest()
         {
             PlayFabId = userData.userId,
-            Keys = null
-        }, result =>
-        {
-            if (result.Data.ContainsKey("day_last"))
-            {
-                userData.dayLast = int.Parse(result.Data["day_last"].Value);
-            }
-            else
-            {
-                userData.dayLast = -1;
-            }
-
-            if (result.Data.ContainsKey("moc_da_nhan"))
-            {
-                userData.mocDaNhan = int.Parse(result.Data["moc_da_nhan"].Value);
-
-            }
-            else
-            {
-                userData.mocDaNhan = 0;
-            }
-        }, (error) =>
+            Keys = new List<string> { "day_last", "moc_da_nhan" }
+        }, result => ApplyUserData(result.Data),
+        error =>
         {
             Debug.Log("Got error retrieving user data:");
             Debug.Log(error.GenerateErrorReport());
         });
     }
 
+    public void ApplyUserData(Dictionary<string, UserDataRecord> data)
+    {
+        userData.dayLast = data != null && data.TryGetValue("day_last", out var dl) && int.TryParse(dl.Value, out var d) ? d : -1;
+        userData.mocDaNhan = data != null && data.TryGetValue("moc_da_nhan", out var mc) && int.TryParse(mc.Value, out var m) ? m : 0;
+    }
+
+    public void GetMyStatistics()
+    {
+        var request = new GetPlayerStatisticsRequest
+        {
+            StatisticNames = new List<string>() { "TopPlayer" }
+        };
+        PlayFabClientAPI.GetPlayerStatistics(request, result => ApplyStatistics(result.Statistics), OnError);
+    }
+
+    public void ApplyStatistics(List<StatisticValue> statistics)
+    {
+        userData.score = 0;
+        if (statistics == null) return;
+        foreach (var s in statistics)
+            if (s.StatisticName == "TopPlayer") userData.score = s.Value;
+    }
+    #endregion
+
+    #region Time / daily reward
     private bool checkDailyrewarded;
     public void checkDailyReward()
     {
         if (!checkDailyrewarded)
         {
-            PlayFabClientAPI.GetTime(new GetTimeRequest(), OnGetTimeSuccess, LogFailure);
             checkDailyrewarded = true;
+            PlayFabClientAPI.GetTime(new GetTimeRequest(), OnGetTimeSuccess, error =>
+            {
+                checkDailyrewarded = false; // allow a later retry
+                LogFailure(error);
+            });
         }
     }
 
@@ -212,13 +277,12 @@ public class GameManager : MonoBehaviour
             {
                 OnGetTimeSuccess(result);
                 callback?.Invoke(result.Time);
-            } 
+            }
             , LogFailure);
     }
 
     void OnGetTimeSuccess(GetTimeResult result)
     {
-        Debug.Log("The time is: " + result.Time.DayOfYear);
         toDayOfTheYear = result.Time.DayOfYear;
         today = result.Time;
     }
@@ -227,28 +291,22 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("There was a problem getting the time. Error: " + error.GenerateErrorReport());
     }
+
     public void RequestAddDailyReward(int mocNhan, Action<RewardData> callBack)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
-
             GeneratePlayStreamEvent = true,
             FunctionName = "AddDailyReward",
             FunctionParameter = new { inputValue = mocNhan.ToString() }
-
         }, result =>
         {
             GetUserInventory();
-            JsonObject jsonResult = (JsonObject)result.FunctionResult;
-            object rewardJson;
-            jsonResult.TryGetValue("messageValue", out rewardJson);
-            Debug.Log(rewardJson);
-
-            RewardData rewardData = JsonConvert.DeserializeObject<RewardData>(rewardJson.ToString());
-            callBack?.Invoke(rewardData);
+            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
+            RewardData rewardData = ParseReward(rewardJson);
+            if (rewardData != null) callBack?.Invoke(rewardData);
         },
-       error => Debug.Log(error.GenerateErrorReport()));
-
+        error => Debug.Log(error.GenerateErrorReport()));
     }
 
     public void RecieveDailyReward(int dayLast, int mocNhan, Action<RewardData> callBack)
@@ -270,64 +328,46 @@ public class GameManager : MonoBehaviour
                 {"moc_da_nhan", mocDaNhan.ToString()}
             }
         },
-        result =>
-        {
-        },
-        error =>
-        {
-
-        });
+        result => { },
+        error => Debug.LogError("SetDayLast failed: " + error.GenerateErrorReport()));
     }
-    
-    
-
+    #endregion
 
     public void BuyItem(ItemId itemId, Action<ItemId> CallBack = null)
     {
         ItemConfig itemConfig = ConfigManager.GetItemConfig(itemId);
+        if (itemConfig?.catalogItem?.VirtualCurrencyPrices == null || !itemConfig.catalogItem.VirtualCurrencyPrices.TryGetValue("GK", out var price))
+        {
+            Debug.LogError($"BuyItem: no GK price for {itemId}");
+            return;
+        }
         PlayFabClientAPI.PurchaseItem(new PurchaseItemRequest()
         {
             ItemId = itemId.ToString(),
-            Price = (int)itemConfig.catalogItem.VirtualCurrencyPrices["GK"],
+            Price = (int)price,
             VirtualCurrency = "GK"
         }, result =>
         {
-            for(int i = 0; i < result.Items.Count; i++)
+            for (int i = 0; i < result.Items.Count; i++)
             {
                 UserItem item = ConfigManager.CreateUserItem(result.Items[i]);
-                userData.userItems.Add(item);
+                if (item != null) userData.userItems.Add(item);
             }
-            userData.currency.UpdateGoldKey(userData.currency.goldKey - (int)itemConfig.catalogItem.VirtualCurrencyPrices["GK"]);
+            userData.currency.UpdateGoldKey(userData.currency.goldKey - (int)price);
             CallBack?.Invoke(itemId);
 
-        }, error => { Debug.Log(error.GenerateErrorReport());});
+        }, error => { Debug.Log(error.GenerateErrorReport()); });
     }
 
-    public void GetMyStatistics()
-    {
-        var request = new GetPlayerStatisticsRequest
-        {
-            StatisticNames = new List<string>() { "TopPlayer" }
-        };
-        PlayFabClientAPI.GetPlayerStatistics(request, (result) =>
-        {
-            if (result.Statistics != null && result.Statistics.Count > 0)
-                userData.score = result.Statistics[0].Value;
-            else
-                userData.score = 0;
-        }, OnError);
-    }
     public void OnError(PlayFabError err)
     {
-        print(err);
+        Debug.LogWarning(err.GenerateErrorReport());
     }
-
 
     public void RequestCraft(ItemId itemId, int useCurrency, Action<bool> CallBack)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
-
             GeneratePlayStreamEvent = false,
             FunctionName = "Craft",
             FunctionParameter = new
@@ -335,139 +375,100 @@ public class GameManager : MonoBehaviour
                 itemId = itemId.ToString(),
                 useCurrency = useCurrency.ToString()
             }
-
         }, result =>
         {
-            JsonObject jsonResult = (JsonObject)result.FunctionResult;
-            object success;
-            jsonResult.TryGetValue("messageValue", out success);
-
             GetUserInventory();
-            
-            print(success);
-            if (success.ToString().Equals("success"))
-            {
-                CallBack(true);
-            }
-            else
-            {
-                CallBack(false);
-            }
-
+            bool ok = TryGetCloudScriptMessage(result, out var success) && success.ToString().Equals("success");
+            CallBack?.Invoke(ok);
         },
-       error => Debug.Log(error.GenerateErrorReport()));
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            CallBack?.Invoke(false);
+        });
     }
-    
-    
+
     public void RequestOnEndGame(GameMode gameMode, bool isWin, int score, Action<RewardData> CallBack)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = false,
+            FunctionName = "EndGame",
+            FunctionParameter = new
             {
-
-                GeneratePlayStreamEvent = false,
-                FunctionName = "EndGame",
-                FunctionParameter = new
-                {
-                    gameMode = gameMode.ToString(),
-                    isWin = isWin? 1: 0,
-                    score = score.ToString()
-                }
-
-            }, result =>
-            {
-                JsonObject jsonResult = (JsonObject)result.FunctionResult;
-                object rewardJson;
-                jsonResult.TryGetValue("messageValue", out rewardJson);
-                Debug.Log(rewardJson);
-
-                RewardData rewardData = JsonConvert.DeserializeObject<RewardData>(rewardJson.ToString());
-                GetUserInventory();
-                CallBack?.Invoke(rewardData);
-
-            },
-            error => Debug.Log(error.GenerateErrorReport()));
+                gameMode = gameMode.ToString(),
+                isWin = isWin ? 1 : 0,
+                score = score.ToString()
+            }
+        }, result =>
+        {
+            GetUserInventory();
+            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
+            RewardData rewardData = ParseReward(rewardJson);
+            if (rewardData != null) CallBack?.Invoke(rewardData);
+        },
+        error => Debug.Log(error.GenerateErrorReport()));
     }
-    
-    
+
     public void RequestCrate(Action<ItemId> CallBack, Action CallBack2)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = false,
+            FunctionName = "OpenCrate"
+        }, result =>
+        {
+            if (!TryGetCloudScriptMessage(result, out var rewardJson))
             {
+                CallBack?.Invoke(ItemId.None);
+                return;
+            }
 
-                GeneratePlayStreamEvent = false,
-                FunctionName = "OpenCrate"
+            RewardData rewardData = ParseReward(rewardJson);
+            ItemId rewardId = rewardData?.itemDatas != null && rewardData.itemDatas.Count > 0 ? rewardData.itemDatas[0].itemId : ItemId.None;
 
-            }, result =>
+            if (rewardId != ItemId.None)
             {
-                JsonObject jsonResult = (JsonObject)result.FunctionResult;
-                if (jsonResult != null)
-                {
-                    object rewardJson;
-                    if (jsonResult.TryGetValue("messageValue", out rewardJson))
-                    {
-                        Debug.Log(rewardJson);
-                        RewardData rewardData = JsonConvert.DeserializeObject<RewardData>(rewardJson.ToString());
-                        if (rewardData != null)
-                        {
-                            if (rewardData.itemDatas[0].itemId != ItemId.None)
-                                GetUserInventory(CallBack2);
-                            else
-                            {
-                                userData.UseItem(ItemId.crate_box, 1);
-                                userData.currency.Spend(ConfigManager.pricePerCrate, 0, 0);
-                                CallBack2?.Invoke();
-                            }
-                            CallBack?.Invoke(rewardData.itemDatas[0].itemId);
-                        }
-                        else
-                        {
-                            CallBack?.Invoke(ItemId.None);
-                            userData.UseItem(ItemId.crate_box, 1);
-                            userData.currency.Spend(ConfigManager.pricePerCrate, 0, 0);
-                            CallBack2?.Invoke();
-                        }
-                    }
-                }
-                else
-                {
-                    CallBack?.Invoke(ItemId.None);
-                }
-                
-
-            },
-            error => Debug.Log(error.GenerateErrorReport()));
+                GetUserInventory(CallBack2);
+            }
+            else
+            {
+                userData.UseItem(ItemId.crate_box, 1);
+                userData.currency.Spend(ConfigManager.pricePerCrate, 0, 0);
+                CallBack2?.Invoke();
+            }
+            CallBack?.Invoke(rewardId);
+        },
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            CallBack?.Invoke(ItemId.None);
+        });
     }
 
     public void RequestUseTicket(ItemId ticketId, int quantity, Action callBackIfFail)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = false,
+            FunctionName = "UseTicket",
+            FunctionParameter = new
             {
-
-                GeneratePlayStreamEvent = false,
-                FunctionName = "UseTicket",
-                FunctionParameter = new
-                {
-                    ticketId = ticketId,
-                    quantity = quantity.ToString()
-                }
-
-            }, result =>
-            {
-                JsonObject jsonResult = (JsonObject)result.FunctionResult;
-                object success;
-                jsonResult.TryGetValue("messageValue", out success);
-                if (success.ToString().Equals("success"))
-                {
-                    GetUserInventory();
-                }
-                else
-                {
-                    callBackIfFail?.Invoke();
-                }
-
-
-            },
-            error => Debug.Log(error.GenerateErrorReport()));
+                ticketId = ticketId,
+                quantity = quantity.ToString()
+            }
+        }, result =>
+        {
+            if (TryGetCloudScriptMessage(result, out var success) && success.ToString().Equals("success"))
+                GetUserInventory();
+            else
+                callBackIfFail?.Invoke();
+        },
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            callBackIfFail?.Invoke();
+        });
     }
 
     public void GetLeaderBoard(Action<GetLeaderboardResult> Callback)
@@ -488,157 +489,128 @@ public class GameManager : MonoBehaviour
             StatisticName = "TopPlayer",
             MaxResultsCount = 1
         };
-        PlayFabClientAPI.GetLeaderboardAroundPlayer(request, (result) => {
-            Callback(result.Leaderboard[0]);
+        PlayFabClientAPI.GetLeaderboardAroundPlayer(request, (result) =>
+        {
+            if (result.Leaderboard != null && result.Leaderboard.Count > 0)
+                Callback(result.Leaderboard[0]);
         }, OnError);
     }
 
-    
+    /// <summary>Stores the raw Google receipt for support. Key is unique per purchase.</summary>
     public void AddPurchase(string itemID, string recipID)
     {
-        string key = itemID + "-" + UnityEngine.Random.Range(0, 100000);
+        string key = itemID + "-" + DateTime.UtcNow.Ticks;
         PlayFabClientAPI.UpdateUserData(new UpdateUserDataRequest()
+        {
+            Data = new Dictionary<string, string>()
             {
-                Data = new Dictionary<string, string>()
-                {
-                    {key, recipID}
-                }
+                {key, recipID}
             },
-            result =>
-            {
-                print("addd");
-                //SceneManager.LoadScene(1 + gameMode);
-                //HomeManager.instan.SwitchScene();
-            },
-            error =>
-            {
-                //user.matchs[gameMode]--;
-                //HomeManager.instan._CancelBattle();
-                Debug.Log("Got error setting user data Ancestor to Arthur");
-                Debug.Log(error.GenerateErrorReport());
-            });
+            Permission = UserDataPermission.Private
+        },
+        result => { },
+        error =>
+        {
+            Debug.Log("AddPurchase: error saving receipt");
+            Debug.Log(error.GenerateErrorReport());
+        });
     }
-    
+
     public void AddRewardFromAds()
     {
-        
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = true,
+            FunctionName = "AddRewardFromAds",
+        }, result =>
+        {
+            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
+            RewardData rewardData = ParseReward(rewardJson);
+            if (rewardData?.virtualCurrncies != null && rewardData.virtualCurrncies.Count > 0)
             {
-
-                GeneratePlayStreamEvent = true,
-                FunctionName = "AddRewardFromAds",
-
-            }, result =>
-            {
-
-                JsonObject jsonResult = (JsonObject)result.FunctionResult;
-                object rewardJson;
-                jsonResult.TryGetValue("messageValue", out rewardJson);
-                Debug.Log(rewardJson);
-                
-                RewardData rewardData = JsonConvert.DeserializeObject<RewardData>(rewardJson.ToString());
-                if (rewardData != null)
+                switch (rewardData.virtualCurrncies[0].currency)
                 {
-                    switch (rewardData.virtualCurrncies[0].currency)
-                    {
-                        case TF2Currency.GK:
-                            userData.currency.AddCurrency(rewardData.virtualCurrncies[0].quantity, 0, 0);
-                            break;
-                        case TF2Currency.MM:
-                            userData.currency.AddCurrency(0, 0, rewardData.virtualCurrncies[0].quantity);
-                            break;
-                    }
-                    
-                    GUIManager.instan.CreatePopup<PopupReward>(rewardData);
+                    case TF2Currency.GK:
+                        userData.currency.AddCurrency(rewardData.virtualCurrncies[0].quantity, 0, 0);
+                        break;
+                    case TF2Currency.MM:
+                        userData.currency.AddCurrency(0, 0, rewardData.virtualCurrncies[0].quantity);
+                        break;
                 }
-
-            },
-            error => Debug.Log(error.GenerateErrorReport()));
+                GUIManager.instan.CreatePopup<PopupReward>(rewardData);
+            }
+        },
+        error => Debug.Log(error.GenerateErrorReport()));
     }
-    
-    
+
     public void RequestTransition(Transition transition, Action<RewardData> callBack)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = true,
+            FunctionName = "Trading",
+            FunctionParameter = new { inputValue = transition.ID.ToString() }
+        }, result =>
+        {
+            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
+            RewardData rewardData = ParseReward(rewardJson);
+            if (rewardData == null) return;
+
+            if (rewardData.virtualCurrncies != null && rewardData.virtualCurrncies.Count > 0)
             {
+                userData.currency.AddCurrency(rewardData.virtualCurrncies[0]);
+            }
 
-                GeneratePlayStreamEvent = true,
-                FunctionName = "Trading",
-                FunctionParameter = new { inputValue = transition.ID.ToString() }
-
-            }, result =>
+            if (transition.sourceCurrency != null)
             {
-                //GetUserInventory();
-                JsonObject jsonResult = (JsonObject)result.FunctionResult;
-                object rewardJson;
-                jsonResult.TryGetValue("messageValue", out rewardJson);
-                Debug.Log(rewardJson);
-                RewardData rewardData = JsonConvert.DeserializeObject<RewardData>(rewardJson.ToString());
-                if (rewardData != null && rewardData.virtualCurrncies != null)
-                {
-                    userData.currency.AddCurrency(rewardData.virtualCurrncies[0]);
-                }
+                userData.currency.SpendCurrency(transition.sourceCurrency);
+            }
+            else if (transition.sourceItem != null)
+            {
+                userData.RemoveUserItem(transition.sourceItem.itemId);
+            }
 
-                if (transition.sourceCurrency != null)
-                {
-                    userData.currency.SpendCurrency(transition.sourceCurrency);
-                }
-                else if(transition.sourceItem != null)
-                {
-                    userData.RemoveUserItem(transition.sourceItem.itemId);
-                }
-
-                callBack?.Invoke(rewardData);
-            },
-            error => Debug.Log(error.GenerateErrorReport()));
-
+            callBack?.Invoke(rewardData);
+        },
+        error => Debug.Log(error.GenerateErrorReport()));
     }
-
 
     public void RestorePurchase(ItemId itemId, Action callback = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
-
             GeneratePlayStreamEvent = false,
             FunctionName = "RestoreIap",
             FunctionParameter = new
             {
                 itemId = itemId.ToString(),
             }
-
         }, result =>
         {
-            GetUserInventory(() => {
-                callback?.Invoke();
-
-            });
-
-
+            if (result.Error != null) Debug.LogError($"RestoreIap error: {result.Error.Error} - {result.Error.Message}");
+            GetUserInventory(() => callback?.Invoke());
         },
-            error => Debug.Log(error.GenerateErrorReport()));
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            callback?.Invoke();
+        });
     }
 
     public void RemoveAcount(Action callback = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
-
             GeneratePlayStreamEvent = false,
             FunctionName = "RemoveAccount",
-
         }, result =>
         {
-            JsonObject jsonResult = (JsonObject)result.FunctionResult;
-            object res;
-            jsonResult.TryGetValue("messageValue", out res);
-            Debug.Log($"Deleted: {res}");
-            callback?.Invoke();
-
-
+            if (TryGetCloudScriptMessage(result, out var res))
+            {
+                Debug.Log($"Deleted: {res}");
+                callback?.Invoke();
+            }
         },
-            error => Debug.Log(error.GenerateErrorReport()));
+        error => Debug.Log(error.GenerateErrorReport()));
     }
 }
-
-

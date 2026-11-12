@@ -4,6 +4,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using Newtonsoft.Json;
 using DG.Tweening;
@@ -49,6 +50,13 @@ public class LoginManager : MonoBehaviour
     [HideInInspector]
     public bool loadedCategory;
 
+    // Data required before entering Home
+    bool titleDataLoaded;
+    bool inventoryLoaded;
+    bool loginDoneStarted;
+
+    const int MaxLoadAttempts = 3;
+
     public Slider slider;
 
     private void Awake()
@@ -73,27 +81,12 @@ public class LoginManager : MonoBehaviour
             loadingPanel.SetActive(false);
         }
 
-        if (PlayerPrefs.HasKey(USERNAME))
-        {
-            _username = PlayerPrefs.GetString(USERNAME);
-        }
-
-        if (PlayerPrefs.HasKey(PASSWORD))
-        {
-            _password = PlayerPrefs.GetString(PASSWORD);
-        }
-
-        if (PlayerPrefs.HasKey(CUSTOMID))
-        {
-            customId = PlayerPrefs.GetString(CUSTOMID);
-        }
+        _username = PlayerPrefs.GetString(USERNAME, null);
+        _password = PlayerPrefs.GetString(PASSWORD, null);
+        customId = PlayerPrefs.GetString(CUSTOMID, null);
 
         if (string.IsNullOrEmpty(PlayFabSettings.staticSettings.TitleId))
         {
-            /*
-            Please change the titleId below to your own titleId from PlayFab Game Manager.
-            If you have already set the value in the Editor Extensions, this can be skipped.
-            */
             PlayFabSettings.staticSettings.TitleId = "F08BD";
         }
         slider.value = 0;
@@ -109,41 +102,48 @@ public class LoginManager : MonoBehaviour
 #if UNITY_IOS
     private void AskAtt()
     {
-        ATTrackingStatusBinding.AuthorizationTrackingStatus attStatus = ATTrackingStatusBinding.GetAuthorizationTrackingStatus();
-        Debug.Log("ThoDD: " + attStatus.ToString());
+        var attStatus = ATTrackingStatusBinding.GetAuthorizationTrackingStatus();
         if (attStatus == ATTrackingStatusBinding.AuthorizationTrackingStatus.NOT_DETERMINED)
         {
             ATTrackingStatusBinding.RequestAuthorizationTracking();
-            Debug.Log("ThoDD: Request Att");
         }
     }
 #endif
 
-
     public void _Retry()
     {
         noInternetPanel.SetActive(false);
-        StartCoroutine(CheckConenctInternet());
+        if (logined)
+            LoadMissingData(); // already logged in: only reload what failed
+        else
+            StartCoroutine(CheckConenctInternet());
     }
 
     IEnumerator CheckConenctInternet()
     {
-        WWW www = new WWW("https://www.google.com");
-        yield return www;
-        if (www.isDone && www.bytesDownloaded > 0)
-        {
-            noInternetPanel.SetActive(false);
-            AdsManager.instan.InitAds();
-            //Yodo1AdsManager.instan.StartInitYodo();
-            Login();
-            yield break;
-        }
-        else if (www.isDone && www.bytesDownloaded == 0)
+        if (Application.internetReachability == NetworkReachability.NotReachable)
         {
             noInternetPanel.SetActive(true);
             yield break;
         }
 
+        using (var req = UnityWebRequest.Head("https://www.google.com"))
+        {
+            req.timeout = 10;
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                noInternetPanel.SetActive(false);
+                AdsManager.instan.InitAds();
+                Login();
+            }
+            else
+            {
+                Debug.LogWarning("Internet check failed: " + req.error);
+                noInternetPanel.SetActive(true);
+            }
+        }
     }
 
     public void SelectRegister()
@@ -160,6 +160,20 @@ public class LoginManager : MonoBehaviour
         txtLoginNotifical.gameObject.SetActive(false);
     }
 
+    /// <summary>Everything needed before Home is returned in the login response (1 call instead of 5).</summary>
+    static GetPlayerCombinedInfoRequestParams InfoParams => new GetPlayerCombinedInfoRequestParams
+    {
+        GetPlayerProfile = true,
+        ProfileConstraints = new PlayerProfileViewConstraints { ShowDisplayName = true },
+        GetTitleData = true,
+        GetUserInventory = true,
+        GetUserVirtualCurrency = true,
+        GetUserData = true,
+        UserDataKeys = new List<string> { "day_last", "moc_da_nhan" },
+        GetPlayerStatistics = true,
+        PlayerStatisticNames = new List<string> { "TopPlayer" },
+    };
+
     public void Login()
     {
         switch (loginCase)
@@ -172,8 +186,7 @@ public class LoginManager : MonoBehaviour
                 }
                 else
                 {
-                    //loginPanel.SetActive(true);
-                    loadingPanel.SetActive((false));
+                    loadingPanel.SetActive(false);
                 }
                 break;
             case 1:
@@ -184,105 +197,86 @@ public class LoginManager : MonoBehaviour
                 }
                 else
                 {
-                    //loginPanel.SetActive(true);
-                    loadingPanel.SetActive((false));
+                    loadingPanel.SetActive(false);
                 }
                 break;
         }
     }
-
 
     public void LoginWithUserNameAndPasswordClick()
     {
         txtLoginNotifical.gameObject.SetActive(false);
         if (userNameInput.text.Length < 4)
         {
-            txtLoginNotifical.text = "Username must longer 3 characters";
-            txtLoginNotifical.gameObject.SetActive(true);
+            ShowNotify("Username must longer 3 characters");
             return;
         }
         else if (passwordInput.text.Length < 6)
         {
-            txtLoginNotifical.text = "Password must be 6 or more characters";
-            txtLoginNotifical.gameObject.SetActive(true);
+            ShowNotify("Password must be 6 or more characters");
             return;
         }
-        _username = userNameInput.text;
+        _username = userNameInput.text.Trim();
         _password = passwordInput.text;
         loginHidePanel.SetActive(true);
         LoginWithUserNameAndPassword();
-
     }
 
     public void LoginWithUserNameAndPassword()
     {
         if (logined) return;
         loginCase = 0;
-        var request = new LoginWithPlayFabRequest { Username = _username, Password = _password };
+        var request = new LoginWithPlayFabRequest
+        {
+            Username = _username,
+            Password = _password,
+            InfoRequestParameters = InfoParams
+        };
         PlayFabClientAPI.LoginWithPlayFab(request, OnLoginWithPassSuccess, OnLoginFailure);
     }
 
     public void OnLoginWithPassSuccess(LoginResult result)
     {
-        //if (!PlayerPrefs.HasKey(USERNAME) || )
-        //{
         PlayerPrefs.SetString(USERNAME, _username);
         PlayerPrefs.SetInt(LOGINCASE, 0);
         PlayerPrefs.SetString(PASSWORD, _password);
-        //}
 
-        GameManager.instan.userData.userId = result.PlayFabId;
-        //fistTime = false;
         if (loginPanel)
         {
             loginPanel.SetActive(false);
             signupPanel.SetActive(false);
         }
-        logined = true;
-        fistTime = false;
-        GetPlayerProfile();
-
+        OnLoggedIn(result.PlayFabId, false, result.InfoResultPayload);
     }
 
     private void OnLoginFailure(PlayFabError error)
     {
-        txtLoginNotifical.gameObject.SetActive(true);
+        ShowNotify(error.ErrorMessage);
         loginPanel.SetActive(true);
-        txtLoginNotifical.text = error.ErrorMessage;
         loginHidePanel.SetActive(false);
-        loadingPanel.SetActive((false));
+        loadingPanel.SetActive(false);
     }
-
 
     public void RegisterWithUserNameAndPasswordClick()
     {
         txtLoginNotifical.gameObject.SetActive(false);
         if (newUsernameInput.text.Length < 4)
         {
-            txtLoginNotifical.gameObject.SetActive(true);
-            txtLoginNotifical.text = "Username must longer 3 characters";
+            ShowNotify("Username must longer 3 characters");
             return;
         }
         else if (newPasswordInput.text.Length < 6)
         {
-            txtLoginNotifical.gameObject.SetActive(true);
-            txtLoginNotifical.text = "Password must be 6 or more characters";
+            ShowNotify("Password must be 6 or more characters");
             return;
         }
         else if (!passwordInputConfirm.text.Equals(newPasswordInput.text))
         {
-            txtLoginNotifical.gameObject.SetActive(true);
-            txtLoginNotifical.text = "Confirm password was wrong";
+            ShowNotify("Confirm password was wrong");
             return;
         }
-        //else if (GameManagerAll.instan.names.Contains(newUsernameInput.text))
-        //{
-        //    registerNotify.SetActive(true);
-        //    txtRegisterNotifical.text = "Name is exis";
-        //    return;
-        //}
 
-        _username = newUsernameInput.text;
+        _username = newUsernameInput.text.Trim();
         _password = newPasswordInput.text;
 
         OpenPolicy(() =>
@@ -290,20 +284,23 @@ public class LoginManager : MonoBehaviour
             registerHidePanel.SetActive(true);
             RegisterWithUserNameAndPassword();
         });
-        //loginHidePanel.SetActive(true);
-
     }
 
     public void RegisterWithUserNameAndPassword()
     {
-        var request = new RegisterPlayFabUserRequest { Username = _username, Password = _password, DisplayName = _username, RequireBothUsernameAndEmail = false };
+        var request = new RegisterPlayFabUserRequest
+        {
+            Username = _username,
+            Password = _password,
+            DisplayName = _username,
+            RequireBothUsernameAndEmail = false
+        };
         PlayFabClientAPI.RegisterPlayFabUser(request, OnRegisterSucess, OnRegisterFall);
     }
 
     public void OnRegisterFall(PlayFabError err)
     {
-        txtLoginNotifical.gameObject.SetActive(true);
-        txtLoginNotifical.text = err.ErrorMessage;
+        ShowNotify(err.ErrorMessage);
         registerHidePanel.SetActive(false);
     }
 
@@ -316,10 +313,9 @@ public class LoginManager : MonoBehaviour
         PlayerPrefs.SetInt(LOGINCASE, 0);
         PlayerPrefs.SetString(PASSWORD, _password);
 
-        GameManager.instan.userData.userId = userResult.PlayFabId;
-        fistTime = true;
-        GetPlayerProfile();
-
+        // Register does not return the combined payload: load data with separate calls.
+        // DisplayName was set at registration.
+        OnLoggedIn(userResult.PlayFabId, true, null, _username);
     }
 
     public void LoginWithDeviceIdClick()
@@ -327,10 +323,9 @@ public class LoginManager : MonoBehaviour
         OpenPolicy(() =>
         {
             customId = "Brawl_" + SystemInfo.deviceUniqueIdentifier;
-            LoginWithCustomId();
             loginHidePanel.SetActive(true);
+            LoginWithCustomId();
         });
-        
     }
 
     private void OpenPolicy(Action callback)
@@ -358,69 +353,147 @@ public class LoginManager : MonoBehaviour
 
     public void LoginWithCustomId()
     {
-        var request = new LoginWithCustomIDRequest { CustomId = customId, CreateAccount = true };
-        PlayFabClientAPI.LoginWithCustomID(request, result => {
-            Debug.Log("Congratulations, you made your first successful API call!");
-            GameManager.instan.userData.userId = result.PlayFabId;
+        if (logined) return;
+        var request = new LoginWithCustomIDRequest
+        {
+            CustomId = customId,
+            CreateAccount = true,
+            InfoRequestParameters = InfoParams
+        };
+        PlayFabClientAPI.LoginWithCustomID(request, result =>
+        {
             PlayerPrefs.SetInt(LOGINCASE, 1);
             PlayerPrefs.SetString(CUSTOMID, customId);
-            fistTime = result.NewlyCreated;
-            GetPlayerProfile();
-
+            OnLoggedIn(result.PlayFabId, result.NewlyCreated, result.InfoResultPayload);
         }, OnLoginFailure1);
     }
 
-
-
     private void OnLoginFailure1(PlayFabError error)
     {
-        //Debug.LogWarning("Something went wrong with your first API call.  :(");
-        //Debug.LogError("Here's some debug information:");
-        //Debug.LogError(error.ErrorMessage);
+        Debug.LogWarning("LoginWithCustomID failed: " + error.GenerateErrorReport());
+        ShowNotify(error.ErrorMessage);
         loginHidePanel.SetActive(false);
-        loadingPanel.SetActive((false));
-        //if (error.ErrorMessage == "User not found")
-        //{
-        //    // Active SignUp panel
-        //    loginPanel.SetActive(true);
-        //    loginHidePanel.SetActive(false);
-        //    fistTime = true;
-        //}
-
+        loadingPanel.SetActive(false);
     }
 
+    #region After login
+    void OnLoggedIn(string playFabId, bool newlyCreated, GetPlayerCombinedInfoResultPayload payload, string knownDisplayName = null)
+    {
+        GameManager.instan.userData.userId = playFabId;
+        logined = true;
+        fistTime = newlyCreated;
+
+        StartDataLoad(payload);
+
+        if (!string.IsNullOrEmpty(knownDisplayName))
+        {
+            OnDisplayNameResolved(knownDisplayName);
+        }
+        else if (payload != null)
+        {
+            // PlayerProfile is null for a newly created player.
+            OnDisplayNameResolved(payload.PlayerProfile?.DisplayName);
+        }
+        else
+        {
+            GetPlayerProfile();
+        }
+    }
+
+    void StartDataLoad(GetPlayerCombinedInfoResultPayload payload)
+    {
+        var gm = GameManager.instan;
+
+        if (payload?.TitleData != null && payload.TitleData.Count > 0)
+        {
+            ApplyTitleData(payload.TitleData);
+            titleDataLoaded = true;
+        }
+        else ClientGetTitleData();
+
+        if (payload?.UserInventory != null)
+        {
+            gm.ApplyInventory(payload.UserInventory, payload.UserVirtualCurrency);
+            inventoryLoaded = true;
+        }
+        else gm.GetUserInventory(() => inventoryLoaded = true, OnDataLoadFailed);
+
+        if (payload?.UserData != null) gm.ApplyUserData(payload.UserData);
+        else gm.GetUserData();
+
+        if (payload?.PlayerStatistics != null) gm.ApplyStatistics(payload.PlayerStatistics);
+        else gm.GetMyStatistics();
+
+        if (!loadedCategory) gm.GetCatalogs(null, OnDataLoadFailed);
+
+        gm.checkDailyReward();
+    }
+
+    void LoadMissingData()
+    {
+        if (!titleDataLoaded) ClientGetTitleData();
+        if (!inventoryLoaded) GameManager.instan.GetUserInventory(() => inventoryLoaded = true, OnDataLoadFailed);
+        if (!loadedCategory) GameManager.instan.GetCatalogs(null, OnDataLoadFailed);
+    }
+
+    void OnDataLoadFailed(PlayFabError error)
+    {
+        // All retries failed: let the player retry instead of hanging on the loading screen.
+        noInternetPanel.SetActive(true);
+    }
+
+    void OnDisplayNameResolved(string displayName)
+    {
+        if (string.IsNullOrEmpty(displayName))
+        {
+            setUserNamePanel.SetActive(true);
+            loginHidePanel.SetActive(false);
+            return;
+        }
+        GameManager.instan.userData.userName = displayName;
+        setUserNamePanel.SetActive(false);
+        LoginDone();
+    }
+
+    /// <summary>Fallback when the login response has no profile (register flow).</summary>
+    public void GetPlayerProfile()
+    {
+        PlayFabClientAPI.GetPlayerProfile(new GetPlayerProfileRequest()
+        {
+            PlayFabId = GameManager.instan.userData.userId,
+            ProfileConstraints = new PlayerProfileViewConstraints() { ShowDisplayName = true }
+        },
+        result => OnDisplayNameResolved(result.PlayerProfile?.DisplayName),
+        error =>
+        {
+            Debug.LogError(error.GenerateErrorReport());
+            loginHidePanel.SetActive(false);
+            noInternetPanel.SetActive(true);
+        });
+    }
+    #endregion
 
     public void UpdateUserNameClick()
     {
         txtLoginNotifical.gameObject.SetActive(false);
         loginHidePanel.SetActive(true);
-        if (newUsernameInputID.text.Length < 4)
+        string name = newUsernameInputID.text.Trim();
+        if (name.Length < 4)
         {
-            txtLoginNotifical.text = "The name must longer 3 characters";
-            txtLoginNotifical.gameObject.SetActive(true);
+            ShowNotify("The name must longer 3 characters");
             loginHidePanel.SetActive(false);
             return;
         }
-        else if (newUsernameInputID.text.Contains(" "))
+        else if (name.Contains(" "))
         {
-            txtLoginNotifical.text = "The name cannot contain spaces";
-            txtLoginNotifical.gameObject.SetActive(true);
+            ShowNotify("The name cannot contain spaces");
             loginHidePanel.SetActive(false);
             return;
         }
-        //else if (GameManagerAll.instan.names.Contains(newUsernameInputID.text))
-        //{
-        //    txtUserNameNotifical.text = "Name is exis";
-        //    loginHidePanel.SetActive(false);
-        //    usernameNotifi.SetActive(true);
-        //    return;
-        //}
 
-        _username = newUsernameInputID.text;
+        _username = name;
         SetUserName();
     }
-
-
 
     public void SetUserName()
     {
@@ -430,190 +503,144 @@ public class LoginManager : MonoBehaviour
         }, result =>
         {
             GameManager.instan.userData.userName = result.DisplayName;
-            print("Set username success!");
+            setUserNamePanel.SetActive(false);
             LoginDone();
-
         }, error =>
         {
-            print(error.ErrorMessage);
             loginHidePanel.SetActive(false);
-            if (error.ErrorMessage == "Name not available")
-            {
-                txtLoginNotifical.gameObject.SetActive(true);
-                txtLoginNotifical.text = "Name is exis";
-
-            }
-        });
-
-    }
-
-
-    public void GetPlayerProfile()
-    {
-        ClientGetTitleData();
-        //if (fistTime)
-        //{
-        //    GameManagerAll.instan.GrandItemOnCreate();
-        //}
-        //else
-        //{
-        GameManager.instan.GetUserInventory();
-        //}
-        GameManager.instan.GetCatalogs();
-        GameManager.instan.GetUserData();
-        GameManager.instan.checkDailyReward();
-        PlayFabClientAPI.GetPlayerProfile(new GetPlayerProfileRequest()
-        {
-            PlayFabId = GameManager.instan.userData.userId,
-            ProfileConstraints = new PlayerProfileViewConstraints()
-            {
-                ShowDisplayName = true
-            }
-
-        },
-        result => {
-
-            if (result.PlayerProfile.DisplayName == null)
-            {
-                setUserNamePanel.SetActive(true);
-                loginHidePanel.SetActive(false);
-            }
+            if (error.Error == PlayFabErrorCode.NameNotAvailable)
+                ShowNotify("Name is exis");
             else
-            {
-                GameManager.instan.userData.userName = result.PlayerProfile.DisplayName;
-                setUserNamePanel.SetActive(false);
-                GameManager.instan.GetMyStatistics();
-
-                LoginDone();
-                print("Login Success!");
-            }
-
-        },
-        error => Debug.LogError(error.GenerateErrorReport()));
+                ShowNotify(error.ErrorMessage);
+        });
     }
 
+    #region Title data
+    public void ClientGetTitleData() => ClientGetTitleData(0);
 
-
-    public void ClientGetTitleData()
+    void ClientGetTitleData(int attempt)
     {
         PlayFabClientAPI.GetTitleData(new GetTitleDataRequest(),
-            result => {
-                if (result.Data == null) Debug.Log("No MonsterName");
+            result =>
+            {
+                ApplyTitleData(result.Data);
+                titleDataLoaded = true;
+            },
+            error =>
+            {
+                if (attempt + 1 < MaxLoadAttempts)
+                {
+                    Debug.LogWarning("GetTitleData failed, retrying: " + error.GenerateErrorReport());
+                    StartCoroutine(Delay(2f, () => ClientGetTitleData(attempt + 1)));
+                }
                 else
                 {
-                    string[] temp = result.Data["recipt_code_accept"].Split('-');
-                    ConfigManager.reciptCodeAccept = new List<string>();
-                    foreach (var t in temp)
-                    {
-                        ConfigManager.reciptCodeAccept.Add(t);
-                    }
-
-                    List<MedalExp> medalExps = JsonConvert.DeserializeObject<List<MedalExp>>(result.Data["medal_exp"]);
-                    ConfigManager.medals = new Dictionary<Medal, MedalExp>();
-                    foreach (var medal in medalExps)
-                    {
-                        ConfigManager.medals.Add(medal.medal, medal);
-                    }
-
-                    if (result.Data.ContainsKey("map_configs"))
-                    {
-                        List<MapConfig> mapConfigs = JsonConvert.DeserializeObject<List<MapConfig>>(result.Data["map_configs"]);
-                        foreach (var mapCfg in mapConfigs)
-                        {
-                            ConfigManager.mapConfigs.Add(mapCfg.map, mapCfg);
-                        }
-                    }
-
-                    ConfigManager.battleTimes = JsonConvert.DeserializeObject<Dictionary<Map, int>>(result.Data["battle_map_times"]);
-
-                    ConfigManager.discordLink = result.Data["discord_link"];
-                    ConfigManager.landingPage = result.Data["lnading_page"];
-                    ConfigManager.landingCharacter = result.Data["lnading_character"];
-                    //GameManager.instan.iap = bool.Parse(result.Data["iap"]);
-
-                    string jsonDailyReward = result.Data["daily_rewards"];
-                    ConfigManager.dailyRewards = JsonConvert.DeserializeObject<List<DailyReward>>(jsonDailyReward);
-
-                    string jsonQC = result.Data["qc_data"];
-                    ConfigManager.QcDatas = JsonConvert.DeserializeObject<List<QCData>>(jsonQC);
-
-                    if (result.Data.ContainsKey("price_per_crate"))
-                    {
-                        ConfigManager.pricePerCrate = int.Parse(result.Data["price_per_crate"]);
-                    }
-
-                    if (result.Data.ContainsKey("can_get_ticket_by_ads"))
-                    {
-                        ConfigManager.canGetTicketByAds = bool.Parse(result.Data["can_get_ticket_by_ads"]);
-                    }
-                    if (result.Data.ContainsKey("show_banner"))
-                    {
-                        ConfigManager.showBanner = bool.Parse(result.Data["show_banner"]);
-                    }
-
-                    if (result.Data.ContainsKey("multiplay"))
-                    {
-                        ConfigManager.multiplay = bool.Parse(result.Data["multiplay"]);
-                    }
-
-                    if (result.Data.ContainsKey("show_inter_back_home"))
-                    {
-                        ConfigManager.showInterBackHome = bool.Parse(result.Data["show_inter_back_home"]);
-                    }
-
-                    if (result.Data.ContainsKey("show_inter_die"))
-                    {
-                        ConfigManager.showInterDie = bool.Parse(result.Data["show_inter_die"]);
-                    }
-
-                    if (result.Data.ContainsKey("map_config"))
-                    {
-                        List<MapConfig> mapConfigs = JsonConvert.DeserializeObject<List<MapConfig>>(result.Data["map_config"]);
-                        ConfigManager.mapConfigs.Clear();
-                        foreach (var mapConfig in mapConfigs)
-                        {
-                            ConfigManager.mapConfigs.Add(mapConfig.map, mapConfig);
-                        }
-                    }
-
-                    if (result.Data.ContainsKey("trading_data"))
-                    {
-                        ConfigManager.tradingData =
-                            JsonConvert.DeserializeObject<TradingData>(result.Data["trading_data"]);
-                    }
-                    
-                    if (result.Data.ContainsKey("character_stats"))
-                    {
-                        ConfigManager.characterStats =
-                            JsonConvert.DeserializeObject<Dictionary<TF2Class, CharacterStats>>(result.Data["character_stats"]);
-                    }
-                    
-                    if (result.Data.ContainsKey("weapon_stats"))
-                    {
-                        ConfigManager.weaponStats =
-                            JsonConvert.DeserializeObject<Dictionary<WeaponId, WeaponStats>>(result.Data["weapon_stats"]);
-                    }
-
-                    ConfigManager.maxVideoPerDay = int.Parse(result.Data["max_reward_video_per_season"]);
-
-                    //VirtualCurrncy v1 = new VirtualCurrncy() { currency = TF2Currency.CM, quantity = 10000 };
-                    //VirtualCurrncy v2 = new VirtualCurrncy() { currency = TF2Currency.GK, quantity = 10 };
-                    //ItemData it = new ItemData() { itemId = ItemId.demoman_bomber_knight, quantity = 1 };
-
-                    //Transition transition = new Transition() { ID = 1, sourceCurrency = v1, sourceItem = it, targetCurrency = v2 };
-
-                    //TradingData tr = new TradingData() { openDay = System.DayOfWeek.Wednesday, transitions = new Transition[] { transition } };
-                    //string js = JsonConvert.SerializeObject(tr);
-                    //Debug.Log(js);
+                    Debug.LogError("GetTitleData failed: " + error.GenerateErrorReport());
+                    OnDataLoadFailed(error);
                 }
-            },
-            error => {
-                Debug.Log("Got error getting titleData:");
-                Debug.Log(error.GenerateErrorReport());
-            }
-        );
+            });
     }
 
+    static IEnumerator Delay(float seconds, Action action)
+    {
+        yield return new WaitForSecondsRealtime(seconds);
+        action();
+    }
+
+    static T ParseJson<T>(Dictionary<string, string> data, string key) where T : class
+    {
+        if (!data.TryGetValue(key, out var json) || string.IsNullOrEmpty(json)) return null;
+        try { return JsonConvert.DeserializeObject<T>(json); }
+        catch (Exception e)
+        {
+            Debug.LogError($"TitleData '{key}' parse error: {e.Message}");
+            return null;
+        }
+    }
+
+    static void ReadBool(Dictionary<string, string> data, string key, ref bool target)
+    {
+        if (data.TryGetValue(key, out var s) && bool.TryParse(s, out var v)) target = v;
+    }
+
+    static void ReadInt(Dictionary<string, string> data, string key, ref int target)
+    {
+        if (data.TryGetValue(key, out var s) && int.TryParse(s, out var v)) target = v;
+    }
+
+    static void ReadString(Dictionary<string, string> data, string key, ref string target)
+    {
+        if (data.TryGetValue(key, out var s)) target = s;
+    }
+
+    /// <summary>Every key is optional: a missing or malformed key keeps the default value.</summary>
+    void ApplyTitleData(Dictionary<string, string> data)
+    {
+        if (data == null)
+        {
+            Debug.LogWarning("No title data");
+            ConfigManager.reciptCodeAccept = ConfigManager.reciptCodeAccept ?? new List<string>();
+            return;
+        }
+
+        string codes = data.TryGetValue("recipt_code_accept", out var c) ? c : "";
+        ConfigManager.reciptCodeAccept = new List<string>(codes.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries));
+
+        var medalExps = ParseJson<List<MedalExp>>(data, "medal_exp");
+        if (medalExps != null)
+        {
+            ConfigManager.medals = new Dictionary<Medal, MedalExp>();
+            foreach (var medal in medalExps) ConfigManager.medals[medal.medal] = medal;
+        }
+
+        var mapConfigsOld = ParseJson<List<MapConfig>>(data, "map_configs");
+        if (mapConfigsOld != null)
+            foreach (var mapCfg in mapConfigsOld) ConfigManager.mapConfigs[mapCfg.map] = mapCfg;
+
+        var mapConfigs = ParseJson<List<MapConfig>>(data, "map_config");
+        if (mapConfigs != null)
+        {
+            ConfigManager.mapConfigs.Clear();
+            foreach (var mapCfg in mapConfigs) ConfigManager.mapConfigs[mapCfg.map] = mapCfg;
+        }
+
+        var battleTimes = ParseJson<Dictionary<Map, int>>(data, "battle_map_times");
+        if (battleTimes != null) ConfigManager.battleTimes = battleTimes;
+
+        ReadString(data, "discord_link", ref ConfigManager.discordLink);
+        ReadString(data, "lnading_page", ref ConfigManager.landingPage);
+        ReadString(data, "lnading_character", ref ConfigManager.landingCharacter);
+
+        var dailyRewards = ParseJson<List<DailyReward>>(data, "daily_rewards");
+        if (dailyRewards != null) ConfigManager.dailyRewards = dailyRewards;
+
+        var qc = ParseJson<List<QCData>>(data, "qc_data");
+        if (qc != null) ConfigManager.QcDatas = qc;
+
+        ReadInt(data, "price_per_crate", ref ConfigManager.pricePerCrate);
+        ReadBool(data, "can_get_ticket_by_ads", ref ConfigManager.canGetTicketByAds);
+        ReadBool(data, "show_banner", ref ConfigManager.showBanner);
+        ReadBool(data, "multiplay", ref ConfigManager.multiplay);
+        ReadBool(data, "show_inter_back_home", ref ConfigManager.showInterBackHome);
+        ReadBool(data, "show_inter_die", ref ConfigManager.showInterDie);
+        ReadInt(data, "max_reward_video_per_season", ref ConfigManager.maxVideoPerDay);
+
+        var trading = ParseJson<TradingData>(data, "trading_data");
+        if (trading != null) ConfigManager.tradingData = trading;
+
+        var characterStats = ParseJson<Dictionary<TF2Class, CharacterStats>>(data, "character_stats");
+        if (characterStats != null) ConfigManager.characterStats = characterStats;
+
+        var weaponStats = ParseJson<Dictionary<WeaponId, WeaponStats>>(data, "weapon_stats");
+        if (weaponStats != null) ConfigManager.weaponStats = weaponStats;
+    }
+    #endregion
+
+    void ShowNotify(string message)
+    {
+        txtLoginNotifical.text = message;
+        txtLoginNotifical.gameObject.SetActive(true);
+    }
 
     public void CloseLoginPanelClick()
     {
@@ -627,6 +654,8 @@ public class LoginManager : MonoBehaviour
 
     public void LoginDone()
     {
+        if (loginDoneStarted) return;
+        loginDoneStarted = true;
         loadingPanel.SetActive(true);
         slider.DOValue(1, 2f);
         StartCoroutine(WaitAllLoad());
@@ -635,7 +664,8 @@ public class LoginManager : MonoBehaviour
     IEnumerator WaitAllLoad()
     {
         yield return new WaitForSeconds(2);
-        while (!loadedCategory)
+        // Home needs title data (IAP receipt codes, ads flags...), the catalog and the inventory.
+        while (!(loadedCategory && titleDataLoaded && inventoryLoaded))
         {
             yield return null;
         }
