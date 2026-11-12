@@ -56,7 +56,7 @@ public class FirebaseController : MonoBehaviour
 
         if (!PlayerPrefs.HasKey("FIRST_OPEN"))
         {
-            LogEvent("first_open");
+            LogEvent("my_first_open");
             PlayerPrefs.SetInt("FIRST_OPEN", 1);
         }
 
