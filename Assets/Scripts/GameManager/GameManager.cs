@@ -599,6 +599,61 @@ public class GameManager : MonoBehaviour
         });
     }
 
+    #region Rewarded-ad bonuses (CloudScript: ClaimDoubleReward / GetTicketByAds)
+    public const string DoubleSourceEndGame = "endgame";
+    public const string DoubleSourceDaily = "daily";
+
+    /// <summary>
+    /// Grants the last reward of <paramref name="source"/> a second time (after a rewarded ad).
+    /// The server only accepts it once, for a reward saved a few minutes ago by EndGame / AddDailyReward.
+    /// </summary>
+    public void RequestDoubleReward(string source, Action<RewardData> onDone, Action onError)
+    {
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = true,
+            FunctionName = "ClaimDoubleReward",
+            FunctionParameter = new { source }
+        }, result =>
+        {
+            RewardData reward = TryGetCloudScriptMessage(result, out var json) ? ParseReward(json) : null;
+            if (reward == null) { onError?.Invoke(); return; }
+            firebaseController.LogEvent("reward_x2", "source", source);
+            GetUserInventory(() => onDone?.Invoke(reward));
+        },
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            onError?.Invoke();
+        });
+    }
+
+    /// <summary>Grants the tickets needed for <paramref name="map"/> after a rewarded ad (daily cap on the server).</summary>
+    /// <param name="onFail">true = daily limit reached, false = other error.</param>
+    public void RequestTicketByAds(Map map, Action onDone, Action<bool> onFail)
+    {
+        PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
+        {
+            GeneratePlayStreamEvent = true,
+            FunctionName = "GetTicketByAds",
+            FunctionParameter = new { map = map.ToString(), mapId = (int)map }
+        }, result =>
+        {
+            if (!TryGetCloudScriptMessage(result, out var msg)) { onFail?.Invoke(false); return; }
+            string s = msg.ToString();
+            if (s == "limit") { onFail?.Invoke(true); return; }
+            if (s != "success") { onFail?.Invoke(false); return; }
+            firebaseController.LogEvent("ticket_by_ads", "map", map.ToString());
+            GetUserInventory(() => onDone?.Invoke());
+        },
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            onFail?.Invoke(false);
+        });
+    }
+    #endregion
+
     public void RestorePurchase(ItemId itemId, Action callback = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest

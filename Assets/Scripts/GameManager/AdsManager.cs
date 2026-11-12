@@ -131,22 +131,22 @@ interAdsCallBack = callBack;
         return ShowRewardAds(callBack);
     }
 
-    public void ShowNavtiveAds()
+    public void ShowNavtiveAds() => ShowNavtiveAds(AdCorner.TopLeft);
+
+    /// <summary>Shows the MREC (300x250 banner) at the given screen position. Disabled by remove_ads.</summary>
+    public void ShowNavtiveAds(AdCorner position)
     {
         if (GameManager.instan.userData.ads_removed)
         {
             return;
         }
-        else
-        {
 #if YODO1
-            Yodo1AdsManager.instan.ShowNavtiveAds();
+        Yodo1AdsManager.instan.ShowNavtiveAds();
 #endif
 
 #if Admob
-            AdmobManager.insan.ShowNavtive();
+        AdmobManager.insan.ShowNavtive(position);
 #endif
-        }
     }
 
     public void HideNavtiveAds()
@@ -201,4 +201,16 @@ interAdsCallBack = callBack;
 
 
 
+}
+
+/// <summary>Screen anchor for banner / MREC ads (independent of the ad SDK).</summary>
+public enum AdCorner
+{
+    Top,
+    Bottom,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    Center
 }

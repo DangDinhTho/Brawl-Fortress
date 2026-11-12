@@ -310,11 +310,7 @@ public class PopupInsideRoom : MonoBehaviour
     {
         if (readyToggle.isOn && !ConfigManager.CheckSelectMap(map))
         {
-            GUIManager.instan.CreatePopup<PopupConfirm>(
-                string.Format(LocalizationManager.Localize("not_enough_ticket")), (Action)(() =>
-                {
-                    GUIManager.instan.CreatePopup<PopupStore>();
-                }));
+            TicketAds.Offer(map);
             readyToggle.SetIsOnWithoutNotify(false);
             ready = false;
             return;

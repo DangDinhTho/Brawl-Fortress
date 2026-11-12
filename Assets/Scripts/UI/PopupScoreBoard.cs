@@ -18,6 +18,10 @@ public class PopupScoreBoard : PopupBase
     [Tooltip("Seconds before leaving automatically once the result is shown")]
     public float autoQuitDelay = 30f;
 
+    [Tooltip("Where the MREC (300x250) shows on the end-of-match board")]
+    public AdCorner mrecPosition = AdCorner.Bottom;
+    private bool mrecShown;
+
     private bool leaving;
     private Coroutine autoQuitRoutine;
 
@@ -37,7 +41,22 @@ public class PopupScoreBoard : PopupBase
         txtTeamScores[1].text = ArenaManager.Instance.teamScores[Team.blue].ToString();
 
         InitData();
+
+        if (cantDismiss && !mrecShown)
+        {
+            mrecShown = true;
+            AdsManager.instan.ShowNavtiveAds(mrecPosition);
+        }
     }
+
+    void HideMrec()
+    {
+        if (!mrecShown) return;
+        mrecShown = false;
+        AdsManager.instan.HideNavtiveAds();
+    }
+
+    private void OnDisable() { HideMrec(); }
 
     private void InitData()
     {
@@ -68,6 +87,7 @@ public class PopupScoreBoard : PopupBase
         leaving = true;
         if (autoQuitRoutine != null) StopCoroutine(autoQuitRoutine);
         goHomeBtn.SetActive(false);
+        HideMrec();
         StartCoroutine(WaitLeaveRoom());
     }
 

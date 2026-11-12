@@ -27,6 +27,9 @@ public class MedalManager : MonoBehaviour
 
     bool goingHome;
 
+    [Tooltip("Where the MREC (300x250) shows in MedalScene")]
+    public AdCorner mrecPosition = AdCorner.Bottom;
+
     public void Start()
     {
         goHomeBtn.SetActive(false);
@@ -34,6 +37,12 @@ public class MedalManager : MonoBehaviour
         int oldScore = Mathf.Min(user.oldScore, user.score);
         int newScore = user.score;
         StartCoroutine(Play(oldScore, newScore));
+        AdsManager.instan.ShowNavtiveAds(mrecPosition);
+    }
+
+    private void OnDestroy()
+    {
+        if (AdsManager.instan != null) AdsManager.instan.HideNavtiveAds();
     }
 
     #region Medal helpers
@@ -116,6 +125,7 @@ public class MedalManager : MonoBehaviour
         if (goingHome) return;
         goingHome = true;
         loadingPanel.SetActive(true);
+        AdsManager.instan.HideNavtiveAds();
         if (ConfigManager.showInterBackHome)
         {
             AdsManager.instan.ShowInterAds(LoadSceneHome);

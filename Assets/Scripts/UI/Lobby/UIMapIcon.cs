@@ -56,10 +56,7 @@ public class UIMapIcon : MonoBehaviour
     {
         if (!ConfigManager.CheckSelectMap(map))
         {
-            GUIManager.instan.CreatePopup<PopupConfirm>(
-                string.Format(LocalizationManager.Localize("not_enough_ticket")), (Action)(() => {
-                    GUIManager.instan.CreatePopup<PopupStore>();
-                }));
+            TicketAds.Offer(map);
             return;
         }
 

@@ -66,7 +66,7 @@ public class UIDailyRewardItem : MonoBehaviour
 
     public void OnClambReward(RewardData rewardData)
     {
-        GUIManager.instan.CreatePopup<PopupReward>(rewardData);
+        GUIManager.instan.CreatePopup<PopupReward>(rewardData, GameManager.DoubleSourceDaily);
     }
 }
 

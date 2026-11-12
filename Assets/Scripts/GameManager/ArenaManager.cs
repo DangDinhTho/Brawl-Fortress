@@ -649,7 +649,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
     {
         GameManager.instan.userData.oldScore = GameManager.instan.userData.score;
         GameManager.instan.userData.score += CaculatePlayerScore();
-        GUIManager.instan.CreatePopup<PopupReward>(rewardData);
+        GUIManager.instan.CreatePopup<PopupReward>(rewardData, GameManager.DoubleSourceEndGame);
 
         popupScoreBoard.goHomeBtn.SetActive(true);
         popupScoreBoard.StartCoroutine(popupScoreBoard.WaitAutoQuickGame());

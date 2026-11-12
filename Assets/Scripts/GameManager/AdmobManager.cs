@@ -126,8 +126,7 @@ public class AdmobManager : MonoBehaviour
             LoadAppOpenAd();
             LoadInterstitialAd();
             LoadRewardedAd();
-            if (!isTest)
-                LoadNavtiveAd();
+            LoadNavtiveAd();
             LoadBannerAd();
         }));
     }
@@ -457,9 +456,27 @@ public class AdmobManager : MonoBehaviour
         _naviveView.LoadAd(new AdRequest());
     }
 
-    public void ShowNavtive()
+    public void ShowNavtive() => ShowNavtive(AdCorner.TopLeft);
+
+    public void ShowNavtive(AdCorner position)
     {
-        if (_naviveView != null) _naviveView.Show();
+        if (_naviveView == null) return;
+        _naviveView.SetPosition(ToAdPosition(position));
+        _naviveView.Show();
+    }
+
+    static AdPosition ToAdPosition(AdCorner c)
+    {
+        switch (c)
+        {
+            case AdCorner.Top: return AdPosition.Top;
+            case AdCorner.Bottom: return AdPosition.Bottom;
+            case AdCorner.TopRight: return AdPosition.TopRight;
+            case AdCorner.BottomLeft: return AdPosition.BottomLeft;
+            case AdCorner.BottomRight: return AdPosition.BottomRight;
+            case AdCorner.Center: return AdPosition.Center;
+            default: return AdPosition.TopLeft;
+        }
     }
 
     public void HideNavtive()

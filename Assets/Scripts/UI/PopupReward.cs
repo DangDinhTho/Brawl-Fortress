@@ -1,21 +1,109 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
+/// <summary>
+/// args[0] = RewardData, args[1] (optional) = double source ("endgame", "daily"...).
+/// When a source is given, a "Watch ad: x2" button is shown (rewarded ad, opt-in).
+/// </summary>
 public class PopupReward : PopupBase
 {
     private RewardData rewardData;
     public Transform itemContainer;
     public GameObject itemPref;
 
+    [Tooltip("Button 'Watch ad: x2 reward'. Hidden when the reward cannot be doubled.")]
+    public GameObject doubleBtn;
+
+    private string doubleSource;
+    private bool doubling;
+
     public override void OnCreate(params object[] args)
     {
         base.OnCreate(args);
-        if (args.Length > 0)
+        rewardData = args.Length > 0 ? args[0] as RewardData : null;
+        doubleSource = args.Length > 1 ? args[1] as string : null;
+        doubling = false;
+
+        if (doubleBtn != null)
         {
-            rewardData = (RewardData)args[0];
+            doubleBtn.SetActive(!string.IsNullOrEmpty(doubleSource) && HasAnything(rewardData));
+            SetButtonLabel(doubleBtn, LocalizationManager.Localize("x2_reward_ads"));
         }
         SetReward();
+    }
+
+    static bool HasAnything(RewardData r)
+    {
+        return r != null && ((r.virtualCurrncies != null && r.virtualCurrncies.Count > 0) || (r.itemDatas != null && r.itemDatas.Count > 0));
+    }
+
+    static void SetButtonLabel(GameObject btn, string text)
+    {
+        var tmp = btn.GetComponentInChildren<TMP_Text>(true);
+        if (tmp != null) { tmp.text = text; return; }
+        var legacy = btn.GetComponentInChildren<Text>(true);
+        if (legacy != null) legacy.text = text;
+    }
+
+    /// <summary>Hooked to doubleBtn.onClick in the prefab.</summary>
+    public void OnDoubleClick()
+    {
+        if (doubling || string.IsNullOrEmpty(doubleSource)) return;
+        // The rewarded callback only fires when the reward is earned; closing the ad early keeps the button.
+        AdsManager.instan.ShowRewardAds(() =>
+        {
+            if (doubling) return;
+            doubling = true;
+            GameManager.instan.RequestDoubleReward(doubleSource, OnDoubled, OnDoubleFailed);
+        });
+    }
+
+    private void OnDoubled(RewardData extra)
+    {
+        doubleSource = null;
+        if (doubleBtn != null) doubleBtn.SetActive(false);
+        rewardData = Merge(rewardData, extra);
+        SetReward();
+    }
+
+    private void OnDoubleFailed()
+    {
+        doubling = false;
+        doubleSource = null; // already claimed / expired: don't offer it again
+        if (doubleBtn != null) doubleBtn.SetActive(false);
+        GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
+    }
+
+    /// <summary>Adds quantities of b into a (same currency / item = one entry).</summary>
+    static RewardData Merge(RewardData a, RewardData b)
+    {
+        var res = new RewardData
+        {
+            virtualCurrncies = new List<VirtualCurrncy>(),
+            itemDatas = new List<ItemData>()
+        };
+        foreach (var src in new[] { a, b })
+        {
+            if (src == null) continue;
+            if (src.virtualCurrncies != null)
+                foreach (var c in src.virtualCurrncies)
+                {
+                    var found = res.virtualCurrncies.Find(x => x.currency == c.currency);
+                    if (found != null) found.quantity += c.quantity;
+                    else res.virtualCurrncies.Add(new VirtualCurrncy { currency = c.currency, quantity = c.quantity });
+                }
+            if (src.itemDatas != null)
+                foreach (var it in src.itemDatas)
+                {
+                    var found = res.itemDatas.Find(x => x.itemId == it.itemId);
+                    if (found != null) found.quantity += it.quantity;
+                    else res.itemDatas.Add(new ItemData { itemId = it.itemId, quantity = it.quantity });
+                }
+        }
+        return res;
     }
 
     public void SetReward()
@@ -27,43 +115,26 @@ public class PopupReward : PopupBase
 
         if (rewardData == null) return;
         int index = 0;
-        
-        if(rewardData.virtualCurrncies != null)
+
+        if (rewardData.virtualCurrncies != null)
             foreach (var currncy in rewardData.virtualCurrncies)
             {
-                UIItem uiItem = null;
-                if (index < itemContainer.childCount)
-                {
-                    uiItem = itemContainer.GetChild(index).GetComponent<UIItem>();
-                }
-                else
-                {
-                    uiItem = Instantiate(itemPref, itemContainer).GetComponent<UIItem>();
-                }
-
-                uiItem.gameObject.SetActive(true);
-                uiItem.SetCurrency(currncy);
-                index++;
+                GetItem(index++).SetCurrency(currncy);
             }
-        
-        if(rewardData.itemDatas != null)
+
+        if (rewardData.itemDatas != null)
             foreach (var item in rewardData.itemDatas)
             {
-                UIItem uiItem = null;
-                if (index < itemContainer.childCount)
-                {
-                    uiItem = itemContainer.GetChild(index).GetComponent<UIItem>();
-                }
-                else
-                {
-                    uiItem = Instantiate(itemPref, itemContainer).GetComponent<UIItem>();
-                }
-
-                uiItem.gameObject.SetActive(true);
-                uiItem.SetItem(item);
-                index++;
+                GetItem(index++).SetItem(item);
             }
+    }
 
-        
+    private UIItem GetItem(int index)
+    {
+        UIItem uiItem = index < itemContainer.childCount
+            ? itemContainer.GetChild(index).GetComponent<UIItem>()
+            : Instantiate(itemPref, itemContainer).GetComponent<UIItem>();
+        uiItem.gameObject.SetActive(true);
+        return uiItem;
     }
 }
