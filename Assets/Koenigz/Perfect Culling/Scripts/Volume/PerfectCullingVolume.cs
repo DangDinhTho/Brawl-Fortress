@@ -19,7 +19,7 @@ namespace Koenigz.PerfectCulling
     {
         [FormerlySerializedAs("VolumeSize")] [SerializeField] public Vector3 volumeSize = Vector3.one;
 
-        [SerializeField]
+        //[SerializeField]
         public Bounds volumeBakeBounds
         {
             get => new Bounds(transform.position, volumeSize);
