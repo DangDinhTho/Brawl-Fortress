@@ -289,6 +289,10 @@ public class IAPManager : MonoBehaviour
 #if UNITY_IOS
         popupWaitingFocus = GUIManager.instan.CreatePopup<PopupWaitingFocus>();
 #endif
+#if Admob
+        // The store sheet sends the app to background: don't show an app open ad when it returns.
+        if (AdmobManager.insan != null) AdmobManager.insan.SuppressNextAppOpen();
+#endif
         m_StoreController.PurchaseProduct(productId);
     }
 
@@ -316,6 +320,9 @@ public class IAPManager : MonoBehaviour
             return;
         }
 
+#if Admob
+        if (AdmobManager.insan != null) AdmobManager.insan.SuppressNextAppOpen();
+#endif
         m_StoreController.RestoreTransactions((success, message) =>
         {
             Debug.Log("RestorePurchases continuing: " + success + " " + message + ". If no further messages, no purchases available to restore.");
