@@ -1,103 +1,93 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using GoogleMobileAds.Ump;
+using GoogleMobileAds.Common;
 using GoogleMobileAds.Ump.Api;
 
+/// <summary>
+/// Google UMP consent (GoogleMobileAds 11.x).
+/// Call GatherConsent on every app launch, before MobileAds.Initialize.
+/// </summary>
 public class GDPRScript : MonoBehaviour
 {
-    public static GDPRScript instan; 
-    ConsentForm _consentForm;
+    public static GDPRScript instan;
+
     [HideInInspector]
     public bool consenDone { get => PlayerPrefs.GetInt("CONSEN", 0) == 1; set => PlayerPrefs.SetInt("CONSEN", value ? 1 : 0); }
     [HideInInspector]
     public bool consenShowed;
+
+    [Tooltip("Hashed device IDs that see the EEA consent form in Editor / Development builds.")]
+    public List<string> testDeviceHashedIds = new List<string> { "965E4A26737DF85475A353251709C315" };
 
     private void Awake()
     {
         instan = this;
     }
 
+    /// <summary>True when the user must be able to reopen the consent form (e.g. a Settings button).</summary>
+    public bool IsPrivacyOptionsRequired =>
+        ConsentInformation.PrivacyOptionsRequirementStatus == PrivacyOptionsRequirementStatus.Required;
 
-    public void InitConsen()
+    public bool CanRequestAds => ConsentInformation.CanRequestAds();
+
+    /// <summary>
+    /// Updates consent info and shows the form only if required.
+    /// onComplete(canRequestAds) is invoked on the Unity main thread.
+    /// </summary>
+    public void GatherConsent(Action<bool> onComplete)
     {
-        if (consenShowed || consenDone) return;
-        var debugSettings = new ConsentDebugSettings
-        {
-            // Geography appears as in EEA for debug devices.
-            DebugGeography = DebugGeography.EEA,
-            TestDeviceHashedIds = new List<string>
-            {
-                "965E4A26737DF85475A353251709C315"
-            }
-        };
-
-        // Here false means users are not under age.
-        ConsentRequestParameters request = new ConsentRequestParameters
+        var request = new ConsentRequestParameters
         {
             TagForUnderAgeOfConsent = false,
-            ConsentDebugSettings = debugSettings,
         };
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        request.ConsentDebugSettings = new ConsentDebugSettings
+        {
+            DebugGeography = DebugGeography.EEA,
+            TestDeviceHashedIds = testDeviceHashedIds,
+        };
+#endif
 
-        // Check the current consent information status.
-        ConsentInformation.Update(request, OnConsentInfoUpdated);
+        ConsentInformation.Update(request, updateError =>
+        {
+            if (updateError != null)
+            {
+                Debug.LogError("UMP update error: " + updateError.Message);
+                Finish(onComplete);
+                return;
+            }
+
+            ConsentForm.LoadAndShowConsentFormIfRequired(formError =>
+            {
+                if (formError != null)
+                    Debug.LogError("UMP form error: " + formError.Message);
+                else
+                    consenDone = true;
+                consenShowed = true;
+                Finish(onComplete);
+            });
+        });
     }
 
-    void OnConsentInfoUpdated(FormError error)
+    void Finish(Action<bool> onComplete)
     {
-        if (error != null)
-        {
-            // Handle the error.
-            UnityEngine.Debug.LogError(error);
-            return;
-        }
-
-        if (ConsentInformation.IsConsentFormAvailable())
-        {
-            LoadConsentForm();
-        }
-        // If the error is null, the consent information state was updated.
-        // You are now ready to check if a form is available.
+        MobileAdsEventExecutor.ExecuteInUpdate(() => onComplete?.Invoke(ConsentInformation.CanRequestAds()));
     }
 
-    void LoadConsentForm()
+    /// <summary>Re-open the consent form from a Settings button.</summary>
+    public void ShowPrivacyOptions(Action onClosed = null)
     {
-        // Loads a consent form.
-        ConsentForm.Load(OnLoadConsentForm);
+        ConsentForm.ShowPrivacyOptionsForm(error =>
+        {
+            if (error != null) Debug.LogError("UMP privacy options error: " + error.Message);
+            MobileAdsEventExecutor.ExecuteInUpdate(() => onClosed?.Invoke());
+        });
     }
 
-    void OnLoadConsentForm(ConsentForm consentForm, FormError error)
+    // Kept for backward compatibility.
+    public void InitConsen()
     {
-        if (error != null)
-        {
-            // Handle the error.
-            UnityEngine.Debug.LogError(error);
-            return;
-        }
-
-        // The consent form was loaded.
-        // Save the consent form for future requests.
-        _consentForm = consentForm;
-
-        // You are now ready to show the form.
-        if (ConsentInformation.ConsentStatus == ConsentStatus.Required)
-        {
-            _consentForm.Show(OnShowForm);
-        }
+        GatherConsent(null);
     }
-
-
-    void OnShowForm(FormError error)
-    {
-        if (error != null)
-        {
-            // Handle the error.
-            UnityEngine.Debug.LogError(error);
-            return;
-        }
-        consenDone = true;
-        // Handle dismissal by reloading form.
-        //LoadConsentForm();
-    }
-
 }

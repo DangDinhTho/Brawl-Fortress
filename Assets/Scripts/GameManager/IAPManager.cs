@@ -1,22 +1,23 @@
 using PlayFab;
 using PlayFab.ClientModels;
-using PlayFab.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Purchasing;
-using UnityEngine.Purchasing.Extension;
 
-public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
+/// <summary>
+/// Unity IAP v5 (StoreController API).
+/// Flow: Connect -> OnStoreConnected -> FetchProducts -> OnProductsFetched -> FetchPurchases.
+/// Purchases arrive in OnPurchasePending and must be finished with ConfirmPurchase.
+/// </summary>
+public class IAPManager : MonoBehaviour
 {
     public static IAPManager instan;
-    // Items list, configurable via inspector
-    //[HideInInspector]
-    //public List<CatalogItem> Catalog;
 
-    // The Unity Purchasing system
-    private static IStoreController m_StoreController;
-    IExtensionProvider _mStoreExtensionProvider;
+    StoreController m_StoreController;
+    bool m_ProductsFetched;
+    readonly HashSet<string> m_ProcessingTransactions = new HashSet<string>();
 
     private void Awake()
     {
@@ -26,276 +27,231 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
             Destroy(gameObject);
         DontDestroyOnLoad(gameObject);
     }
-    // Bootstrap the whole thing
+
     public void Start()
     {
-        // Make PlayFab log in
-        //Login();
         //InitializePurchasing();
     }
 
-    //public void OnGUI()
-    //{
-    //    // This line just scales the UI up for high-res devices
-    //    // Comment it out if you find the UI too large.
-    //    GUI.matrix = Matrix4x4.TRS(new Vector3(0, 0, 0), Quaternion.identity, new Vector3(3, 3, 3));
+    // We are initialized once the store is connected and the products are fetched
+    public bool IsInitialized => m_StoreController != null && m_ProductsFetched;
 
-    //    // if we are not initialized, only draw a message
-    //    if (!IsInitialized)
-    //    {
-    //        GUILayout.Label("Initializing IAP and logging in...");
-    //        return;
-    //    }
-
-    //    // Draw menu to purchase items
-    //    foreach (var item in Catalog)
-    //    {
-    //        if (GUILayout.Button("Buy " + item.DisplayName))
-    //        {
-    //            // On button click buy a product
-    //            BuyProductID(item.ItemId);
-    //        }
-    //    }
-    //}
-
-    // This is invoked manually on Start to initiate login ops
-    //private void Login()
-    //{
-    //    // Login with Android ID
-    //    PlayFabClientAPI.LoginWithAndroidDeviceID(new LoginWithAndroidDeviceIDRequest()
-    //    {
-    //        CreateAccount = true,
-    //        AndroidDeviceId = SystemInfo.deviceUniqueIdentifier
-    //    }, result => {
-    //        Debug.Log("Logged in");
-    //        // Refresh available items
-    //        RefreshIAPItems();
-    //    }, error => Debug.LogError(error.GenerateErrorReport()));
-    //}
-
-    //private void RefreshIAPItems()
-    //{
-    //    PlayFabClientAPI.GetCatalogItems(new GetCatalogItemsRequest(), result => {
-    //        Catalog = result.Catalog;
-
-    //        // Make UnityIAP initialize
-    //        InitializePurchasing();
-    //    }, error => Debug.LogError(error.GenerateErrorReport()));
-    //}
-
-    // This is invoked manually on Start to initialize UnityIAP
-    public void InitializePurchasing()
+    public async void InitializePurchasing()
     {
-        // If IAP is already initialized, return gently
-        if (IsInitialized || !ConfigManager.iap) return;
+        // If IAP is already initializing / initialized, return gently
+        if (m_StoreController != null || !ConfigManager.iap) return;
 
-        // Create a builder for IAP service
-#if UNITY_ANDROID
-        var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance(AppStore.GooglePlay));
-#elif UNITY_IOS
-        var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-#endif
+        m_StoreController = UnityIAPServices.StoreController();
 
-        // Register each item from the catalog
+        m_StoreController.OnStoreConnected += OnStoreConnected;
+        m_StoreController.OnStoreDisconnected += OnStoreDisconnected;
+        m_StoreController.OnProductsFetched += OnProductsFetched;
+        m_StoreController.OnProductsFetchFailed += OnProductsFetchFailed;
+        m_StoreController.OnPurchasesFetched += OnPurchasesFetched;
+        m_StoreController.OnPurchasesFetchFailed += OnPurchasesFetchFailed;
+        m_StoreController.OnPurchasePending += OnPurchasePending;
+        m_StoreController.OnPurchaseConfirmed += OnPurchaseConfirmed;
+        m_StoreController.OnPurchaseFailed += OnPurchaseFailed;
+        m_StoreController.OnPurchaseDeferred += OnPurchaseDeferred;
+
+        Debug.Log("IAP: connecting to store");
+        try
+        {
+            await m_StoreController.Connect();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError("IAP: Connect failed: " + ex);
+        }
+    }
+
+    #region Store / products
+    void OnStoreConnected()
+    {
+        Debug.Log("IAP: store connected");
+        var products = new List<ProductDefinition>();
         foreach (var id in GameManager.instan.keyProductIds)
         {
-            //if (item.VirtualCurrencyPrices.ContainsKey("RM") && item.VirtualCurrencyPrices["RM"] > 0 && )
-            if (id.Contains("remove_ads"))
-            {
-                builder.AddProduct(id, ProductType.NonConsumable);
-            }
-            else
-                builder.AddProduct(id, ProductType.Consumable);
+            var type = id.Contains("remove_ads") ? ProductType.NonConsumable : ProductType.Consumable;
+            products.Add(new ProductDefinition(id, type));
         }
-
-        // Trigger IAP service initialization
-        UnityPurchasing.Initialize(this, builder);
-        Debug.Log("Initing");
+        m_StoreController.FetchProducts(products);
     }
 
-    // We are initialized when StoreController and Extensions are set and we are logged in
-    public bool IsInitialized
+    void OnStoreDisconnected(StoreConnectionFailureDescription description)
     {
-        get
-        {
-            return m_StoreController != null;
-        }
+        Debug.LogWarning("IAP: store disconnected: " + description.message);
     }
 
-    // This is automatically invoked automatically when IAP service is initialized
-    public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
+    void OnProductsFetched(List<Product> products)
     {
-        m_StoreController = controller;
-        _mStoreExtensionProvider = extensions;
-        Debug.Log("IAP Inited");
+        m_ProductsFetched = true;
+        Debug.Log($"IAP Inited ({products.Count} products)");
+        // Deliver purchases that were not finished in a previous session (and restored ones).
+        m_StoreController.FetchPurchases();
     }
 
-    // This is automatically invoked automatically when IAP service failed to initialized
-    public void OnInitializeFailed(InitializationFailureReason error)
+    void OnProductsFetchFailed(ProductFetchFailed failure)
     {
-        Debug.Log("OnInitializeFailed InitializationFailureReason:" + error);
+        Debug.LogError($"IAP: products fetch failed for {failure.FailedFetchProducts.Count} products: {failure.FailureReason}");
     }
 
-    // This is automatically invoked automatically when purchase failed
-    public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
+    void OnPurchasesFetched(Orders orders)
     {
-        Debug.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}", product.definition.storeSpecificId, failureReason));
+        Debug.Log("IAP: purchases fetched");
     }
 
-
-    // This is invoked automatically when successful purchase is ready to be processed
-    public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs e)
+    void OnPurchasesFetchFailed(PurchasesFetchFailureDescription failure)
     {
-        // NOTE: this code does not account for purchases that were pending and are
-        // delivered on application start.
-        // Production code should account for such case:
-        // More: https://docs.unity3d.com/ScriptReference/Purchasing.PurchaseProcessingResult.Pending.html
+        Debug.LogWarning("IAP: purchases fetch failed: " + failure.message);
+    }
+    #endregion
 
-        if (!IsInitialized)
-        {
-            return PurchaseProcessingResult.Complete;
-        }
+    #region Purchase flow
+    static Product GetFirstProduct(Order order)
+    {
+        return order?.CartOrdered?.Items().FirstOrDefault()?.Product;
+    }
 
-        // Test edge case where product is unknown
-        if (e.purchasedProduct == null)
+    // Replaces the legacy ProcessPurchase(PurchaseEventArgs)
+    void OnPurchasePending(PendingOrder order)
+    {
+        var product = GetFirstProduct(order);
+
+        // Edge case: product is unknown
+        if (product == null)
         {
             Debug.LogWarning("Attempted to process purchase with unknown product. Ignoring");
-            return PurchaseProcessingResult.Complete;
+            m_StoreController.ConfirmPurchase(order);
+            return;
         }
 
-        // Test edge case where purchase has no receipt
-        if (string.IsNullOrEmpty(e.purchasedProduct.receipt))
+        var receipt = order.Info.Receipt;
+        // Edge case: purchase has no receipt
+        if (string.IsNullOrEmpty(receipt))
         {
             Debug.LogWarning("Attempted to process purchase with no receipt: ignoring");
-            return PurchaseProcessingResult.Complete;
+            m_StoreController.ConfirmPurchase(order);
+            return;
         }
 
-        Debug.Log("Processing transaction: " + e.purchasedProduct.transactionID);
+        var transactionId = order.Info.TransactionID ?? string.Empty;
+        if (!m_ProcessingTransactions.Add(transactionId))
+            return; // already being validated
 
+        Debug.Log("Processing transaction: " + transactionId);
 
 #if UNITY_ANDROID
         // Deserialize receipt
-        var googleReceipt = GooglePurchase.FromJson(e.purchasedProduct.receipt);
+        var googleReceipt = GooglePurchase.FromJson(receipt);
 
-        GameManager.instan.AddPurchase(e.purchasedProduct.definition.id, googleReceipt.PayloadData.json);
+        GameManager.instan.AddPurchase(product.definition.id, googleReceipt.PayloadData.json);
 
-        if (string.IsNullOrEmpty(e.purchasedProduct.definition.id) || googleReceipt.PayloadData.JsonData == null || !ConfigManager.reciptCodeAccept.Contains(googleReceipt.PayloadData.JsonData.purchaseState.ToString())
+        if (string.IsNullOrEmpty(product.definition.id) || googleReceipt.PayloadData.JsonData == null || !ConfigManager.reciptCodeAccept.Contains(googleReceipt.PayloadData.JsonData.purchaseState.ToString())
             || !googleReceipt.PayloadData.JsonData.orderId.StartsWith("GPA."))
         {
             Debug.LogWarning("Not yet payment");
-            return PurchaseProcessingResult.Complete;
+            FinishOrder(order, transactionId);
+            return;
         }
 
-
-        #region Android
-        // Invoke receipt validation
-        // This will not only validate a receipt, but will also grant player corresponding items
-        // only if receipt is valid.
+        // Validate the receipt on PlayFab, grant items only if it is valid.
         PlayFabClientAPI.ValidateGooglePlayPurchase(new ValidateGooglePlayPurchaseRequest()
         {
-            // Pass in currency code in ISO format
-            CurrencyCode = e.purchasedProduct.metadata.isoCurrencyCode,
-            // Convert and set Purchase price
-            PurchasePrice = (uint)(e.purchasedProduct.metadata.localizedPrice * 100),
-            // Pass in the receipt
+            CurrencyCode = product.metadata.isoCurrencyCode,
+            PurchasePrice = (uint)(product.metadata.localizedPrice * 100),
             ReceiptJson = googleReceipt.PayloadData.json,
-            // Pass in the signature
             Signature = googleReceipt.PayloadData.signature
         }, result =>
         {
             Debug.Log("Validation successful!");
-
-            OnValidateBuy(e);
-
+            OnValidateBuy(product);
+            FinishOrder(order, transactionId);
         },
-           error => Debug.Log("Validation failed: " + error.GenerateErrorReport())
-        );
-
-        #endregion
+        error =>
+        {
+            Debug.Log("Validation failed: " + error.GenerateErrorReport());
+            FinishOrder(order, transactionId);
+        });
+#elif UNITY_IOS
+        OnValidateBuy(product);
+        FinishOrder(order, transactionId);
+#else
+        FinishOrder(order, transactionId);
 #endif
-
-#if UNITY_IOS
-        #region iOS
-        // Invoke receipt validation
-        // This will not only validate a receipt, but will also grant player corresponding items
-        // only if receipt is valid.
-        //PlayFabClientAPI.ValidateIOSReceipt(new ValidateIOSReceiptRequest()
-        //{
-        //    // Pass in currency code in ISO format
-        //    CurrencyCode = e.purchasedProduct.metadata.isoCurrencyCode,
-        //    // Convert and set Purchase price
-        //    PurchasePrice = (int)(e.purchasedProduct.metadata.localizedPrice * 100),
-        //    ReceiptData = e.purchasedProduct.receipt
-        //}, result =>
-        //{
-        //    Debug.Log("Validation successful!");
-        //    OnValidateBuy(e);
-        //},
-        //   error => Debug.Log("Validation failed: " + error.GenerateErrorReport())
-        //);
-        OnValidateBuy(e);
-        #endregion
-#endif
-
-        return PurchaseProcessingResult.Complete;
     }
 
-    public static bool isFirstBuy { get => PlayerPrefs.GetInt("IAP_FIRST_BUY", 1) == 1; set => PlayerPrefs.SetInt("IAP_FIRST_BUY", value ? 1 : 0); }
-    private void OnValidateBuy(PurchaseEventArgs e)
+    void FinishOrder(PendingOrder order, string transactionId)
     {
-        if (GameManager.instan.keyProductIds.Contains(e.purchasedProduct.definition.id))
+        m_ProcessingTransactions.Remove(transactionId);
+        m_StoreController.ConfirmPurchase(order);
+    }
+
+    void OnPurchaseConfirmed(Order order)
+    {
+        var id = GetFirstProduct(order)?.definition.id;
+        if (order is FailedOrder failed)
+            Debug.LogWarning($"IAP: confirmation failed - Product: '{id}', reason: {failed.FailureReason}, details: {failed.Details}");
+        else
+            Debug.Log($"IAP: purchase confirmed - Product: {id}");
+    }
+
+    void OnPurchaseFailed(FailedOrder order)
+    {
+        var id = GetFirstProduct(order)?.definition.id;
+        Debug.Log($"OnPurchaseFailed: FAIL. Product: '{id}', PurchaseFailureReason: {order.FailureReason}, Details: {order.Details}");
+        if (popupWaitingFocus) popupWaitingFocus.Dismiss();
+    }
+
+    void OnPurchaseDeferred(DeferredOrder order)
+    {
+        Debug.Log($"IAP: purchase deferred - Product: {GetFirstProduct(order)?.definition.id}");
+        if (popupWaitingFocus) popupWaitingFocus.Dismiss();
+    }
+    #endregion
+
+    public static bool isFirstBuy { get => PlayerPrefs.GetInt("IAP_FIRST_BUY", 1) == 1; set => PlayerPrefs.SetInt("IAP_FIRST_BUY", value ? 1 : 0); }
+
+    private void OnValidateBuy(Product product)
+    {
+        string productId = product.definition.id;
+        if (GameManager.instan.keyProductIds.Contains(productId))
         {
-            ItemId itemId = (ItemId)Enum.Parse(typeof(ItemId), e.purchasedProduct.definition.id);
+            ItemId itemId = (ItemId)Enum.Parse(typeof(ItemId), productId);
             ItemConfig it = ConfigManager.GetItemConfig(itemId);
             if (isFirstBuy)
             {
                 GameManager.instan.firebaseController.LogEvent("buy_iap");
             }
 
-            GameManager.instan.firebaseController.LogEvent("buy_iap_item", "id", e.purchasedProduct.definition.id);
+            GameManager.instan.firebaseController.LogEvent("buy_iap_item", "id", productId);
 
-            //if(itemConfig == null) return;
-            //CatalogItem it = itemConfig.catalogItem; //GameManager.instan.ca.Find(i => i.ItemId.Equals(e.purchasedProduct.definition.id));
             if (it != null && it.slot == ItemType.Pack)
             {
                 PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
                 {
-
                     GeneratePlayStreamEvent = true,
                     FunctionName = "BuyPack",
                     FunctionParameter = new { itemId = it.itemId.ToString() }
-
                 }, result2 =>
                 {
                     GameManager.instan.GetUserInventory();
                     RewardData rewardData = new RewardData();
-                    if(it.itemProperties.packData != null)
+                    if (it.itemProperties.packData != null)
                     {
                         if (it.itemProperties.packData.currncies != null)
                             rewardData.virtualCurrncies = new List<VirtualCurrncy>(it.itemProperties.packData.currncies);
                         if (it.itemProperties.packData.itemDatas != null)
                             rewardData.itemDatas = new List<ItemData>(it.itemProperties.packData.itemDatas);
                     }
-                    //{
-                    //    virtualCurrncies = new List<VirtualCurrncy>(it.itemProperties.packData.currncies),
-                    //    itemDatas = new List<ItemData>(it.itemProperties.packData.itemDatas),
-                    //};
                     GUIManager.instan.CreatePopup<PopupReward>(rewardData);
                     if (popupWaitingFocus) popupWaitingFocus.Dismiss();
-                    //GameManagerAll.instan.user.diamond += int.Parse(it.Description);
-                    //string _title = $"successfully purchase\n{it.DisplayName}";
-                    //HomeManager.instan.getPanel.Create(_title, LayoutManagerAll.instan.packIcon);
                 },
-       error => Debug.Log(error.GenerateErrorReport()));
+                error => Debug.Log(error.GenerateErrorReport()));
             }
             else if (it != null)
             {
                 GameManager.instan.GetUserInventory();
-                // string _title = $"successfully purchase\n{it.DisplayName}";
-                // if (it.ItemId.Equals("remove_ads_2"))
-                //     HomeManager.instan.getPanel.Create(_title, LayoutManagerAll.instan.removeAds);
-                // else
-                //     HomeManager.instan.getPanel.Create(_title);
                 ItemData itemData = new ItemData()
                 {
                     itemId = itemId,
@@ -307,7 +263,6 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
                 };
                 GUIManager.instan.CreatePopup<PopupReward>(rewardData);
                 if (popupWaitingFocus) popupWaitingFocus.Dismiss();
-
             }
         }
         else
@@ -315,27 +270,27 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
     }
 
     PopupWaitingFocus popupWaitingFocus;
+
     // This is invoked manually to initiate purchase
     public void BuyProductID(string productId)
     {
-        // If IAP service has not been initialized, fail hard
-        if (!IsInitialized) throw new Exception("IAP Service is not initialized!");
+        if (!IsInitialized)
+        {
+            Debug.LogError("IAP Service is not initialized!");
+            return;
+        }
 #if UNITY_IOS
         popupWaitingFocus = GUIManager.instan.CreatePopup<PopupWaitingFocus>();
 #endif
-        // Pass in the product id to initiate purchase
-        m_StoreController.InitiatePurchase(productId);
-
+        m_StoreController.PurchaseProduct(productId);
     }
 
-    public void OnInitializeFailed(InitializationFailureReason error, string message)
+    bool HasPurchased(string productId)
     {
-        Debug.Log("OnInitializeFailed InitializationFailureReason:" + message + " " + error.ToString());
-    }
-
-    public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureDescription)
-    {
-        throw new NotImplementedException();
+        if (m_StoreController.GetProductById(productId)?.hasReceipt == true) return true;
+        return m_StoreController.GetPurchases().Any(o =>
+            (o is ConfirmedOrder || o is PendingOrder) &&
+            o.CartOrdered.Items().Any(i => i.Product?.definition.id == productId));
     }
 
     public void RestorePurchasesIOS(Action callback)
@@ -346,12 +301,10 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
             return;
         }
 
-        var apple = _mStoreExtensionProvider.GetExtension<IAppleExtensions>();
-
-
-        apple.RestoreTransactions((result, s) => {
-            Debug.Log("RestorePurchases continuing: " + s + ". If no further messages, no purchases available to restore.");
-            if (m_StoreController.products.WithID(ItemId.brawl_valley_remove_ads.ToString()).hasReceipt || m_StoreController.products.WithID(ItemId.brawl_valley_pack_2.ToString()).hasReceipt)
+        m_StoreController.RestoreTransactions((success, message) =>
+        {
+            Debug.Log("RestorePurchases continuing: " + success + " " + message + ". If no further messages, no purchases available to restore.");
+            if (HasPurchased(ItemId.brawl_valley_remove_ads.ToString()) || HasPurchased(ItemId.brawl_valley_pack_2.ToString()))
             {
                 GameManager.instan.RestorePurchase(ItemId.brawl_valley_remove_ads, callback);
             }
@@ -359,7 +312,6 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
             {
                 callback();
             }
-
         });
     }
 }
@@ -369,8 +321,6 @@ public class IAPManager : MonoBehaviour, IStoreListener, IDetailedStoreListener
 // Please, note that JSON fields are case-sensitive and should remain fields to support Unity Deserialization via JsonUtilities
 public class JsonData
 {
-    // JSON Fields, ! Case-sensitive
-
     public string orderId;
     public string packageName;
     public string productId;
@@ -383,7 +333,6 @@ public class PayloadData
 {
     public JsonData JsonData;
 
-    // JSON Fields, ! Case-sensitive
     public string signature;
     public string json;
 
@@ -399,7 +348,6 @@ public class GooglePurchase
 {
     public PayloadData PayloadData;
 
-    // JSON Fields, ! Case-sensitive
     public string Store;
     public string TransactionID;
     public string Payload;
