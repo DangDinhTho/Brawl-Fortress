@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class UITransitionItem : MonoBehaviour
@@ -9,7 +7,7 @@ public class UITransitionItem : MonoBehaviour
     public UIItem targetItem;
     public GameObject adsItem;
     private Transition transition;
-    private bool traing;
+    private bool trading;
 
     public void SetTransitionData(Transition transition)
     {
@@ -22,52 +20,58 @@ public class UITransitionItem : MonoBehaviour
         {
             sourceItem.SetItem(transition.sourceItem);
         }
-        
+
         targetItem.SetCurrency(transition.targetCurrency);
-        
-        adsItem.SetActive(!GameManager.instan.userData.ads_removed);
-        
-        traing = false;
+
+        adsItem.SetActive(true); // rewarded ads are opt-in: not affected by remove_ads
+
+        trading = false;
     }
 
     public void TradingClick()
     {
-        if(traing) return;
-        if (transition.sourceCurrency != null)
+        if (trading) return;
+        if (!HasSource())
         {
-            if (!GameManager.instan.userData.IsReduceableCurrency(transition.sourceCurrency))
-            {
-                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("not_enough_resource"));
-                return;
-            }
-        }
-        else if (transition.sourceItem != null)
-        {
-            if (GameManager.instan.userData.GetUserItem(transition.sourceItem.itemId) == null)
-            {
-                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("not_enough_resource"));
-                return;
-            }
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("not_enough_resource"));
+            return;
         }
         GUIManager.instan.CreatePopup<PopupConfirm>(LocalizationManager.Localize("trading_confirm"), (Action)ConfirmTrading);
     }
 
+    private bool HasSource()
+    {
+        if (transition.sourceCurrency != null)
+            return GameManager.instan.userData.IsReduceableCurrency(transition.sourceCurrency);
+        if (transition.sourceItem != null)
+            return GameManager.instan.userData.GetUserItem(transition.sourceItem.itemId) != null;
+        return true;
+    }
+
     public void ConfirmTrading()
     {
-        
-        traing = true;
-        //Yodo1AdsManager.instan.ShowTradingReward(Trading);
+        if (trading) return;
+        // "trading" is only locked once the reward is granted, so closing the ad early never locks the button.
         AdsManager.instan.ShowRewardAds(Trading);
     }
 
     public void Trading()
     {
-        GameManager.instan.RequestTransition(transition, OnTrasitionResponse);
+        if (trading) return;
+        if (!HasSource()) return; // resources may have changed while the ad was playing
+        trading = true;
+        GameManager.instan.RequestTransition(transition, OnTrasitionResponse, OnTransitionError);
     }
 
     public void OnTrasitionResponse(RewardData rewardData)
     {
-        traing = false;
+        trading = false;
         GUIManager.instan.CreatePopup<PopupReward>(rewardData);
+    }
+
+    private void OnTransitionError()
+    {
+        trading = false;
+        GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
     }
 }

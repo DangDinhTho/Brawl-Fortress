@@ -35,7 +35,7 @@ public class UILoadoutItem : MonoBehaviour
                 if(userItem != null)
                 {
                     txtQuantity.gameObject.SetActive(true);
-                    txtQuantity.text = userItem.itemInstance.RemainingUses.Value.ToString();
+                    txtQuantity.text = userItem.itemInstance.RemainingUses.GetValueOrDefault().ToString();
                 }
                 else
                 {

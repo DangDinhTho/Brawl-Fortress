@@ -333,12 +333,13 @@ public class GameManager : MonoBehaviour
     }
     #endregion
 
-    public void BuyItem(ItemId itemId, Action<ItemId> CallBack = null)
+    public void BuyItem(ItemId itemId, Action<ItemId> CallBack = null, Action<PlayFabError> onError = null)
     {
         ItemConfig itemConfig = ConfigManager.GetItemConfig(itemId);
         if (itemConfig?.catalogItem?.VirtualCurrencyPrices == null || !itemConfig.catalogItem.VirtualCurrencyPrices.TryGetValue("GK", out var price))
         {
             Debug.LogError($"BuyItem: no GK price for {itemId}");
+            onError?.Invoke(null);
             return;
         }
         PlayFabClientAPI.PurchaseItem(new PurchaseItemRequest()
@@ -355,8 +356,13 @@ public class GameManager : MonoBehaviour
             }
             userData.currency.UpdateGoldKey(userData.currency.goldKey - (int)price);
             CallBack?.Invoke(itemId);
-
-        }, error => { Debug.Log(error.GenerateErrorReport()); });
+        }, error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            // Local balance may be stale (e.g. InsufficientFunds): resync it.
+            GetUserInventory();
+            onError?.Invoke(error);
+        });
     }
 
     public void OnError(PlayFabError err)
@@ -364,7 +370,9 @@ public class GameManager : MonoBehaviour
         Debug.LogWarning(err.GenerateErrorReport());
     }
 
-    public void RequestCraft(ItemId itemId, int useCurrency, Action<bool> CallBack)
+    /// <param name="CallBack">true = crafted, false = craft roll failed (resources consumed by the server).</param>
+    /// <param name="onError">Request/CloudScript error (nothing consumed). Falls back to CallBack(false) when null.</param>
+    public void RequestCraft(ItemId itemId, int useCurrency, Action<bool> CallBack, Action onError = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
@@ -378,13 +386,17 @@ public class GameManager : MonoBehaviour
         }, result =>
         {
             GetUserInventory();
-            bool ok = TryGetCloudScriptMessage(result, out var success) && success.ToString().Equals("success");
-            CallBack?.Invoke(ok);
+            if (!TryGetCloudScriptMessage(result, out var success))
+            {
+                if (onError != null) onError(); else CallBack?.Invoke(false);
+                return;
+            }
+            CallBack?.Invoke(success.ToString().Equals("success"));
         },
         error =>
         {
             Debug.Log(error.GenerateErrorReport());
-            CallBack?.Invoke(false);
+            if (onError != null) onError(); else CallBack?.Invoke(false);
         });
     }
 
@@ -547,7 +559,7 @@ public class GameManager : MonoBehaviour
         error => Debug.Log(error.GenerateErrorReport()));
     }
 
-    public void RequestTransition(Transition transition, Action<RewardData> callBack)
+    public void RequestTransition(Transition transition, Action<RewardData> callBack, Action onError = null)
     {
         PlayFabClientAPI.ExecuteCloudScript(new ExecuteCloudScriptRequest
         {
@@ -556,9 +568,13 @@ public class GameManager : MonoBehaviour
             FunctionParameter = new { inputValue = transition.ID.ToString() }
         }, result =>
         {
-            if (!TryGetCloudScriptMessage(result, out var rewardJson)) return;
-            RewardData rewardData = ParseReward(rewardJson);
-            if (rewardData == null) return;
+            RewardData rewardData = TryGetCloudScriptMessage(result, out var rewardJson) ? ParseReward(rewardJson) : null;
+            if (rewardData == null)
+            {
+                GetUserInventory(); // resync in case the server changed something
+                onError?.Invoke();
+                return;
+            }
 
             if (rewardData.virtualCurrncies != null && rewardData.virtualCurrncies.Count > 0)
             {
@@ -576,7 +592,11 @@ public class GameManager : MonoBehaviour
 
             callBack?.Invoke(rewardData);
         },
-        error => Debug.Log(error.GenerateErrorReport()));
+        error =>
+        {
+            Debug.Log(error.GenerateErrorReport());
+            onError?.Invoke();
+        });
     }
 
     public void RestorePurchase(ItemId itemId, Action callback = null)

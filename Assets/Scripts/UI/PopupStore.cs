@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PopupStore : PopupBase
@@ -15,22 +13,21 @@ public class PopupStore : PopupBase
     public void InitPacks()
     {
         var packConfigs = ConfigManager.GetItemConfigs(ItemType.Pack);
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         int index = 0;
         foreach (var packConfig in packConfigs)
         {
-            if(packConfig.itemId == ItemId.brawl_valley_pack_first_purchase && GameManager.instan.userData.GetUserItem(ItemId.brawl_valley_pack_first_purchase) != null) continue;
-            
-            if (packConfig.itemProperties.packData.expirationDate > 0)
-            {
-                var timeRemaining = packConfig.itemProperties.packData.expirationDate - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                if(timeRemaining <= 0) continue;
-            }
-            
+            var packData = packConfig.itemProperties?.packData;
+            if (packData == null) continue; // pack without CustomData
+
+            if (packConfig.itemId == ItemId.brawl_valley_pack_first_purchase && GameManager.instan.userData.GetUserItem(ItemId.brawl_valley_pack_first_purchase) != null) continue;
+            if (packData.expirationDate > 0 && packData.expirationDate <= now) continue;
+
             var uiPackItem = GUIManager.instan.CreateListItem<UIPackItem>(packContainer, index);
             uiPackItem.SetData(packConfig);
             index++;
         }
-        
+
         GUIManager.instan.CleanListItem(packContainer, index);
     }
 }

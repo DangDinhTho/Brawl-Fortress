@@ -292,6 +292,14 @@ public class IAPManager : MonoBehaviour
         m_StoreController.PurchaseProduct(productId);
     }
 
+    /// <summary>Store-localized price (e.g. "25.000 ₫"), or null when the product is not fetched yet.</summary>
+    public string GetLocalizedPrice(string productId)
+    {
+        if (m_StoreController == null || !m_ProductsFetched) return null;
+        var price = m_StoreController.GetProductById(productId)?.metadata?.localizedPriceString;
+        return string.IsNullOrEmpty(price) ? null : price;
+    }
+
     bool HasPurchased(string productId)
     {
         if (m_StoreController.GetProductById(productId)?.hasReceipt == true) return true;

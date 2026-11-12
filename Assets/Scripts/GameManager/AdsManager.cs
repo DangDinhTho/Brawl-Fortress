@@ -106,47 +106,29 @@ interAdsCallBack = callBack;
         }
     }
 
-    public void ShowRewardAds(Action callBack)
+    public bool ShowRewardAds(Action callBack)
     {
-        //if (rewardAdsCount > ConfigManager.maxVideoPerDay)
-        //{
-        //    GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("reward_video_max"));
-        //    return;
-        //}
         rewardAdsCallBack = callBack;
 #if YODO1
-
         Yodo1AdsManager.instan.ShowRewardAds();
-#endif
-
-#if Admob
+        return true;
+#elif Admob
         if (AdmobManager.insan.RewardVideosReady())
+        {
             AdmobManager.insan.ShowRewardedAd(OnRewardAdsDone);
-        else
-            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("no_reward_availble"));
+            return true;
+        }
+        GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("no_reward_availble"));
+        return false;
+#else
+        return false;
 #endif
     }
 
-    public void ShowTradingAds(Action callBack)
+    public bool ShowTradingAds(Action callBack)
     {
-        rewardAdsCallBack = callBack;
-        if (GameManager.instan.userData.ads_removed)
-        {
-            OnRewardAdsDone();
-        }
-        else
-        {
-#if YODO1
-            Yodo1AdsManager.instan.ShowRewardAds();
-#endif
-
-#if Admob
-            if (AdmobManager.insan.RewardVideosReady())
-                AdmobManager.insan.ShowRewardedAd(OnRewardAdsDone);
-            else
-                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("no_reward_availble"));
-#endif
-        }
+        // Rewarded ads are opt-in: remove_ads only disables interstitial, banner and native ads.
+        return ShowRewardAds(callBack);
     }
 
     public void ShowNavtiveAds()

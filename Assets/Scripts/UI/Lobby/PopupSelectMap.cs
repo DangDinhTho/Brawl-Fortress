@@ -99,7 +99,7 @@ public class PopupSelectMap : PopupBase
             int quatity = 0;
             if(ticketData != null)
             {
-                quatity = ticketData.itemInstance.RemainingUses.Value;
+                quatity = ticketData.itemInstance.RemainingUses.GetValueOrDefault();
             }
             var item = GUIManager.instan.CreateListItem<UITicketItem>(ticketContainer, index);
             item.InitTicket(ticketId, quatity);

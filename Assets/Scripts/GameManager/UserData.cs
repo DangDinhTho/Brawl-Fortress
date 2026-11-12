@@ -76,7 +76,7 @@ public class UserData
             ItemConfig itConfig = ConfigManager.GetItemConfig(item.itemId);
             if (itConfig != null && itConfig.slot == ItemType.ticket && itConfig.catalogItem.Tags != null && itConfig.catalogItem.Tags.Contains(map.ToString()))
             {
-                if (item.itemInstance.RemainingUses.Value >= numTickets) return item;
+                if (item.itemInstance.RemainingUses.GetValueOrDefault() >= numTickets) return item;
             }
         }
         return null;

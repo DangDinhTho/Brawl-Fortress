@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,47 +11,52 @@ public class UIPackItem : MonoBehaviour
     public Text txtTimeRemaining;
     public TMP_Text txtPrice;
     private ItemConfig packConfig;
-        
+    private Coroutine countdown;
+
     public void SetData(ItemConfig packConfig)
     {
         this.packConfig = packConfig;
-        var packData = packConfig.itemProperties.packData;
+        var packData = packConfig.itemProperties?.packData;
 
-        if (packData.expirationDate > 0 && packData.expirationDate < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        // Item is reused by CreateListItem: stop the countdown of the previous pack.
+        if (countdown != null)
+        {
+            StopCoroutine(countdown);
+            countdown = null;
+        }
+
+        if (packData == null || (packData.expirationDate > 0 && packData.expirationDate <= DateTimeOffset.UtcNow.ToUnixTimeSeconds()))
         {
             gameObject.SetActive(false);
             return;
         }
 
         txtPackName.text = packConfig.catalogItem.DisplayName;
-        txtPrice.text = $"${packConfig.catalogItem.VirtualCurrencyPrices["RM"] / 100f}";
+        txtPrice.text = GetPriceText();
 
         int index = 0;
-        if(packData.currncies != null)
+        if (packData.currncies != null)
             foreach (var currency in packData.currncies)
             {
                 var elementItem = GUIManager.instan.CreateListItem<UIPackElementItem>(itemContainer, index);
                 elementItem.SetCurrencyData(currency);
                 index++;
             }
-        
-        if(packData.itemDatas != null)
+
+        if (packData.itemDatas != null)
             foreach (var itemData in packData.itemDatas)
             {
                 var elementItem = GUIManager.instan.CreateListItem<UIPackElementItem>(itemContainer, index);
                 elementItem.SetItemData(itemData);
                 index++;
             }
-        
-        GUIManager.instan.CleanListItem(itemContainer, index);
 
-        
+        GUIManager.instan.CleanListItem(itemContainer, index);
 
         if (packData.expirationDate > 0)
         {
             txtTimeRemaining.gameObject.SetActive(true);
-            var timeRemaining = packData.expirationDate - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            StartCoroutine(CountTime(timeRemaining));
+            countdown = StartCoroutine(CountTime(packData.expirationDate));
         }
         else
         {
@@ -60,23 +64,46 @@ public class UIPackItem : MonoBehaviour
         }
     }
 
+    /// <summary>Store price in the player's currency; falls back to the PlayFab "RM" price (cents, USD).</summary>
+    private string GetPriceText()
+    {
+        string local = IAPManager.instan != null ? IAPManager.instan.GetLocalizedPrice(packConfig.itemId.ToString()) : null;
+        if (!string.IsNullOrEmpty(local)) return local;
+
+        var prices = packConfig.catalogItem.VirtualCurrencyPrices;
+        if (prices != null && prices.TryGetValue("RM", out var cents))
+            return $"${cents / 100f:0.##}";
+        return "";
+    }
+
     public void OnBuyClick()
     {
+        if (IAPManager.instan == null || !IAPManager.instan.IsInitialized)
+        {
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
+            return;
+        }
         IAPManager.instan.BuyProductID(packConfig.itemId.ToString());
     }
 
-
-
-    IEnumerator CountTime(long totalTime)
+    private void OnEnable()
     {
-        while (totalTime > 0)
-        {
-            var timeRemaining = TimeSpan.FromSeconds(totalTime);
-            txtTimeRemaining.text = string.Format(LocalizationManager.Localize("date_exp_day"), timeRemaining.Days, timeRemaining.Hours, timeRemaining.Minutes, timeRemaining.Seconds);
-            yield return new WaitForSeconds(1);
-            totalTime--;
-        }
+        // The localized price may arrive after the store popup was built.
+        if (packConfig != null && txtPrice != null) txtPrice.text = GetPriceText();
+    }
 
+    IEnumerator CountTime(long expirationUnix)
+    {
+        var wait = new WaitForSecondsRealtime(1);
+        while (true)
+        {
+            long remaining = expirationUnix - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (remaining <= 0) break;
+            var t = TimeSpan.FromSeconds(remaining);
+            txtTimeRemaining.text = string.Format(LocalizationManager.Localize("date_exp_day"), t.Days, t.Hours, t.Minutes, t.Seconds);
+            yield return wait;
+        }
+        countdown = null;
         gameObject.SetActive(false);
     }
 }

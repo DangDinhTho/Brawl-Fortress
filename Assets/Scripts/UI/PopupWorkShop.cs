@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using PlayFab;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,21 +23,25 @@ public class PopupWorkShop : PopupBase
     public Text txtItemSelectedName;
     private List<ItemConfig> catalogItems;
     private TF2Class tF2ClassOrg;
+    private bool buying;
 
     public override void OnCreate(params object[] args)
     {
         gameObject.SetActive(true);
         highlight.gameObject.SetActive(false);
         buyAvailble.SetActive(false);
+        craftAvailble.SetActive(false);
+        itemPrevious = ItemId.None; // the popup instance can be reused
+        buying = false;
+        _itemType = ItemType.all;
+
         if (args.Length > 0)
         {
             tf2Class = (TF2Class)args[0];
-            
-            if(HomeManager.instance.characterPref.tF2Class != tf2Class)
+            if (HomeManager.instance.characterPref.tF2Class != tf2Class)
             {
                 HomeManager.instance.SetCharacterClass(tf2Class);
             }
-            
         }
         else
         {
@@ -46,35 +50,35 @@ public class PopupWorkShop : PopupBase
 
         tF2ClassOrg = tf2Class;
 
-        if (args.Length > 1)
-        {
-
-        }
         txtItemSelectedName.gameObject.SetActive(false);
+
+        // Remove listeners first: OnCreate runs every time a reused popup is opened.
+        classFilter.onValueChanged.RemoveListener(OnClassFilterChange);
         classFilter.ClearOptions();
         List<string> classOptions = new List<string>();
-        for(int i = 1; i < 10; i++)
+        for (int i = 1; i < 10; i++)
         {
             classOptions.Add(LocalizationManager.Localize(((TF2Class)i).ToString()));
         }
         classFilter.AddOptions(classOptions);
-        classFilter.onValueChanged.AddListener(OnClassFilterChange);
         classFilter.SetValueWithoutNotify((int)tf2Class - 1);
+        classFilter.onValueChanged.AddListener(OnClassFilterChange);
 
+        itemTypeFilter.onValueChanged.RemoveListener(OnItemFilterChange);
         itemTypeFilter.ClearOptions();
         List<string> itemOptions = new List<string>();
-        itemOptions.Add(LocalizationManager.Localize((ItemType.all.ToString())));
+        itemOptions.Add(LocalizationManager.Localize(ItemType.all.ToString()));
         for (int i = 1; i <= 5; i++)
         {
             itemOptions.Add(LocalizationManager.Localize(((ItemType)i).ToString()));
         }
-
         for (int i = 21; i < 24; i++)
         {
             itemOptions.Add(LocalizationManager.Localize(((ItemType)i).ToString()));
         }
         itemOptions.Add(LocalizationManager.Localize(ItemType.taunt.ToString()));
         itemTypeFilter.AddOptions(itemOptions);
+        itemTypeFilter.SetValueWithoutNotify(0);
         itemTypeFilter.onValueChanged.AddListener(OnItemFilterChange);
 
         catalogItems = ConfigManager.itemConfigs.Values.ToList();
@@ -85,40 +89,19 @@ public class PopupWorkShop : PopupBase
 
     private long GetItemPoint(ItemConfig item)
     {
-        long point = 0;
         switch (item.slot)
         {
-            case ItemType.taunt:
-                point += 1000000000009;
-                break;
-            case ItemType.Primary:
-                point += 1000000000008;
-                break;
-            case ItemType.Secondary:
-                point += 1000000000007;
-                break;
-            case ItemType.Mele:
-                point += 1000000000006;
-                break;
-            case ItemType.slot_0:
-                point += 1000000000005;
-                break;
-            case ItemType.slot_1:
-                point += 1000000000004;
-                break;
-            case ItemType.slot_2:
-                point += 1000000000003;
-                break;
-            case ItemType.slot_3:
-                point += 1000000000002;
-                break;
-            case ItemType.slot_4:
-                point += 1000000000001;
-                break;
-
+            case ItemType.taunt: return 9;
+            case ItemType.Primary: return 8;
+            case ItemType.Secondary: return 7;
+            case ItemType.Mele: return 6;
+            case ItemType.slot_0: return 5;
+            case ItemType.slot_1: return 4;
+            case ItemType.slot_2: return 3;
+            case ItemType.slot_3: return 2;
+            case ItemType.slot_4: return 1;
+            default: return 0;
         }
-
-        return point;
     }
 
     public void UpdateListItem()
@@ -132,15 +115,12 @@ public class PopupWorkShop : PopupBase
         }
 
         int index = 0;
-
-        
-
         foreach (var item in catalogItems)
         {
-            if(item.itemId < ItemId.IgnoreShow && (_itemType == ItemType.all || item.slot == _itemType) && (item.tf2Classes != null && item.tf2Classes.Contains(tf2Class)))
+            if (item.itemId < ItemId.IgnoreShow && (_itemType == ItemType.all || item.slot == _itemType) && (item.tf2Classes != null && item.tf2Classes.Contains(tf2Class)))
             {
-                UIWorkShopItem loadoutItem = null;
-                if(index < itemContainer.childCount)
+                UIWorkShopItem loadoutItem;
+                if (index < itemContainer.childCount)
                 {
                     loadoutItem = itemContainer.GetChild(index).GetComponent<UIWorkShopItem>();
                 }
@@ -155,32 +135,36 @@ public class PopupWorkShop : PopupBase
         }
     }
 
+    /// <summary>Equipment / taunts can only be owned once: no point buying them again.</summary>
+    private static bool IsAlreadyOwned(ItemConfig itemConfig)
+    {
+        bool unique = itemConfig.slot < ItemType.NonEquipt || itemConfig.slot == ItemType.taunt;
+        return unique && GameManager.instan.userData.GetUserItem(itemConfig.itemId) != null;
+    }
+
     public void OnSelectItem(ItemId itemId)
     {
         ItemConfig itemConfig = ConfigManager.GetItemConfig(itemId);
+        if (itemConfig == null) return;
+
         if (itemPrevious != ItemId.None && itemConfig.slot != ItemType.taunt)
         {
             if (itemId == itemPrevious) return;
             HomeManager.instance.remotePlayer.Unequip(itemPrevious);
-            //HomeManager.instance.remotePlayer.EndTaunt();
         }
 
-       
-        
-        
         if (itemConfig.slot < ItemType.NonEquipt)
         {
             HomeManager.instance.remotePlayer.Equipt(itemId);
             HomeManager.instance.remotePlayer.EndTaunt();
             if (itemConfig.slot > ItemType.WEAPON)
                 HomeManager.instance.remotePlayer.SwitchWeaponItem(itemConfig.slot);
-            else if(itemPrevious != ItemId.None)
+            else if (itemPrevious != ItemId.None)
             {
                 ItemConfig itemPreviousConfig = ConfigManager.GetItemConfig(itemPrevious);
-                if (itemPreviousConfig.slot > ItemType.WEAPON)
+                if (itemPreviousConfig != null && itemPreviousConfig.slot > ItemType.WEAPON)
                 {
                     HomeManager.instance.remotePlayer.SwitchWeaponItem(ConfigManager.classMenuWeapon[HomeManager.instance.characterPref.tF2Class]);
-                   // HomeManager.instance.remotePlayer.playerAnimator.Animator.SetTrigger("Menu");
                 }
             }
         }
@@ -192,8 +176,8 @@ public class PopupWorkShop : PopupBase
         txtItemSelectedName.gameObject.SetActive(true);
         txtItemSelectedName.text = itemConfig.catalogItem.DisplayName;
 
-        
-        if (itemConfig.catalogItem.VirtualCurrencyPrices.TryGetValue("GK", out var price))
+        var prices = itemConfig.catalogItem.VirtualCurrencyPrices;
+        if (prices != null && prices.TryGetValue("GK", out var price) && !IsAlreadyOwned(itemConfig))
         {
             txtPrice.gameObject.SetActive(true);
             txtPrice.text = price.ToString();
@@ -205,18 +189,10 @@ public class PopupWorkShop : PopupBase
             buyAvailble.SetActive(false);
         }
 
-        if(itemConfig.itemProperties != null && itemConfig.itemProperties.craftData != null)
-        {
-            craftAvailble.SetActive(true);
-        }
-        else
-        {
-            craftAvailble.SetActive(false);
-        }
+        craftAvailble.SetActive(itemConfig.itemProperties != null && itemConfig.itemProperties.craftData != null);
 
         itemPrevious = itemId;
     }
-
 
     public void OnClassFilterChange(int value)
     {
@@ -240,39 +216,59 @@ public class PopupWorkShop : PopupBase
 
     public void OnBuyClick()
     {
+        if (buying || itemPrevious == ItemId.None) return;
         ItemConfig itemConfig = ConfigManager.GetItemConfig(itemPrevious);
-        if(GameManager.instan.userData.currency.goldKey < itemConfig.catalogItem.VirtualCurrencyPrices["GK"])
+        var prices = itemConfig?.catalogItem?.VirtualCurrencyPrices;
+        if (prices == null || !prices.TryGetValue("GK", out var price)) return;
+
+        if (GameManager.instan.userData.currency.goldKey < price)
         {
             GUIManager.instan.CreatePopup<PopupNotEnought>();
             return;
         }
 
         string confirmContent = string.Format(LocalizationManager.Localize("work_shop_buy_confirm"),
-            itemConfig.catalogItem.DisplayName, txtPrice.text);
+            itemConfig.catalogItem.DisplayName, price);
         GUIManager.instan.CreatePopup<PopupConfirm>(confirmContent, (Action)Buy, GUIManager.instan.GetItemIcon(itemPrevious));
     }
 
     private void Buy()
     {
-        GameManager.instan.BuyItem(itemPrevious, OnBuySuccess);
+        if (buying) return; // double tap on the confirm button
+        buying = true;
+        GameManager.instan.BuyItem(itemPrevious, OnBuySuccess, OnBuyFailed);
     }
 
     public void OnBuySuccess(ItemId itemId)
     {
+        buying = false;
         RewardData reward = new RewardData();
-        ItemData itemPurcharsed = new ItemData()
-        {
-            itemId = itemId,
-            quantity = 1
-        };
-        reward.itemDatas = new List<ItemData>() { itemPurcharsed };
+        reward.itemDatas = new List<ItemData>() { new ItemData() { itemId = itemId, quantity = 1 } };
         GUIManager.instan.CreatePopup<PopupReward>(reward);
-        Debug.Log("success");
+
+        // Refresh the selection (hides the Buy button for owned equipment)
+        if (itemId == itemPrevious)
+        {
+            var cfg = ConfigManager.GetItemConfig(itemId);
+            if (cfg != null && IsAlreadyOwned(cfg))
+            {
+                buyAvailble.SetActive(false);
+                txtPrice.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void OnBuyFailed(PlayFabError error)
+    {
+        buying = false;
+        if (error != null && error.Error == PlayFabErrorCode.InsufficientFunds)
+            GUIManager.instan.CreatePopup<PopupNotEnought>();
+        else
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
     }
 
     public override void OnDismiss()
     {
-        //HomeManager.instance.CreateCharacter();
         HomeManager.instance.SetCharacterClass(tF2ClassOrg);
         base.OnDismiss();
     }

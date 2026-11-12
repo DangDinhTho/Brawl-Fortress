@@ -26,7 +26,7 @@ public class CratesPanel : MonoBehaviour
         }
         else
         {
-            crateRemaining = crate.itemInstance.RemainingUses.Value;
+            crateRemaining = crate.itemInstance.RemainingUses.GetValueOrDefault();
             txtCrateQuantity.text = crateRemaining.ToString();
         }
 
