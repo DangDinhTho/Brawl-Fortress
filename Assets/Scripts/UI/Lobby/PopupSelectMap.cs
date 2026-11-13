@@ -1,7 +1,8 @@
 using Photon.Pun;
-//using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 using ExitGames.Client.Photon;
 
 public class PopupSelectMap : PopupBase
@@ -11,84 +12,100 @@ public class PopupSelectMap : PopupBase
     [HideInInspector]
     public Map mapSelected = Map.BrawlScene;
 
-    //public GameObject mapTemPref;
-
-    //public UIGameModeItem[] uIGameModeItems;
     public Transform mapContainer;
-    //private Dictionary<GameMode, UIGameModeItem> gameMaps;
     private bool singlePlayer;
     [HideInInspector]
     public UIMapIcon mapSelectedItem;
     public Transform ticketContainer;
 
+    [Header("Mode tabs")]
+    [Tooltip("Left tab bar. The first tab is used when the popup opens (normally 'All').")]
+    public MapModeTab[] tabs;
+    public ScrollRect mapScroll;
+    [Tooltip("Hide tabs that have no map.")]
+    public bool hideEmptyTabs = true;
+    public float cardStagger = 0.05f;
+
+    private MapModeTab currentTab;
+    private readonly List<UIMapIcon> cards = new List<UIMapIcon>();
 
     public override void OnCreate(params object[] args)
     {
         base.OnCreate(args);
-        //mapTemPref.SetActive(false);
-        //if(gameMaps == null)
-        //{
-        //    gameMaps = new Dictionary<GameMode, UIGameModeItem>();
-        //    for(int i = 0; i < uIGameModeItems.Length; i++)
-        //    {
-        //        gameMaps.Add(uIGameModeItems[i].gameMode, uIGameModeItems[i]);
-        //    }
-        //}
-        if(args.Length > 0)
-        {
-            gameModeSelected = (GameMode)args[0];
-           
-        }
-        else
-        {
-            gameModeSelected = GameMode.Competitive;
-        }
-
-        if (args.Length > 1)
-        {
-            mapSelected = (Map)args[1];
-        }
-        else
-        {
-            mapSelected = Map.BrawlScene;
-        }
+        gameModeSelected = args.Length > 0 ? (GameMode)args[0] : GameMode.Competitive;
+        mapSelected = args.Length > 1 ? (Map)args[1] : Map.BrawlScene;
 
         SetTicket();
+        InitTabs();
+    }
 
-        OnGameModeUpdate(gameModeSelected);
+    private void InitTabs()
+    {
+        cards.Clear();
+        if (mapContainer) mapContainer.GetComponentsInChildren(true, cards);
+        if (tabs == null || tabs.Length == 0) return;
+
+        foreach (var tab in tabs)
+        {
+            if (tab == null) continue;
+            tab.popup = this;
+            int n = 0;
+            foreach (var c in cards) if (tab.Matches(c)) n++;
+            tab.SetCount(n);
+            tab.gameObject.SetActive(!hideEmptyTabs || tab.isAll || n > 0);
+        }
+        currentTab = null;
+        SelectTab(tabs[0], false);
+    }
+
+    /// <summary>Called by MapModeTab when it is clicked.</summary>
+    public void SelectTab(MapModeTab tab)
+    {
+        SelectTab(tab, true);
+    }
+
+    public void SelectTab(MapModeTab tab, bool animateTabs)
+    {
+        if (tab == null || tab == currentTab) return;
+        currentTab = tab;
+        foreach (var t in tabs)
+            if (t != null) t.SetSelected(t == tab, animateTabs);
+        ShowCards();
+    }
+
+    private void ShowCards()
+    {
+        int i = 0;
+        foreach (var card in cards)
+        {
+            if (card == null) continue;
+            bool show = currentTab.Matches(card);
+            DOTween.Kill(card);
+            card.gameObject.SetActive(show);
+            if (!show) continue;
+
+            var cg = card.GetComponent<CanvasGroup>();
+            if (cg == null) cg = card.gameObject.AddComponent<CanvasGroup>();
+            var tr = card.transform;
+            float delay = i * cardStagger;
+            cg.alpha = 0f;
+            tr.localScale = Vector3.one * 0.8f;
+            cg.DOFade(1f, 0.25f).SetDelay(delay).SetUpdate(true).SetTarget(card);
+            tr.DOScale(1f, 0.35f).SetEase(Ease.OutBack).SetDelay(delay).SetUpdate(true).SetTarget(card);
+            i++;
+        }
+
+        if (mapContainer is RectTransform rt) LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+        if (mapScroll)
+        {
+            mapScroll.StopMovement();
+            mapScroll.verticalNormalizedPosition = 1f;
+        }
     }
 
     public void OnGameModeUpdate(GameMode gameMode)
     {
-        //gameModeSelected = gameMode;
-        //for(int i = 0; i < uIGameModeItems.Length; i++)
-        //{
-        //    uIGameModeItems[i].SetSelect(gameMode == uIGameModeItems[i].gameMode);
-        //}
-        //InitMaps();
     }
-
-    public void InitMaps()
-    {
-        //for(int i = 1; i < mapContainer.childCount; i++)
-        //{
-        //    Destroy(mapContainer.GetChild(i).gameObject);
-        //}
-
-        //Map[] maps = gameMaps[gameModeSelected].maps;
-        //for(int i = 0; i < maps.Length; i++)
-        //{
-        //    GameObject map = Instantiate(mapTemPref, mapContainer);
-        //    map.SetActive(true);
-        //    UIMapIcon uIMapIcon = map.GetComponent<UIMapIcon>();
-        //    uIMapIcon.Init(maps[i], gameModeSelected, this, maps[i] == mapSelected);
-        //    if(maps[i] == mapSelected)
-        //    {
-        //        mapSelectedItem = uIMapIcon;
-        //    }
-        //}
-    }
-
 
     public void SetTicket()
     {
@@ -108,17 +125,16 @@ public class PopupSelectMap : PopupBase
         GUIManager.instan.CleanListItem(ticketContainer, index);
     }
 
-    
     public void SelectedMap(GameMode gameMode, Map map, UIMapIcon uIMapIcon)
     {
         if (mapSelected == map) return;
         if (mapSelectedItem != null && mapSelectedItem.gameObject.activeInHierarchy) mapSelectedItem.Deselected();
+        else if (mapSelectedItem != null) mapSelectedItem.selectedObj.SetActive(false);
         gameModeSelected = gameMode;
         mapSelected = map;
         mapSelectedItem = uIMapIcon;
         LobbyManager.instance.InsideRoomPanel.OnChangeMap(gameMode, map);
     }
- 
 
     public void OnDoneClick()
     {
@@ -140,10 +156,14 @@ public class PopupSelectMap : PopupBase
         Dismiss();
     }
 
-
     public void SetSinglePlayer()
     {
         singlePlayer = true;
+    }
 
+    private void OnDisable()
+    {
+        foreach (var card in cards)
+            if (card != null) DOTween.Kill(card);
     }
 }
