@@ -19,7 +19,16 @@ public class MapModeTab : MonoBehaviour
     public CanvasGroup glow;
     public RectTransform icon;
     public TMP_Text label;
+    [Tooltip("Dark overlay + lock + unlock level shown while this tab's game mode is locked by level (ModeUnlock)")]
+    public GameObject lockObj;
+    [Tooltip("'Level N' under the lock")]
+    public TMP_Text txtLockLevel;
+    [Tooltip("How much the mode name is pulled in from the right while locked, to leave room for the lock")]
+    public float lockedLabelInset = 40f;
     public TMP_Text count;
+
+    private float labelRight;
+    private bool labelRightCached;
 
     [Header("Style")]
     public Color labelNormal = new Color(0.7f, 0.8f, 1f, 1f);
@@ -40,6 +49,8 @@ public class MapModeTab : MonoBehaviour
     private void OnClick()
     {
         if (popup) popup.SelectTab(this);
+        // the tab still filters (the player can look at the locked maps), but tells how to unlock the mode
+        if (IsLocked) ModeUnlock.ShowLockedPopup(gameMode);
     }
 
     public bool Matches(UIMapIcon map)
@@ -50,6 +61,29 @@ public class MapModeTab : MonoBehaviour
     public void SetCount(int n)
     {
         if (count) count.text = n.ToString();
+        RefreshLock();
+    }
+
+    public bool IsLocked => !isAll && !ModeUnlock.IsUnlocked(gameMode);
+
+    public void RefreshLock()
+    {
+        bool locked = IsLocked;
+        if (lockObj) lockObj.SetActive(locked);
+        if (locked && txtLockLevel) txtLockLevel.text = LocalizationManager.Localize("level", ModeUnlock.UnlockLevel(gameMode));
+        // the map count badge sits where the lock goes: hide it while locked
+        if (count)
+        {
+            var countObj = count.transform.parent != null && count.transform.parent != body ? count.transform.parent.gameObject : count.gameObject;
+            countObj.SetActive(!locked);
+        }
+        // keep the mode name clear of the lock + level on the right
+        if (label)
+        {
+            var lr = label.rectTransform;
+            if (!labelRightCached) { labelRight = lr.offsetMax.x; labelRightCached = true; }
+            lr.offsetMax = new Vector2(labelRight - (locked ? lockedLabelInset : 0f), lr.offsetMax.y);
+        }
     }
 
     public void SetSelected(bool value, bool animate)

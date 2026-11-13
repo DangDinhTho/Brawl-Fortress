@@ -39,10 +39,24 @@ public class PopupSelectMap : PopupBase
         InitTabs();
     }
 
+    /// <summary>The previous choice (last room map / default) may belong to a mode still locked by level: fall back to Competitive.</summary>
+    private void EnsureUnlockedSelection()
+    {
+        bool locked = !ModeUnlock.IsUnlocked(gameModeSelected);
+        foreach (var c in cards)
+            if (c != null && c.map == mapSelected && c.IsLocked) locked = true;
+        if (!locked) return;
+        gameModeSelected = GameMode.Competitive;
+        mapSelected = Map.BrawlScene;
+        foreach (var c in cards)
+            if (c != null && c.gameMode == GameMode.Competitive) { mapSelected = c.map; break; }
+    }
+
     private void InitTabs()
     {
         cards.Clear();
         if (mapContainer) mapContainer.GetComponentsInChildren(true, cards);
+        EnsureUnlockedSelection();
         if (tabs == null || tabs.Length == 0) return;
 
         foreach (var tab in tabs)
@@ -138,6 +152,11 @@ public class PopupSelectMap : PopupBase
 
     public void OnDoneClick()
     {
+        if (!ModeUnlock.IsUnlocked(gameModeSelected))
+        {
+            ModeUnlock.ShowLockedPopup(gameModeSelected);
+            return;
+        }
         if (singlePlayer)
         {
             LobbyManager.instance.sigleGameMode = gameModeSelected;

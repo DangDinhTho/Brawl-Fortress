@@ -16,6 +16,10 @@ public class UserData
     public int oldScore;
     public int score;
     public int matchCount;
+    /// <summary>Player level from the rank score (ConfigManager.scorePerLevel points per level).</summary>
+    public int Level => ConfigManager.GetLevel(score);
+    /// <summary>Progress 0..1 towards the next level.</summary>
+    public float LevelProgress => ConfigManager.GetLevelProgress(score);
     public bool ads_removed = false;
 
     

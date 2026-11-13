@@ -26,6 +26,11 @@ public class UIGameModeItem : MonoBehaviour
     
     public void OnSelectClick()
     {
+        if (!ModeUnlock.IsUnlocked(gameMode))
+        {
+            ModeUnlock.ShowLockedPopup(gameMode);
+            return;
+        }
         if (gameMode == GameMode.MannVsMachine)
         {
             if (PhotonNetwork.CurrentRoom != null &&

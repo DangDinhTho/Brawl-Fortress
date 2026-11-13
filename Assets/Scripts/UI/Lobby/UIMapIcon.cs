@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +15,14 @@ public class UIMapIcon : MonoBehaviour
     public Map map;
     public PopupSelectMap popupSelectMap;
     public Text txtStickRequire;
+
+    [Header("Mode lock (ModeUnlock)")]
+    [Tooltip("Overlay shown while this card's game mode is locked by level")]
+    public GameObject lockObj;
+    [Tooltip("'Level N' on the lock overlay")]
+    public TMP_Text txtLockLevel;
+
+    public bool IsLocked => !ModeUnlock.IsUnlocked(gameMode);
 
     //public void Init(Map map, GameMode gameMode, PopupSelectMap popup, bool selected)
     //{
@@ -50,17 +59,34 @@ public class UIMapIcon : MonoBehaviour
     {
         selectedObj.SetActive(map == popupSelectMap.mapSelected);
         if (map == popupSelectMap.mapSelected) popupSelectMap.mapSelectedItem = this;
+        RefreshLock();
+    }
+
+    private void OnEnable()
+    {
+        RefreshLock();
+    }
+
+    public void RefreshLock()
+    {
+        bool locked = IsLocked;
+        if (lockObj) lockObj.SetActive(locked);
+        if (locked && txtLockLevel) txtLockLevel.text = LocalizationManager.Localize("level", ModeUnlock.UnlockLevel(gameMode));
     }
 
     public void OnSelectMapClick()
     {
+        if (IsLocked)
+        {
+            ModeUnlock.ShowLockedPopup(gameMode);
+            return;
+        }
+
         if (!ConfigManager.CheckSelectMap(map))
         {
             TicketAds.Offer(map);
             return;
         }
-
-        
 
         if (gameMode == GameMode.MannVsMachine)
         {

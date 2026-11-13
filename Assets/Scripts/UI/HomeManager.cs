@@ -26,6 +26,10 @@ public class HomeManager : MonoBehaviour
 
     public Image playerMedalIcon;
     public Text txtPlayerName;
+    [Tooltip("Optional: shows the player level (ConfigManager.GetLevel)")]
+    public Text txtPlayerLevel;
+    [Tooltip("Optional: progress to the next level")]
+    public Slider playerLevelProgress;
     public ResourceManager resourceManager;
 
     public CraftResultController craftResultController;
@@ -57,6 +61,8 @@ public class HomeManager : MonoBehaviour
         Medal playerMedal = ConfigManager.GetMedal(GameManager.instan.userData.score);
         playerMedalIcon.sprite = GUIManager.instan.iconAtlas.GetSprite(playerMedal.ToString());
         txtPlayerName.text = GameManager.instan.userData.userName;
+        if (txtPlayerLevel != null) txtPlayerLevel.text = GameManager.instan.userData.Level.ToString(); // number inside the level star badge
+        if (playerLevelProgress != null) playerLevelProgress.value = GameManager.instan.userData.LevelProgress;
 
         resourceManager.Init();
 
@@ -88,6 +94,10 @@ public class HomeManager : MonoBehaviour
         {
             GUIManager.instan.CreatePopup<PopupDailyReward>();
         }
+
+        // Game modes unlocked by level since the last visit to Home (ModeUnlock): one popup each, on top of the others
+        var unlocked = ModeUnlock.TakeNewlyUnlocked();
+        if (unlocked.Count > 0) ModeUnlock.ShowUnlockedPopups(unlocked);
         
     }
 

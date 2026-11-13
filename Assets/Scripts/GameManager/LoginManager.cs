@@ -593,6 +593,13 @@ public class LoginManager : MonoBehaviour
             foreach (var medal in medalExps) ConfigManager.medals[medal.medal] = medal;
         }
 
+        if (data.TryGetValue("score_per_level", out var spl) && int.TryParse(spl, out var splValue) && splValue > 0)
+            ConfigManager.scorePerLevel = splValue;
+
+        var modeUnlock = ParseJson<Dictionary<GameMode, int>>(data, "mode_unlock_level");
+        if (modeUnlock != null)
+            foreach (var kv in modeUnlock) ConfigManager.modeUnlockLevels[kv.Key] = kv.Value;
+
         var mapConfigsOld = ParseJson<List<MapConfig>>(data, "map_configs");
         if (mapConfigsOld != null)
             foreach (var mapCfg in mapConfigsOld) ConfigManager.mapConfigs[mapCfg.map] = mapCfg;

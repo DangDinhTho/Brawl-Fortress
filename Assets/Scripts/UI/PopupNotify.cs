@@ -18,24 +18,19 @@ public class PopupNotify : PopupBase
         {
             txtContent.text = (string)args[0];
         }
-        if (args.Length > 1)
-        {
-            icon.gameObject.SetActive(true);
-            icon.sprite = (Sprite)args[1];
-        }
-        else
-        {
-            icon.gameObject.SetActive(false);
-        }
-        if (args.Length > 2)
-        {
-            OnClose = (Action)args[2];
-        }
+        // args[1] may be a null Sprite (no icon available): hide the icon instead of showing a white box
+        Sprite sprite = args.Length > 1 ? args[1] as Sprite : null;
+        icon.gameObject.SetActive(sprite != null);
+        if (sprite != null) icon.sprite = sprite;
+        OnClose = args.Length > 2 ? args[2] as Action : null;
     }
 
     public void OnCloseClick()
     {
-        OnClose?.Invoke();
+        // Dismiss first: the callback may open another PopupNotify (chained popups), which must not be closed right away
+        var cb = OnClose;
+        OnClose = null;
         Dismiss();
+        cb?.Invoke();
     }
 }

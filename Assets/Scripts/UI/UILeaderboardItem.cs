@@ -14,6 +14,8 @@ public class UILeaderboardItem : MonoBehaviour
     public Text txtName;
 
     public Text txtRankName;
+    [Tooltip("Number inside the level star badge (ConfigManager.GetLevel of the leaderboard score)")]
+    public Text txtLevel;
 
     public void SetData(PlayerLeaderboardEntry entry)
     {
@@ -21,6 +23,7 @@ public class UILeaderboardItem : MonoBehaviour
         txtName.text = entry.DisplayName;
         icon.sprite = GUIManager.instan.iconAtlas.GetSprite(rank.ToString());
         txtRankName.text = LocalizationManager.Localize(rank.ToString());
+        if (txtLevel != null) txtLevel.text = ConfigManager.GetLevel(entry.StatValue).ToString(); // StatValue = rank score
 
         if (entry.Position <= 16)
         {
