@@ -209,6 +209,8 @@ public static partial class BrawlMapBuilder
         log += " bushes=" + (bushes ? bushes.transform.childCount : 0);
         var navData = BakeNavMesh(d.mapEnum);
         FixPathPoints(d, navData);
+        // bot patrol points inside bushes need the final NavMesh: rebuild them now
+        log += " bushPoints=" + BushPatrolPoints.Build(scene) + "/offNav=" + BushPatrolPoints.LastOffNav;
 
         var mm = Root("MapManager").GetComponent<MapManager>();
         var mso = new SerializedObject(mm);
@@ -615,6 +617,9 @@ public static partial class BrawlMapBuilder
         int mask = so.FindProperty("m_LayerMask").intValue;
         var sources = new List<NavMeshBuildSource>();
         var markups = new List<NavMeshBuildMarkup>();
+        // bushes (grass / bamboo clumps) are walk-through like in Brawl Stars: never let them cut holes in the NavMesh
+        foreach (var rr in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Renderer>(true)))
+            if (BushAreaGenerator.IsBushRenderer(rr)) markups.Add(new NavMeshBuildMarkup { root = rr.transform, ignoreFromBuild = true });
         foreach (var root in scene.GetRootGameObjects())
         {
             var tmp = new List<NavMeshBuildSource>();
@@ -632,6 +637,27 @@ public static partial class BrawlMapBuilder
         so.FindProperty("m_NavMeshData").objectReferenceValue = asset;
         so.ApplyModifiedPropertiesWithoutUndo();
         return asset;
+    }
+
+    /// <summary>Rebakes the NavMesh (bushes walkable) and the bush patrol points of an existing map scene,
+    /// opened alone (Single). Does not touch the layout. Use for maps not rebuilt by Build().</summary>
+    public static string RebakeNavMesh(string id)
+    {
+        GuardUnsavedScenes();
+        scene = EditorSceneManager.OpenScene("Assets/Scenes/" + id + ".unity", OpenSceneMode.Single);
+        var data = BakeNavMesh(id);
+        NavMesh.RemoveAllNavMeshData();
+        var inst = NavMesh.AddNavMeshData(data);
+        var tp = Root("TeamPos").GetComponentsInChildren<Transform>().Where(t => t.childCount == 0).ToList();
+        int off = tp.Count(t => !NavMesh.SamplePosition(t.position, out var h, 1f, NavMesh.AllAreas));
+        string path = "?";
+        var red = tp.FirstOrDefault(t => t.position.z < 0); var blue = tp.FirstOrDefault(t => t.position.z > 0);
+        if (red && blue && NavMesh.SamplePosition(red.position, out var ha, 2f, NavMesh.AllAreas) && NavMesh.SamplePosition(blue.position, out var hb, 2f, NavMesh.AllAreas))
+        { var np = new NavMeshPath(); NavMesh.CalculatePath(ha.position, hb.position, NavMesh.AllAreas, np); path = np.status.ToString(); }
+        inst.Remove();
+        int pts = BushPatrolPoints.Build(scene);
+        EditorSceneManager.SaveScene(scene);
+        return id + ": redToBlue=" + path + " spawnsOffNav=" + off + " bushPoints=" + pts + " offNav=" + BushPatrolPoints.LastOffNav;
     }
 
     static void FixPathPoints(Def d, NavMeshData data)

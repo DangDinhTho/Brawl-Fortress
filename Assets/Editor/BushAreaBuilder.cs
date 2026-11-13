@@ -22,8 +22,9 @@ public class BushAreaBuilder : EditorWindow
     {
         if (!scene.IsValid()) return 0;
         int n = BushAreaGenerator.Generate(scene);
+        int pts = BushPatrolPoints.Build(scene);
         EditorSceneManager.MarkSceneDirty(scene);
-        Debug.Log("[Bush] " + scene.name + ": " + n + " bush areas (save the scene to keep them)");
+        Debug.Log("[Bush] " + scene.name + ": " + n + " bush areas, " + pts + " bot patrol points (save the scene to keep them)");
         return n;
     }
 

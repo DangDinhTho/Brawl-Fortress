@@ -11,6 +11,28 @@ public class MapManager : MonoBehaviour
 
     public Transform[] PathPoints;
 
+    [Tooltip("Patrol points inside bushes (baked by Tools/Bush/Build Bush Areas). Bots pick one of these instead of a PathPoint with probability bushPatrolChance, so they often hide in bushes.")]
+    public Transform[] BushPoints;
+    [Range(0f, 1f)] public float bushPatrolChance = 0.45f;
+
+    /// <summary>Random patrol destination for bots: a bush point (bushPatrolChance) or a normal path point.</summary>
+    public Vector3 GetPatrolPoint()
+    {
+        bool hasBush = BushPoints != null && BushPoints.Length > 0;
+        bool hasPath = PathPoints != null && PathPoints.Length > 0;
+        if (hasBush && (!hasPath || Random.value < bushPatrolChance))
+        {
+            var b = BushPoints[Random.Range(0, BushPoints.Length)];
+            if (b) return b.position;
+        }
+        if (hasPath)
+        {
+            var p = PathPoints[Random.Range(0, PathPoints.Length)];
+            if (p) return p.position;
+        }
+        return transform.position;
+    }
+
     private void Awake()
     {
         instan = this;

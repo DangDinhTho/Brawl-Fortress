@@ -100,7 +100,7 @@ public class CheckFlagState : Action
         int rand = Random.Range(0, 3);
         if (rand == 0)
         {
-            storeTarget.Value = MapManager.instan.PathPoints[Random.Range(0, MapManager.instan.PathPoints.Length)].position;
+            storeTarget.Value = MapManager.instan.GetPatrolPoint();
             igroneEnemy.Value = false;
             return TaskStatus.Success;
         }

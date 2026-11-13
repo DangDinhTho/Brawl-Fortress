@@ -20,7 +20,7 @@ public class FindFlag : Action
         switch (caseAction)
         {
             case 0:
-                storeTarget.Value = MapManager.instan.PathPoints[Random.Range(0, MapManager.instan.PathPoints.Length)].position;
+                storeTarget.Value = MapManager.instan.GetPatrolPoint();
                 return TaskStatus.Success;
         }
 

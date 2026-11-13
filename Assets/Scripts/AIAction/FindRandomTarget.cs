@@ -12,7 +12,7 @@ public class FindRandomTarget : Action
     public override TaskStatus OnUpdate()
     {
         if(hasEnemy.Value) return TaskStatus.Failure;
-        storeTarget.Value = MapManager.instan.PathPoints[Random.Range(0, MapManager.instan.PathPoints.Length)].position;
+        storeTarget.Value = MapManager.instan.GetPatrolPoint();
         return TaskStatus.Success;
     }
 

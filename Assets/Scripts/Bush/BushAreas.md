@@ -62,3 +62,9 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 | Map_Brawl_CrystalFactory | MvM | Cave | 8 |
 | Map_Brawl_MoonbaseSiege | MvM | Moon | 12 |
 | Map_Brawl_LastStand | MvM | Mix | 18 |
+
+## Bot patrol points in bushes (2026-11-13)
+- `Assets/Editor/BushPatrolPoints.cs` bakes points inside every BushArea into root object `BushPoints` and assigns them to `MapManager.BushPoints` (1 point per bush, 2 for bushes of 9 m2 or more), snapped onto the scene's NavMesh.
+- Runs automatically after `Tools/Bush/Build Bush Areas (Active Scene)`; alone: `Tools/Bush/Build Bush Patrol Points (Active Scene)`. Save the scene afterwards.
+- Bots: `MapManager.GetPatrolPoint()` returns a bush point with probability `bushPatrolChance` (default 0.45), otherwise a PathPoint. Used by FindRandomTarget, FindFlag, CheckFlagState, KothMoveFree.
+- Map builder NavMesh ignores bush renderers (NavMeshBuildMarkup ignoreFromBuild), so bushes are walkable for bots. Existing builder maps + Oasis were rebaked with `BrawlMapBuilder.RebakeNavMesh(id)`.

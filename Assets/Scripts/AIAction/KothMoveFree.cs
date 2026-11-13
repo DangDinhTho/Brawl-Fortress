@@ -16,7 +16,7 @@ public class KothMoveFree : Action
     public override void OnStart()
     {
         kingOfTheHillManager = KingOfTheHillManager.instan;
-        storeTarget.Value = MapManager.instan.PathPoints[Random.Range(0, MapManager.instan.PathPoints.Length)].position;
+        storeTarget.Value = MapManager.instan.GetPatrolPoint();
     }
 
     public override TaskStatus OnUpdate()
@@ -38,7 +38,7 @@ public class KothMoveFree : Action
 
         if (Vector3.Distance(transform.position, storeTarget.Value) < 1)
         {
-            storeTarget.Value = MapManager.instan.PathPoints[Random.Range(0, MapManager.instan.PathPoints.Length)].position;
+            storeTarget.Value = MapManager.instan.GetPatrolPoint();
             
         }
         
