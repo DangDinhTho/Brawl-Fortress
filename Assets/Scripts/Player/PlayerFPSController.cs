@@ -602,16 +602,70 @@ public class PlayerFPSController : MonoBehaviour
     }
 
     private bool isTouchFire;
+    /// <summary>Aim joystick magnitude above which the player is aiming (indicator shown, tap shot armed).</summary>
+    public const float AimDeadZone = 0.2f;
+    private bool tapAiming;
+    private Vector3 tapAimDir;
+    private float aimLockUntil;
+
+    /// <summary>World direction of the aim joystick (not normalized), same mapping as UpdateRotation.</summary>
+    public Vector3 AimWorldDirection
+    {
+        get
+        {
+            var j = UICharacterInputController.instan != null ? UICharacterInputController.instan.aimingJoystick : null;
+            return j == null ? Vector3.zero : new Vector3(j.Horizontal * teamRotate, 0, j.Vertical * teamRotate);
+        }
+    }
+
+    /// <summary>True while the aim joystick is pulled past the dead zone.</summary>
+    public bool IsAiming
+    {
+        get
+        {
+            var j = UICharacterInputController.instan != null ? UICharacterInputController.instan.aimingJoystick : null;
+            return j != null && j.Direction.magnitude >= AimDeadZone;
+        }
+    }
+
     public void UpdateFire()
     {
-        if(!isTouchFire && UICharacterInputController.instan.aimingJoystick.Direction.magnitude >= 0.8f)
+        if (currWeapon == null) return;
+        float mag = UICharacterInputController.instan.aimingJoystick.Direction.magnitude;
+
+        if (currWeapon.weaponConfig.fireMode == FireMode.Hold)
         {
-            isTouchFire = true;
-            currWeapon.BeginFire();
-        }else if (isTouchFire && UICharacterInputController.instan.aimingJoystick.Direction.magnitude < 0.8f)
+            // automatic weapons (minigun, flamethrower...): fire while the joystick is pulled to the edge
+            tapAiming = false;
+            if (!isTouchFire && mag >= 0.8f)
+            {
+                isTouchFire = true;
+                currWeapon.BeginFire();
+            }
+            else if (isTouchFire && mag < 0.8f)
+            {
+                currWeapon.FinishFire();
+                isTouchFire = false;
+            }
+            return;
+        }
+
+        // single-shot weapons (shotgun, rocket, melee...): aim while dragging, fire ONE shot on release
+        if (isTouchFire) { currWeapon.FinishFire(); isTouchFire = false; }
+        if (mag >= AimDeadZone)
         {
-            currWeapon.FinishFire();
-            isTouchFire = false;
+            tapAiming = true;
+            tapAimDir = AimWorldDirection;
+        }
+        else if (tapAiming)
+        {
+            tapAiming = false;
+            if (tapAimDir.sqrMagnitude > 1e-4f)
+            {
+                transform.localRotation = Quaternion.LookRotation(tapAimDir);  // shoot exactly where the indicator pointed
+                aimLockUntil = Time.time + currWeapon.weaponConfig.weaponStats.delayFire + 0.3f;
+            }
+            currWeapon.FireOnce();
         }
     }
 
@@ -765,6 +819,12 @@ public class PlayerFPSController : MonoBehaviour
 
     public void UpdateRotation()
     {
+        // keep facing the released aim direction until the tap shot has left
+        if (Time.time < aimLockUntil && tapAimDir.sqrMagnitude > 1e-4f)
+        {
+            transform.localRotation = Quaternion.LookRotation(tapAimDir);
+            return;
+        }
         //RotateLook(UICharacterInputController.instan.aimingJoystick.Horizontal, UICharacterInputController.instan.aimingJoystick.Vertical);
         //Vector3 lookDir = new Vector3(UICharacterInputController.instan.aimingJoystick.Horizontal, 0, UICharacterInputController.instan.aimingJoystick.Vertical);
 

@@ -29,6 +29,16 @@ public class WeaponConfig: ScriptableObject
     public AudioClip reloadSound;
     public WeaponStats weaponStats;
 
+    [Header("Aim / range (Brawl-style aim indicator)")]
+    [Tooltip("Distance (m) the attack reaches: bullet flight distance, melee reach, heal beam length and the aim indicator length. 0 = no indicator.")]
+    public float range = 6f;
+    [Tooltip("Total width (degrees) of the aim cone. Bullets fly inside it; the indicator shows it.")]
+    public float aimAngle = 6f;
+    [Tooltip("Bullets per shot, spread evenly across the cone (shotguns). The damage of one shot is split between them.")]
+    public int pellets = 1;
+    [Tooltip("Tap = one shot when the aim joystick is released. Hold = fires while the aim joystick is pulled to the edge.")]
+    public FireMode fireMode = FireMode.Tap;
+
     public void LoadStats()
     {
         weaponStats = ConfigManager.weaponStats[weaponId];
@@ -50,6 +60,12 @@ public class WeaponStats
     public float minDamage;
     public float maxDamage;
     public float critDamage;
+}
+
+public enum FireMode : byte
+{
+    Tap = 0,
+    Hold = 1,
 }
 
 public enum WeaponType : byte

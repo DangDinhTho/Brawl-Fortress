@@ -153,8 +153,8 @@
 //        Vector3 targetPoint;
 //        //if (playerOwner.isBot)
 //        //{
-//            //targetPoint = playerOwner.targetLook;
-//            targetPoint = shotPoints[0].position + shotPoints[0].forward * 2;
+//        //targetPoint = playerOwner.targetLook;
+//        targetPoint = shotPoints[0].position + shotPoints[0].forward * 2;
 //        //}
 //        //else
 //        //{
@@ -186,7 +186,7 @@
 //        damageObject.isOwner = playerOwner.photonView.IsMine;
 //        PoolingEntry currentBullet = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), shotPoints[0].position, shotPoints[0].rotation, directionWithSpread.normalized, damageObject); //store instantiated bullet in currentBullet
 
-//        if(muzzeEffect != null)
+//        if (muzzeEffect != null)
 //            muzzeEffect.Play();
 
 //        playerOwner.playerNetwork.SyncFire();
@@ -469,7 +469,20 @@ public class Gun : Weapon
         bulletInClip--;
         Shoot();
         base.FireLoopSuccess();
+        ReloadIfEmpty();
     }
+
+    /// <summary>Brawl-Stars style: reload starts right after the last bullet is fired (Tap and Hold), not on the next fire attempt.</summary>
+    protected void ReloadIfEmpty()
+    {
+        if (bulletInClip > 0 || weaponState == WeaponState.Reloading || !gameObject.activeInHierarchy) return;
+        StartReload();
+    }
+
+    protected float reloadStartTime, reloadDuration;
+    public bool IsReloading => weaponState == WeaponState.Reloading;
+    /// <summary>Reload progress 0..1 (time-based, used by FootRing), -1 when not reloading.</summary>
+    public float ReloadProgress => !IsReloading ? -1f : reloadDuration <= 0f ? 1f : Mathf.Clamp01((Time.time - reloadStartTime) / reloadDuration);
 
 
     public override void FinishFire()
@@ -490,6 +503,9 @@ public class Gun : Weapon
         this.maxReloadLoop = inventory >= bulletNeed ? bulletNeed : inventory;
         reload = true;
         //weaponState = WeaponState.DelayStartReload;
+        reloadStartTime = Time.time;
+        var st = weaponConfig.weaponStats;
+        reloadDuration = st.delayReload + (st.timeReload > 0 ? maxReloadLoop * st.timeReload : 0f) + st.delayFinishReload;
         StartCoroutine(LoopReload());
     }
 
@@ -515,48 +531,57 @@ public class Gun : Weapon
 
     public virtual void Shoot()
     {
-        //readyToShoot = false;
-        Vector3 targetPoint;
-        //if (playerOwner.isBot)
-        //{
-        //targetPoint = playerOwner.targetLook;
-        targetPoint = shotPoints[0].position + shotPoints[0].forward * 2;
-        //}
-        //else
-        //{
-        //    //Find the exact hit position using a raycast
-        //    Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
-        //    RaycastHit hit;
-
-        //    //check if ray hits something
-
-        //    if (Physics.Raycast(ray, out hit))
-        //        targetPoint = hit.point;
-        //    else
-        //        targetPoint = ray.GetPoint(75); //Just a point far away from the player
-        //}
-
-
-        //Calculate direction from attackPoint to targetPoint
-        Vector3 directionWithoutSpread = targetPoint - shotPoints[0].position;
-
-        //Calculate spread
-        float x = UnityEngine.Random.Range(-spread, spread);
-        float y = UnityEngine.Random.Range(-spread, spread);
-
-        //Calculate new direction with spread
-        Vector3 directionWithSpread = directionWithoutSpread + new Vector3(x, y, 0); //Just add spread to last direction
-
-        //Instantiate bullet/projectile
-        damageObject.damage = UnityEngine.Random.Range(weaponConfig.weaponStats.minDamage, weaponConfig.weaponStats.maxDamage);
         damageObject.isOwner = playerOwner.photonView.IsMine;
-        PoolingEntry currentBullet = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), shotPoints[0].position, shotPoints[0].rotation, directionWithSpread.normalized, damageObject); //store instantiated bullet in currentBullet
+        SpawnShot(shotPoints[0], AimForward(shotPoints[0]), true);
 
         if (muzzeEffect != null)
             muzzeEffect.Play();
 
         playerOwner.playerNetwork.SyncFire();
         OnShoot?.Invoke();
+    }
+
+    /// <summary>False for lobbed projectiles (grenades / stickies) that must keep the barrel's upward angle.</summary>
+    protected virtual bool FlatAim => true;
+
+    /// <summary>Aim direction: the player's facing (= aim joystick, flat) for humans, the barrel for bots / lobbed projectiles.</summary>
+    protected Vector3 AimForward(Transform shotPoint)
+    {
+        if (!FlatAim || playerOwner == null || playerOwner.isBot) return shotPoint.forward;
+        Vector3 f = playerOwner.transform.forward; f.y = 0f;
+        return f.sqrMagnitude > 1e-6f ? f.normalized : shotPoint.forward;
+    }
+
+    /// <summary>One shot = weaponConfig.pellets bullets inside the aim cone (aimAngle), each flying weaponConfig.range metres.</summary>
+    protected void SpawnShot(Transform shotPoint, Vector3 forward, bool rollDamage)
+    {
+        int n = Mathf.Max(1, weaponConfig.pellets);
+        float half = Mathf.Max(0f, weaponConfig.aimAngle) * 0.5f;
+        if (rollDamage)
+            damageObject.damage = UnityEngine.Random.Range(weaponConfig.weaponStats.minDamage, weaponConfig.weaponStats.maxDamage) / n;
+        // The indicator fan starts at the player's feet. Flat shots therefore start on the fan's axis
+        // (player centre, at barrel height, pushed forward to the barrel) and fly only what is left of 'range',
+        // so a bullet never goes past the indicator, whatever the barrel offset is.
+        Vector3 spawn = shotPoint.position;
+        float dist = weaponConfig.range;
+        if (FlatAim && playerOwner != null)
+        {
+            Vector3 flat = forward; flat.y = 0f;
+            if (flat.sqrMagnitude > 1e-6f)
+            {
+                flat.Normalize();
+                Vector3 center = playerOwner.transform.position; center.y = shotPoint.position.y;
+                float ahead = Mathf.Clamp(Vector3.Dot(shotPoint.position - center, flat), 0f, dist * 0.5f);
+                spawn = center + flat * ahead;
+                dist -= ahead;
+            }
+        }
+        for (int i = 0; i < n; i++)
+        {
+            float yaw = n == 1 ? UnityEngine.Random.Range(-half, half) : Mathf.Lerp(-half, half, i / (float)(n - 1));
+            Vector3 dir = (Quaternion.AngleAxis(yaw, Vector3.up) * forward).normalized;
+            ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), spawn, Quaternion.LookRotation(dir), dir, damageObject, dist);
+        }
     }
 
 
@@ -582,8 +607,9 @@ public class Gun : Weapon
     public override void RemoteFire()
     {
         base.RemoteFire();
-        Vector3 directionWithoutSpread = playerOwner.targetLook - shotPoints[0].position;
-        PoolingEntry currentBullet = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), shotPoints[0].position, shotPoints[0].rotation, directionWithoutSpread.normalized, damageObject);
+        Vector3 aim = playerOwner.targetLook - shotPoints[0].position;
+        if (FlatAim) aim.y = 0f;
+        SpawnShot(shotPoints[0], aim.sqrMagnitude > 1e-6f ? aim.normalized : shotPoints[0].forward, false);
         if (muzzeEffect != null)
             muzzeEffect.Play();
     }

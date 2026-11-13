@@ -9,12 +9,16 @@ public class BulletNormal : PoolingEntry
     public float speed = 10;
     protected DamageObject damageObject;
     private Vector3 direction;
+    private float maxDistance;   // > 0: finish after travelling exactly this far (weaponConfig.range)
+    private float travelled;
+    private bool finished;
     public string impactFX;
 
     public virtual void OnTriggerEnter(Collider other)
     {
-        if (!ready) return;
+        if (!ready || finished) return;
         ready = false;
+        finished = true;
         if (other.CompareTag("HitBox"))
         {
             if (damageObject.isOwner)
@@ -55,7 +59,18 @@ public class BulletNormal : PoolingEntry
 
     public void Move()
     {
-        transform.position += direction * speed * Time.deltaTime;
+        if (finished) return;
+        float step = speed * Time.deltaTime;
+        if (maxDistance > 0f && travelled + step >= maxDistance)
+        {
+            transform.position += direction * (maxDistance - travelled);
+            travelled = maxDistance;
+            finished = true;
+            OnFinish();
+            return;
+        }
+        travelled += step;
+        transform.position += direction * step;
     }
 
     public override void OnCreated(params object[] args)
@@ -74,7 +89,11 @@ public class BulletNormal : PoolingEntry
 
         //m_body.AddForce(transform.forward * force, ForceMode.Force);
         //m_body.AddTorque(Vector3.forward / 5);
-        StartCoroutine(WaitDestroy());
+        travelled = 0f;
+        finished = false;
+        maxDistance = args.Length > 2 && args[2] is float range && range > 0f ? range : 0f;
+        StopAllCoroutines();
+        if (maxDistance <= 0f) StartCoroutine(WaitDestroy(timeAlive)); // no range given: old time-based life
     }
 
     public override void OnFinish()
@@ -104,9 +123,9 @@ public class BulletNormal : PoolingEntry
     }
 
 
-    IEnumerator WaitDestroy()
+    IEnumerator WaitDestroy(float life)
     {
-        yield return new WaitForSeconds(timeAlive);
+        yield return new WaitForSeconds(life);
         OnFinish();
     }
 }

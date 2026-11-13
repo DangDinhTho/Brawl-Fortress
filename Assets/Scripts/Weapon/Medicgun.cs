@@ -10,6 +10,8 @@ public class Medicgun : Gun
     public LayerMask checkMark;
     private bool lockTarget;
     public float maxDistance = 20;
+    /// <summary>Beam length: weaponConfig.range when set (what the aim indicator shows), else maxDistance.</summary>
+    float MaxDistance => weaponConfig != null && weaponConfig.range > 0f ? weaponConfig.range : maxDistance;
     public HealthManager healthTarget;
     private int targetViewId;
     public LineRenderer lineRenderer;
@@ -97,7 +99,7 @@ public class Medicgun : Gun
 
             RaycastHit hit;
 
-            if (Physics.Raycast(playerOwner.transform.position + Vector3.up, playerOwner.transform.forward, out hit, maxDistance, checkMark))
+            if (Physics.Raycast(playerOwner.transform.position + Vector3.up, playerOwner.transform.forward, out hit, MaxDistance, checkMark))
             {
                 HealthManager health = hit.transform.root.GetComponent<HealthManager>();
                 if (health != null && !health.death && health.team == playerOwner.team)
@@ -115,7 +117,7 @@ public class Medicgun : Gun
         {
             float distanceToTarget = Vector3.Distance(playerOwner.transform.position, target.position);
             Vector3 directionToTarget = (target.position - fpsCam.transform.position).normalized;
-            if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstructionMask) && distanceToTarget < maxDistance)
+            if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstructionMask) && distanceToTarget < MaxDistance)
             {
                 if (healthTarget != null)
                     healthTarget.Buff(0.01f);

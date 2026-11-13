@@ -65,47 +65,9 @@ public class Minigun : Gun
 
     public override void Shoot()
     {
-        //readyToShoot = false;
-
         currShotPoint = currShotPoint >= shotPoints.Length - 1 ? 0 : currShotPoint + 1;
-        //Find the exact hit position using a raycast
-        //readyToShoot = false;
-        Vector3 targetPoint;
-        //if (playerOwner.isBot)
-        //{
-            //targetPoint = playerOwner.targetLook;
-            targetPoint = shotPoints[currShotPoint].position + shotPoints[currShotPoint].forward * 2;
-        //}
-        //else
-        //{
-        //    //Find the exact hit position using a raycast
-        //    Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
-        //    RaycastHit hit;
-
-        //    //check if ray hits something
-
-        //    if (Physics.Raycast(ray, out hit))
-        //        targetPoint = hit.point;
-        //    else
-        //        targetPoint = ray.GetPoint(75); //Just a point far away from the player
-        //}
-
-        //Calculate direction from attackPoint to targetPoint
-        Vector3 directionWithoutSpread = targetPoint - shotPoints[currShotPoint].position;
-
-        //Calculate spread
-        float x = UnityEngine.Random.Range(-spread, spread);
-        float y = UnityEngine.Random.Range(-spread, spread);
-
-        //Calculate new direction with spread
-        Vector3 directionWithSpread = directionWithoutSpread + new Vector3(x, y, 0); //Just add spread to last direction
-
-
-        //Instantiate bullet/projectile
-        damageObject.damage = UnityEngine.Random.Range(weaponConfig.weaponStats.minDamage, weaponConfig.weaponStats.maxDamage);
         damageObject.isOwner = playerOwner.playerNetwork.isMine;
-        PoolingEntry currentBullet = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), shotPoints[currShotPoint].position, shotPoints[currShotPoint].rotation, directionWithSpread.normalized, damageObject); //store instantiated bullet in currentBullet
-        //playerOwner.playerNetwork.SyncFire();
+        SpawnShot(shotPoints[currShotPoint], AimForward(shotPoints[currShotPoint]), true);
         if (muzzeEffect != null)
             muzzeEffect.Play();
     }
@@ -113,8 +75,9 @@ public class Minigun : Gun
     public override void RemoteFire()
     {
         currShotPoint = currShotPoint >= shotPoints.Length - 1 ? 0 : currShotPoint + 1;
-        Vector3 directionWithoutSpread = playerOwner.targetLook - shotPoints[currShotPoint].position;
-        PoolingEntry currentBullet = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), shotPoints[currShotPoint].position, shotPoints[currShotPoint].rotation, directionWithoutSpread.normalized, damageObject);
+        Vector3 aim = playerOwner.targetLook - shotPoints[currShotPoint].position;
+        aim.y = 0f;
+        SpawnShot(shotPoints[currShotPoint], aim.sqrMagnitude > 1e-6f ? aim.normalized : shotPoints[currShotPoint].forward, false);
         muzzeEffect.Play();
     }
 

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class StickybombLauncher : Gun
 {
+    protected override bool FlatAim => false;
     //public float shootForce;
     //public float upwardForce;
 

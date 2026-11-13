@@ -38,6 +38,7 @@ public class TF2Robot : TF2Bot
         remotePlayer.Init(this);
         if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
         if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
+        if (GetComponent<FootRing>() == null) gameObject.AddComponent<FootRing>();
         healthManager.Init(this);
         if (photonView.IsMine)
         {

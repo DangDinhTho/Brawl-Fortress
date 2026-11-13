@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GrenadeLauncher : Gun
 {
+    protected override bool FlatAim => false;
     //public float shootForce;
     //public float upwardForce;
 

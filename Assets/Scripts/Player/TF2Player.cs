@@ -139,6 +139,8 @@ public class TF2Player : MonoBehaviour
 
         if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
         if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
+        if (GetComponent<FootRing>() == null) gameObject.AddComponent<FootRing>();
+        if (!isBot && photonView.IsMine && GetComponent<AimIndicator>() == null) gameObject.AddComponent<AimIndicator>();
 
         if (!isBot)
         {
@@ -177,9 +179,16 @@ public class TF2Player : MonoBehaviour
     }
 
 
+    /// <summary>Team colour the model is currently drawn with (Team.None = own team). A Spy disguise that calls SetMeshTeam(otherTeam) is picked up by FootRing.</summary>
+    public Team MeshTeam { get; private set; } = Team.None;
+    /// <summary>True while the Spy cloak material is on (SetMeshInvsibility), cleared by SetMeshTeam.</summary>
+    public bool MeshInvisible { get; private set; }
+
     public void SetMeshTeam(Team _team = Team.None)
     {
         if (_team == Team.None) _team = team;
+        MeshTeam = _team;
+        MeshInvisible = false;
         MeshDynamicColor[] meshDynamicColors = GetComponentsInChildren<MeshDynamicColor>(true);
         if (meshDynamicColors != null)
         {
@@ -192,6 +201,7 @@ public class TF2Player : MonoBehaviour
 
     public void SetMeshInvsibility()
     {
+        MeshInvisible = true;
         Material[] materials = new Material[1];
         if (team == ArenaManager.Instance.mainPlayer.team)
         {

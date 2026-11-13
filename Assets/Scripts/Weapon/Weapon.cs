@@ -21,6 +21,26 @@ public class Weapon : MonoBehaviour
     protected bool blockFire;
     [HideInInspector]
     public bool fire;
+    /// <summary>Counts shots / swings (incremented in FireLoopSuccess). Used by FireOnce.</summary>
+    [HideInInspector] public int shotsFired;
+
+    /// <summary>Tap fire: exactly one shot / swing, respecting reload, cooldown (interval) and delayFire.</summary>
+    public virtual void FireOnce()
+    {
+        if (blockFire || playerOwner == null || playerOwner.healthManager == null || playerOwner.healthManager.death) return;
+        if (!gameObject.activeInHierarchy) return;
+        StartCoroutine(FireOnceRoutine());
+    }
+
+    private IEnumerator FireOnceRoutine()
+    {
+        int before = shotsFired;
+        BeginFire();
+        if (!fire) yield break; // could not start (empty clip -> reload started, blocked...)
+        float timeout = Time.time + weaponConfig.weaponStats.delayFire + Mathf.Max(weaponConfig.weaponStats.interval, 0.1f) + 0.3f;
+        while (fire && shotsFired == before && Time.time < timeout) yield return null;
+        if (fire) FinishFire();
+    }
 
     protected Camera fpsCam;
 
@@ -115,6 +135,7 @@ public class Weapon : MonoBehaviour
 
     public virtual void FireLoopSuccess()
     {
+        shotsFired++;
         OnFire?.Invoke();
         if (weaponConfig.shotSound != null)
         {
