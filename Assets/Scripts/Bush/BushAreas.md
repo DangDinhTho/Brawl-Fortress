@@ -38,3 +38,27 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 | Map_Brawl_BambooTemple (Bamboo Temple) | 16 |
 | Map_Brawl_DustyCanyon (Dusty Canyon) | 10 |
 | Map_Brawl_FrontierRuins (Frontier Ruins) | 12 |
+
+## Builder maps for CTF / KOTH / Payload / MvM (2026-11-13)
+| Map scene | Mode | Theme | Bushes |
+|---|---|---|---|
+| Map_Brawl_GemHeist | CTF | Cave | 10 |
+| Map_Brawl_LunarVault | CTF | Moon | 14 |
+| Map_Brawl_BambooRaid | CTF | Bamboo | 15 |
+| Map_Brawl_GoldRush | CTF | Western | 8 |
+| Map_Brawl_BorderSiege | CTF | Mix | 14 |
+| Map_Brawl_CrystalCrown | KOTH | Cave | 12 |
+| Map_Brawl_MoonAltar | KOTH | Moon | 14 |
+| Map_Brawl_BambooShrine | KOTH | Bamboo | 12 |
+| Map_Brawl_SheriffSquare | KOTH | Western | 12 |
+| Map_Brawl_CrossroadRuins | KOTH | Mix | 12 |
+| Map_Brawl_MineExpress | Payload | Cave | 14 |
+| Map_Brawl_MoonRail | Payload | Moon | 12 |
+| Map_Brawl_BambooLine | Payload | Bamboo | 18 |
+| Map_Brawl_DynamiteTrail | Payload | Western | 12 |
+| Map_Brawl_FrontierConvoy | Payload | Mix | 10 |
+| Map_Brawl_RobotRidge | MvM | Western | 6 |
+| Map_Brawl_IronGrove | MvM | Bamboo | 14 |
+| Map_Brawl_CrystalFactory | MvM | Cave | 8 |
+| Map_Brawl_MoonbaseSiege | MvM | Moon | 12 |
+| Map_Brawl_LastStand | MvM | Mix | 18 |

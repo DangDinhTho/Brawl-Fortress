@@ -18,7 +18,7 @@ using Random = System.Random;
 /// Legend: '.' empty, '#' wall, 'b' bush, 'x' crate/small cover, 'f' low fence, 't' tall cover.
 /// Menu: Tools/Maps/Build Competitive Maps.
 /// </summary>
-public static class BrawlMapBuilder
+public static partial class BrawlMapBuilder
 {
     public enum Theme { Western, Bamboo, Cave, Moon, Mix }
 
@@ -31,6 +31,7 @@ public static class BrawlMapBuilder
         public string[] half;   // 13 rows, red half, row 0 = back line
         public string center;   // row 13, must be a palindrome
         public string[] names;  // en, ru, th, es, vi
+        public Vector2[] pathHalf; // Payload / MvM: cart path from the blue side to the centre (x,z); mirrored to the red side
     }
 
     const string BaseScene = "Assets/Scenes/Map_Brawl_Oasis.unity";
@@ -152,7 +153,7 @@ public static class BrawlMapBuilder
         foreach (var d in Competitive) Build(d);
     }
 
-    public static Def Find(string mapEnum) => Competitive.First(d => d.mapEnum == mapEnum);
+    public static Def Find(string mapEnum) => AllDefs().First(d => d.mapEnum == mapEnum);
 
     // ------------------------------------------------------------------ state
     static Dictionary<string, string> prefabs;
@@ -169,13 +170,14 @@ public static class BrawlMapBuilder
         Validate(d);
         string path = "Assets/Scenes/" + d.mapEnum + ".unity";
 
-        // close other map scenes (keep only non-map scenes like FlashScene)
-        for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+        // Tho's rule: a map scene is always opened alone (OpenSceneMode.Single), never additively with another
+        // scene. Source scenes (lighting, Moon templates, mode objects) are opened Single one by one BEFORE the
+        // map and copied into hidden preview scenes (see BrawlMapBuilderSources.cs).
+        GuardUnsavedScenes();
+        BeginSources();
+        try
         {
-            var s = SceneManager.GetSceneAt(i);
-            if ((s.name.StartsWith("Map_") || s.name.StartsWith("Brawl")) && SceneManager.sceneCount > 1)
-                EditorSceneManager.CloseScene(s, true);
-        }
+        PrefetchSources(d);
 
         if (File.Exists(path)) File.Copy(BaseScene, path, true);
         else AssetDatabase.CopyAsset(BaseScene, path);
@@ -183,11 +185,12 @@ public static class BrawlMapBuilder
 
         LoadAssets();
 
-        scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+        scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
         SceneManager.SetActiveScene(scene);
         env = Root("Environment").transform;
         spawnPoints = Root("TeamPos").GetComponentsInChildren<Transform>().Where(t => t.childCount == 0).Select(t => t.position).ToList();
         if (d.theme == Theme.Moon) LoadMoonTemplates();
+        PrePlace(d);
 
         ApplyLighting(d.theme);
         PrepareBorderAndGround(d.theme);
@@ -198,6 +201,8 @@ public static class BrawlMapBuilder
         if (holder) Object.DestroyImmediate(holder);
         Physics.SyncTransforms();
 
+        SetupMode(d);
+        Physics.SyncTransforms();
         // bushes, navmesh, path points
         EditorApplication.ExecuteMenuItem("Tools/Bush/Build Bush Areas (Active Scene)");
         var bushes = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "Bushes");
@@ -220,6 +225,8 @@ public static class BrawlMapBuilder
         AssetDatabase.SaveAssets();
         CleanupTemplates();
         return d.mapEnum + ":" + log;
+        }
+        finally { EndSources(); }
     }
 
     static void Validate(Def d)
@@ -228,6 +235,7 @@ public static class BrawlMapBuilder
         foreach (var r in d.half.Append(d.center))
             if (r.Length != COLS) throw new Exception(d.mapEnum + " bad row length " + r.Length + ": " + r);
         if (new string(d.center.Reverse().ToArray()) != d.center) throw new Exception(d.mapEnum + " centre row must be a palindrome");
+        ValidateMode(d);
     }
 
     static GameObject Root(string n) => scene.GetRootGameObjects().First(g => g.name == n);
@@ -250,7 +258,7 @@ public static class BrawlMapBuilder
     {
         moon = new Dictionary<string, GameObject>();
         templateHolder = null;
-        moonScene = EditorSceneManager.OpenScene("Assets/Scenes/Map_Brawl_ShowDown.unity", OpenSceneMode.Additive);
+        moonScene = Source("Assets/Scenes/Map_Brawl_ShowDown.unity");
         var menv = moonScene.GetRootGameObjects().First(g => g.name == "Environment");
         var mfs = menv.GetComponentsInChildren<MeshFilter>(true);
         foreach (var key in new[] { "Wall_Tile_Block1", "Grass_Tile_A_opt", "PolyPyramid", "Night_Plane", "RockFlat3", "RockFlat5", "RockFlat6", "Skull_opt", "Bone_opt", "Bone_ChestA_opt", "Bones_ChestB_opt" })
@@ -260,7 +268,6 @@ public static class BrawlMapBuilder
         }
         var chest = mfs.FirstOrDefault(m => m.sharedMesh && m.sharedMesh.name == "Chest");
         if (chest) moon["Chest"] = KeepTemplate(chest.gameObject);
-        EditorSceneManager.CloseScene(moonScene, true);
         moonScene = default;
         SceneManager.SetActiveScene(scene);
         log += " moonTemplates=" + moon.Count;
@@ -284,7 +291,6 @@ public static class BrawlMapBuilder
 
     static void CleanupTemplates()
     {
-        if (moonScene.IsValid() && moonScene.isLoaded) EditorSceneManager.CloseScene(moonScene, true);
         moonScene = default;
     }
 
@@ -345,28 +351,19 @@ public static class BrawlMapBuilder
             Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
             _ => null,
         };
-        if (refScene == null) return;
-        var rs = SceneManager.GetSceneByPath(refScene);
-        bool opened = false;
-        if (!rs.isLoaded) { rs = EditorSceneManager.OpenScene(refScene, OpenSceneMode.Additive); opened = true; }
-        SceneManager.SetActiveScene(rs);
-        var mode = RenderSettings.ambientMode; var sky = RenderSettings.ambientSkyColor; var eq = RenderSettings.ambientEquatorColor;
-        var gr = RenderSettings.ambientGroundColor; var amb = RenderSettings.ambientLight; var ai = RenderSettings.ambientIntensity;
-        var box = RenderSettings.skybox; var fog = RenderSettings.fog; var fogC = RenderSettings.fogColor; var fogM = RenderSettings.fogMode;
-        var fs = RenderSettings.fogStartDistance; var fe = RenderSettings.fogEndDistance; var fd = RenderSettings.fogDensity;
-        var refLight = rs.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Light>(true)).FirstOrDefault(l => l.type == LightType.Directional);
-        SceneManager.SetActiveScene(scene);
+        if (refScene == null || !sourceLights.TryGetValue(refScene, out var li)) return;
+        var mode = li.mode; var sky = li.sky; var eq = li.eq; var gr = li.gr; var amb = li.amb; var ai = li.ai;
+        var box = li.box; var fog = li.fog; var fogC = li.fogC; var fogM = li.fogM; var fs = li.fs; var fe = li.fe; var fd = li.fd;
         RenderSettings.ambientMode = mode; RenderSettings.ambientSkyColor = sky; RenderSettings.ambientEquatorColor = eq;
         RenderSettings.ambientGroundColor = gr; RenderSettings.ambientLight = amb; RenderSettings.ambientIntensity = ai;
         RenderSettings.skybox = box; RenderSettings.fog = fog; RenderSettings.fogColor = fogC; RenderSettings.fogMode = fogM;
         RenderSettings.fogStartDistance = fs; RenderSettings.fogEndDistance = fe; RenderSettings.fogDensity = fd;
         var light = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Light>(true)).FirstOrDefault(l => l.type == LightType.Directional);
-        if (light && refLight)
+        if (light && li.hasLight)
         {
-            light.color = refLight.color; light.intensity = refLight.intensity; light.shadows = refLight.shadows;
-            light.shadowStrength = refLight.shadowStrength; light.transform.rotation = refLight.transform.rotation;
+            light.color = li.lColor; light.intensity = li.lIntensity; light.shadows = li.lShadows;
+            light.shadowStrength = li.lShadowStrength; light.transform.rotation = li.lRotation;
         }
-        if (opened) EditorSceneManager.CloseScene(rs, true);
     }
 
     static readonly string[] Desert = { "cliff01", "cliff02", "cliff03", "cliff04" };
@@ -475,7 +472,7 @@ public static class BrawlMapBuilder
         var g = FullGrid(d);
         // which tiles are inside the cliffs: test before placing anything (only the border + gates exist now)
         var blocked = new bool[ROWS, COLS];
-        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) blocked[r, c] = Blocked(TilePos(r, c));
+        for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) blocked[r, c] = Blocked(TilePos(r, c)) || NearPath(TilePos(r, c));
         int placed = 0, skipped = 0, decor = 0;
         for (int r = 0; r < ROWS; r++)
             for (int c = 0; c < COLS; c++)
@@ -597,7 +594,7 @@ public static class BrawlMapBuilder
         {
             case Theme.Western: Prefab(Pick(rnd, "rock1", "rock2", "rock4", "rock6", "rock8", "Bone1", "Flower01"), o, rot, 0.8f, false); break;
             case Theme.Bamboo: Prefab(Pick(rnd, "Flower02", "Flower03", "Flower04", "Stone05", "Stone07", "Stone08"), o, rot, 0.6f, false); break;
-            case Theme.Cave: Prefab(Pick(rnd, "Rock9", "Rock10", "Rock13", "Rock14", "Rock15", "Rail1"), o, rot, 0.8f, false); break;
+            case Theme.Cave: { var dn = Pick(rnd, "Rock9", "Rock10", "Rock13", "Rock14", "Rock15", "Rail1"); if (dn == "Rail1" && pathSamples != null) dn = "Rock13"; /* no loose rail pieces next to a real track */ Prefab(dn, o, rot, 0.8f, false); break; }
             case Theme.Moon:
                 {
                     var k = Pick(rnd, "RockFlat3", "RockFlat5", "RockFlat6", "Skull_opt", "Bone_opt");
