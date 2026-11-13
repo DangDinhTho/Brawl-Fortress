@@ -99,24 +99,23 @@ public class ArenaManager : MonoBehaviourPunCallbacks
             map = (Map)gameMapObj;
         }
 
-        if (!ConfigManager.CheckSelectMap(map))
+        int ticketCost = ConfigManager.GetTicketCost(map);
+        if (ticketCost > 0)
         {
-            GUIManager.instan.CreatePopup<PopupNotify>(
-                string.Format(LocalizationManager.Localize("not_enough_ticket")), GUIManager.instan.iconAtlas.GetSprite("ticket"), (Action)ShowAdsQuitGame);
-            return;
-        }
-
-        if (ConfigManager.mapConfigs.TryGetValue(map, out var mapConfig))
-        {
-            if (mapConfig.requireStick)
+            UserItem ticket = GameManager.instan.userData.GetAnyStickerWithMap(map, ticketCost);
+            if (ticket == null)
             {
-                UserItem ticket = GameManager.instan.userData.GetAnyStickerWithMap(map, mapConfig.stickPerPlay);
-                GameManager.instan.RequestUseTicket(ticket.itemId, mapConfig.stickPerPlay, (Action)(() =>
-                {
-                    GUIManager.instan.CreatePopup<PopupNotify>(string.Format(LocalizationManager.Localize("not_enough_ticket")), GUIManager.instan.iconAtlas.GetSprite("ticket"), (Action)ShowAdsQuitGame);
-                    return;
-                }));
+                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("not_enough_ticket"), GUIManager.instan.iconAtlas.GetSprite("ticket"), (Action)ShowAdsQuitGame);
+                return;
             }
+            // Spend locally right away so the cached inventory never shows tickets that are already used
+            // (the server reply refreshes the inventory; a failure re-reads it and leaves the match).
+            GameManager.instan.userData.UseItem(ticket.itemId, ticketCost);
+            GameManager.instan.RequestUseTicket(ticket.itemId, ticketCost, (Action)(() =>
+            {
+                GameManager.instan.GetUserInventory();
+                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("not_enough_ticket"), GUIManager.instan.iconAtlas.GetSprite("ticket"), (Action)ShowAdsQuitGame);
+            }));
         }
         //Yodo1AdsManager.instan.RequestNative();
         LoadMap();

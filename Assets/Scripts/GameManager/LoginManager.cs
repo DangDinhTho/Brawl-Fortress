@@ -579,6 +579,7 @@ public class LoginManager : MonoBehaviour
         if (data == null)
         {
             Debug.LogWarning("No title data");
+            ConfigManager.ApplyMapTicketDefaults();
             ConfigManager.reciptCodeAccept = ConfigManager.reciptCodeAccept ?? new List<string>();
             return;
         }
@@ -611,6 +612,7 @@ public class LoginManager : MonoBehaviour
             foreach (var mapCfg in mapConfigs) ConfigManager.mapConfigs[mapCfg.map] = mapCfg;
         }
 
+        ConfigManager.ApplyMapTicketDefaults(); // maps missing from map_config keep their default ticket price
         var battleTimes = ParseJson<Dictionary<Map, int>>(data, "battle_map_times");
         if (battleTimes != null) ConfigManager.battleTimes = battleTimes;
 

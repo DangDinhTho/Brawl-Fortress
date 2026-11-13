@@ -75,15 +75,20 @@ public class UserData
     
     public UserItem GetAnyStickerWithMap(Map map, int numTickets)
     {
+        string mapName = map.ToString();
+        UserItem tagged = null, all = null, any = null;
         foreach (var item in userItems)
         {
+            if (item == null || item.itemInstance == null) continue;
             ItemConfig itConfig = ConfigManager.GetItemConfig(item.itemId);
-            if (itConfig != null && itConfig.slot == ItemType.ticket && itConfig.catalogItem.Tags != null && itConfig.catalogItem.Tags.Contains(map.ToString()))
-            {
-                if (item.itemInstance.RemainingUses.GetValueOrDefault() >= numTickets) return item;
-            }
+            if (itConfig == null || itConfig.slot != ItemType.ticket) continue;
+            if (item.itemInstance.RemainingUses.GetValueOrDefault() < numTickets) continue;
+            var tags = itConfig.catalogItem != null ? itConfig.catalogItem.Tags : null;
+            if (tags != null && tags.Contains(mapName)) { tagged = item; break; }
+            if (all == null && tags != null && tags.Contains("AllMaps")) all = item;
+            if (any == null) any = item;
         }
-        return null;
+        return tagged ?? all ?? any;
     }
 
     public bool UseItem(ItemId itemId, int quantity)

@@ -121,6 +121,12 @@ public class PopupSelectMap : PopupBase
     {
     }
 
+    /// <summary>Re-reads lock and ticket state on every card (after tickets were granted / spent).</summary>
+    public void RefreshCards()
+    {
+        foreach (var c in cards) if (c != null) c.Refresh();
+    }
+
     public void SetTicket()
     {
         int index = 0;

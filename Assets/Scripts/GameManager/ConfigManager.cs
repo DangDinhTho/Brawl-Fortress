@@ -192,21 +192,69 @@ public class ConfigManager
 
     public static bool CheckSelectMap(Map map)
     {
-        if (mapConfigs.TryGetValue(map, out var mapConfig))
-        {
-            if (mapConfig.requireStick)
-            {
-                UserItem ticket = GameManager.instan.userData.GetAnyStickerWithMap(map, mapConfig.stickPerPlay);
-                if (ticket != null) return true;
-                else
-                {
-                    return false;
-                }
-                
-            }
-        }
+        int cost = GetTicketCost(map);
+        if (cost <= 0) return true;
+        var user = GameManager.instan != null ? GameManager.instan.userData : null;
+        return user != null && user.GetAnyStickerWithMap(map, cost) != null;
+    }
 
-        return true;
+    /// <summary>Tickets needed to play a map (0 = free), from mapConfigs (Title Data "map_config" or the defaults below).</summary>
+    public static int GetTicketCost(Map map)
+    {
+        if (mapConfigs.TryGetValue(map, out var cfg) && cfg != null)
+            return cfg.requireStick ? Mathf.Max(1, cfg.stickPerPlay) : 0;
+        foreach (var d in DefaultTicketCosts) if (d.map == map) return d.cost;
+        return 0;
+    }
+
+    /// <summary>Default ticket price per map: in each game mode the first map is free (Competitive: the first 3),
+    /// the next ones cost 1 to 5 tickets, in the order of the cards in PopupSelectMap.
+    /// Title Data "map_config" overrides a map; maps it does not list keep these defaults (ApplyMapTicketDefaults).</summary>
+    static readonly (GameMode mode, Map map, int cost)[] DefaultTicketCosts =
+    {
+        (GameMode.Competitive, Map.BrawlScene, 0),
+        (GameMode.Competitive, Map.BrawlScene_2, 0),
+        (GameMode.Competitive, Map.Map_Brawl_ShowDown, 0),
+        (GameMode.Competitive, Map.Map_Brawl_Oasis, 1),
+        (GameMode.Competitive, Map.Map_Brawl_Cavern, 2),
+        (GameMode.Competitive, Map.Map_Brawl_BambooTemple, 2),
+        (GameMode.Competitive, Map.Map_Brawl_DustyCanyon, 3),
+        (GameMode.Competitive, Map.Map_Brawl_FrontierRuins, 4),
+        (GameMode.Competitive, Map.Map_Brawl_MoonMaze, 5),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_CTF, 0),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_GemHeist, 1),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_LunarVault, 2),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_BambooRaid, 3),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_GoldRush, 4),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_BorderSiege, 5),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_Koth, 0),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_CrystalCrown, 1),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_MoonAltar, 2),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_BambooShrine, 3),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_SheriffSquare, 4),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_CrossroadRuins, 5),
+        (GameMode.Payload, Map.Map_Brawl_Payload, 0),
+        (GameMode.Payload, Map.Map_Brawl_MineExpress, 1),
+        (GameMode.Payload, Map.Map_Brawl_MoonRail, 2),
+        (GameMode.Payload, Map.Map_Brawl_BambooLine, 3),
+        (GameMode.Payload, Map.Map_Brawl_DynamiteTrail, 4),
+        (GameMode.Payload, Map.Map_Brawl_FrontierConvoy, 5),
+        (GameMode.MannVsMachine, Map.Map_Brawl_MvM, 0),
+        (GameMode.MannVsMachine, Map.Map_Brawl_RobotRidge, 1),
+        (GameMode.MannVsMachine, Map.Map_Brawl_IronGrove, 2),
+        (GameMode.MannVsMachine, Map.Map_Brawl_CrystalFactory, 3),
+        (GameMode.MannVsMachine, Map.Map_Brawl_MoonbaseSiege, 4),
+        (GameMode.MannVsMachine, Map.Map_Brawl_LastStand, 5),
+    };
+
+    /// <summary>Adds the default ticket config for every map mapConfigs does not have yet (called after Title Data is read).</summary>
+    public static void ApplyMapTicketDefaults()
+    {
+        foreach (var d in DefaultTicketCosts)
+        {
+            if (mapConfigs.ContainsKey(d.map)) continue;
+            mapConfigs[d.map] = new MapConfig { gameMode = d.mode, map = d.map, requireStick = d.cost > 0, stickPerPlay = d.cost };
+        }
     }
     
     // public static ItemConfig GetStickerWithMap(Map map)

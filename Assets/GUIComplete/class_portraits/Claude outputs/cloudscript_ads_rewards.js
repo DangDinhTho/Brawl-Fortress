@@ -1,7 +1,7 @@
 // =====================================================================
 // Brawl Fortress - rewarded-ad handlers (appended to CloudScript rev 6)
 //   ClaimDoubleReward : x2 end-game / daily reward (one claim, 10 min)
-//   GetTicketByAds    : watch ad -> tickets for a map (daily cap)
+//   GetTicketByAds    : watch ad -> tickets for a map (daily cap); args: map, mapId, amount (fallback price)
 // EndGame and AddDailyReward call savePendingDouble(...) before returning.
 // =====================================================================
 
@@ -89,7 +89,7 @@ function adsFindStickPerPlay(raw, mapName, mapId) {
                 return m.stickPerPlay > 0 ? m.stickPerPlay : 1;
         }
     } catch (e) { }
-    return 1;
+    return null; // map not listed in map_config
 }
 
 handlers.GetTicketByAds = function (args, context) {
@@ -111,15 +111,26 @@ handlers.GetTicketByAds = function (args, context) {
     if (state.count >= maxPerDay) return { messageValue: "limit" };
 
     var catalog = server.GetCatalogItems({}).Catalog || [];
-    var ticket = null;
+    // Same order as the client (UserData.GetAnyStickerWithMap): ticket tagged with the map, then "AllMaps", then any ticket,
+    // so new maps work with the existing ticket item without editing catalog tags.
+    var ticket = null, allTicket = null, anyTicket = null;
     for (var i = 0; i < catalog.length; i++) {
         var c = catalog[i];
         if ((c.ItemClass || "").toLowerCase() !== "ticket") continue;
-        if ((c.Tags || []).indexOf(mapName) >= 0) { ticket = c; break; }
+        var tags = c.Tags || [];
+        if (tags.indexOf(mapName) >= 0) { ticket = c; break; }
+        if (!allTicket && tags.indexOf("AllMaps") >= 0) allTicket = c;
+        if (!anyTicket) anyTicket = c;
     }
+    ticket = ticket || allTicket || anyTicket;
     if (!ticket) return { messageValue: "error" };
 
+    // Title Data map_config wins; for maps it does not list, use the client's price (ConfigManager defaults), clamped to 1..5
     var amount = adsFindStickPerPlay(td.map_config, mapName, mapId);
+    if (amount === null) {
+        var asked = parseInt(args && args.amount, 10);
+        amount = asked >= 1 ? Math.min(asked, 5) : 1;
+    }
     var inventory = server.GetUserInventory({ PlayFabId: currentPlayerId }).Inventory || [];
     adsAddConsumable(ticket.ItemId, amount, inventory);
 

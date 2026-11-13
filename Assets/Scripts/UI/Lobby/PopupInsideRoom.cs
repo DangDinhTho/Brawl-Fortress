@@ -310,7 +310,13 @@ public class PopupInsideRoom : MonoBehaviour
     {
         if (readyToggle.isOn && !ConfigManager.CheckSelectMap(map))
         {
-            TicketAds.Offer(map);
+            // after the ad grants the tickets, mark the player ready (what they were trying to do)
+            TicketAds.Offer(map, () =>
+            {
+                if (this == null || !PhotonNetwork.InRoom || !ConfigManager.CheckSelectMap(map)) return;
+                readyToggle.SetIsOnWithoutNotify(true);
+                OnReadyChange(true);
+            });
             readyToggle.SetIsOnWithoutNotify(false);
             ready = false;
             return;

@@ -15,8 +15,7 @@ public static class TicketAds
             return;
         }
 
-        int amount = 1;
-        if (ConfigManager.mapConfigs.TryGetValue(map, out var cfg) && cfg.stickPerPlay > 0) amount = cfg.stickPerPlay;
+        int amount = UnityEngine.Mathf.Max(1, ConfigManager.GetTicketCost(map)); // one ad = enough tickets for one match on this map
 
         GUIManager.instan.CreatePopup<PopupConfirm>(
             string.Format(LocalizationManager.Localize("ticket_by_ads_confirm"), amount), (Action)(() =>

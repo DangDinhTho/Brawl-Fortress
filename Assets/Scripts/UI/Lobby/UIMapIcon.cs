@@ -14,7 +14,14 @@ public class UIMapIcon : MonoBehaviour
     public GameMode gameMode;
     public Map map;
     public PopupSelectMap popupSelectMap;
+    [Tooltip("'N Tickets' price of this map (ConfigManager.GetTicketCost); hidden on free maps")]
     public Text txtStickRequire;
+    [Tooltip("Price text colour when the player does not own enough tickets")]
+    public Color notEnoughTicketColor = new Color(1f, 0.45f, 0.4f);
+    [Tooltip("Badge on the map picture: ticket icon + 'xN' (shown on paid maps)")]
+    public GameObject ticketBadge;
+    [Tooltip("'xN' text of the ticket badge")]
+    public TMP_Text txtTicketCost;
 
     [Header("Mode lock (ModeUnlock)")]
     [Tooltip("Overlay shown while this card's game mode is locked by level")]
@@ -24,47 +31,25 @@ public class UIMapIcon : MonoBehaviour
 
     public bool IsLocked => !ModeUnlock.IsUnlocked(gameMode);
 
-    //public void Init(Map map, GameMode gameMode, PopupSelectMap popup, bool selected)
-    //{
-    //    this.gameMode = gameMode;
-    //    popupSelectMap = popup;
-    //    this.map = map;
-    //    mapName.text = LocalizationManager.Localize(map.ToString());
-    //    mapIcon.sprite = GUIManager.instan.GetMapIcon(map);
-    //    selectedObj.SetActive(selected);
-    //    if (ConfigManager.mapConfigs.TryGetValue(map, out var mapConfig))
-    //    {
-    //        if (mapConfig.requireStick)
-    //        {
-    //            txtStickRequire.gameObject.SetActive(true);
-    //            if (mapConfig.stickPerPlay == 1)
-    //                txtStickRequire.text =
-    //                    string.Format(LocalizationManager.Localize("ticket_required"), mapConfig.stickPerPlay);
-    //            else if(mapConfig.stickPerPlay > 1)
-    //                txtStickRequire.text =
-    //                    string.Format(LocalizationManager.Localize("tickets_required"), mapConfig.stickPerPlay);
-    //        }
-    //        else
-    //        {
-    //            txtStickRequire.gameObject.SetActive(false);
-    //        }
-    //    }
-    //    else
-    //    {
-    //        txtStickRequire.gameObject.SetActive(false);
-    //    }
-    //}
+    private Color ticketColor = Color.white;
+    private bool ticketColorCached;
 
     private void Start()
     {
         selectedObj.SetActive(map == popupSelectMap.mapSelected);
         if (map == popupSelectMap.mapSelected) popupSelectMap.mapSelectedItem = this;
-        RefreshLock();
+        Refresh();
     }
 
     private void OnEnable()
     {
+        Refresh();
+    }
+
+    public void Refresh()
+    {
         RefreshLock();
+        RefreshTicket();
     }
 
     public void RefreshLock()
@@ -72,6 +57,35 @@ public class UIMapIcon : MonoBehaviour
         bool locked = IsLocked;
         if (lockObj) lockObj.SetActive(locked);
         if (locked && txtLockLevel) txtLockLevel.text = LocalizationManager.Localize("level", ModeUnlock.UnlockLevel(gameMode));
+    }
+
+    /// <summary>Shows the ticket price on paid maps (red when the player cannot afford it); hidden on free or level-locked maps.
+    /// Uses the badge on the map picture (ticketBadge: ticket icon + "x3") when assigned, else the old text line.</summary>
+    public void RefreshTicket()
+    {
+        int cost = ConfigManager.GetTicketCost(map);
+        bool show = cost > 0 && !IsLocked;
+        bool enough = !show || ConfigManager.CheckSelectMap(map);
+
+        if (ticketBadge != null)
+        {
+            if (txtStickRequire) txtStickRequire.gameObject.SetActive(false);
+            ticketBadge.SetActive(show);
+            if (show && txtTicketCost)
+            {
+                if (!ticketColorCached) { ticketColor = txtTicketCost.color; ticketColorCached = true; }
+                txtTicketCost.text = "x" + cost;
+                txtTicketCost.color = enough ? ticketColor : notEnoughTicketColor;
+            }
+            return;
+        }
+
+        if (txtStickRequire == null) return;
+        if (!ticketColorCached) { ticketColor = txtStickRequire.color; ticketColorCached = true; }
+        txtStickRequire.gameObject.SetActive(show);
+        if (!show) return;
+        txtStickRequire.text = LocalizationManager.Localize(cost == 1 ? "ticket_required" : "tickets_required", cost);
+        txtStickRequire.color = enough ? ticketColor : notEnoughTicketColor;
     }
 
     public void OnSelectMapClick()
@@ -84,7 +98,14 @@ public class UIMapIcon : MonoBehaviour
 
         if (!ConfigManager.CheckSelectMap(map))
         {
-            TicketAds.Offer(map);
+            // after the ad grants the tickets, refresh the counters and pick the map straight away
+            TicketAds.Offer(map, () =>
+            {
+                if (this == null || popupSelectMap == null) return;
+                popupSelectMap.SetTicket();
+                popupSelectMap.RefreshCards();
+                SetSelect();
+            });
             return;
         }
 
@@ -99,10 +120,12 @@ public class UIMapIcon : MonoBehaviour
             }
         }
 
-        if (ConfigManager.mapConfigs.TryGetValue(map, out var mapConfig) && mapConfig.requireStick)
+        int cost = ConfigManager.GetTicketCost(map);
+        if (cost > 0 && popupSelectMap.mapSelected != map)
         {
+            // tickets are only spent when the match starts; this just tells the price
             GUIManager.instan.CreatePopup<PopupConfirm>(
-                string.Format(string.Format(LocalizationManager.Localize("using_ticket_confirm"), mapConfig.stickPerPlay)), (Action)SetSelect);
+                string.Format(LocalizationManager.Localize("using_ticket_confirm"), cost), (Action)SetSelect);
             return;
         }
 
