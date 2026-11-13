@@ -83,5 +83,6 @@ public enum Map: byte
     Map_Brawl_MvM,
     Map_Brawl_ShowDown,
     Map_Brawl_CTF,
-    Map_Brawl_Koth
+    Map_Brawl_Koth,
+    Map_Brawl_Oasis
 }
