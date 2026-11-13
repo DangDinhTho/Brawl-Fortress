@@ -84,5 +84,10 @@ public enum Map: byte
     Map_Brawl_ShowDown,
     Map_Brawl_CTF,
     Map_Brawl_Koth,
-    Map_Brawl_Oasis
+    Map_Brawl_Oasis,
+    Map_Brawl_Cavern,
+    Map_Brawl_MoonMaze,
+    Map_Brawl_BambooTemple,
+    Map_Brawl_DustyCanyon,
+    Map_Brawl_FrontierRuins
 }

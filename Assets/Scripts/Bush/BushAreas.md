@@ -33,3 +33,8 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 | Map_Brawl_CTF (Moonlight Arena, Capture The Flag) | 12 |
 | Map_Brawl_Koth (Bamboo Forest, King Of The Hill) | 10 |
 | Map_Brawl_Oasis (Sunset Oasis) | 10 |
+| Map_Brawl_Cavern (Crystal Cavern) | 6 |
+| Map_Brawl_MoonMaze (Moonlit Maze) | 18 |
+| Map_Brawl_BambooTemple (Bamboo Temple) | 16 |
+| Map_Brawl_DustyCanyon (Dusty Canyon) | 10 |
+| Map_Brawl_FrontierRuins (Frontier Ruins) | 12 |
