@@ -154,8 +154,6 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         }
 
         SceneManager.SetActiveScene(SceneManager.GetSceneByName(map.ToString()));
-        // every map with grass/bushes gets the bush-hiding mechanic (generated if not baked)
-        BushAreaGenerator.EnsureForScene(SceneManager.GetSceneByName(map.ToString()));
         Hashtable props = new Hashtable
         {
             { TF2GameProps.PLAYER_LOADED_LEVEL, true }

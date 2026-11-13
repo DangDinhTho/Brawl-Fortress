@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -6,8 +7,7 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Turns grass / bush meshes of a map into BushArea objects.
 /// - Editor: Tools/Bush/Build Bush Areas (bakes them into the scene so they can be tweaked).
-/// - Runtime: ArenaManager calls EnsureForScene() after loading a map; if the map has no baked
-///   BushArea, they are generated automatically, so every map with grass gets the hiding mechanic.
+/// Editor-only: nothing is generated at runtime, a map only has bushes that were baked into its scene.
 /// A mesh counts as bush when its object/mesh name contains one of Keywords and it is at least MinHeight tall.
 /// </summary>
 public static class BushAreaGenerator
@@ -29,15 +29,6 @@ public static class BushAreaGenerator
         bool match = false;
         foreach (var k in Keywords) if (n.Contains(k) || mesh.Contains(k)) { match = true; break; }
         return match && r.bounds.size.y >= MinHeight;
-    }
-
-    /// <summary>Generates bushes only if the scene has none yet. Returns the number of BushArea in the scene.</summary>
-    public static int EnsureForScene(Scene scene)
-    {
-        if (!scene.IsValid() || !scene.isLoaded) return 0;
-        int existing = scene.GetRootGameObjects().Sum(g => g.GetComponentsInChildren<BushArea>(true).Length);
-        if (existing > 0) return existing;
-        return Generate(scene);
     }
 
     public static int Generate(Scene scene)
@@ -89,3 +80,4 @@ public static class BushAreaGenerator
         return count;
     }
 }
+#endif
