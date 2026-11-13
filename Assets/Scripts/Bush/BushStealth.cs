@@ -16,9 +16,11 @@ public class BushStealth : MonoBehaviour
     /// <summary>Two characters in the same (connected) bush see each other only within this range,
     /// so a long bush strip (e.g. the map border) does not reveal people at the other end.</summary>
     public static float SameBushRange = 6f;
-    public const float GhostAlpha = 0.45f;
+    public const float GhostAlpha = 0.6f;
     const float CheckInterval = 0.1f;
     const float RefreshInterval = 0.5f;
+    /// <summary>Stay 'in bush' until this far outside it, so walking along an edge does not flicker.</summary>
+    const float ExitMargin = 0.35f;
 
     enum State { Normal, Ghost, Hidden }
 
@@ -50,7 +52,13 @@ public class BushStealth : MonoBehaviour
         if (Time.unscaledTime < nextCheck) return;
         nextCheck = Time.unscaledTime + CheckInterval;
 
-        CurrentBush = (BushArea.All.Count == 0 || IsDead) ? null : BushArea.Find(Position + Vector3.up * 0.3f);
+        if (BushArea.All.Count == 0 || IsDead) CurrentBush = null;
+        else
+        {
+            Vector3 p = Position + Vector3.up * 0.3f;
+            if (CurrentBush == null || !CurrentBush.isActiveAndEnabled || !CurrentBush.Contains(p, ExitMargin))
+                CurrentBush = BushArea.Find(p);
+        }
         Apply(ComputeState());
     }
 
@@ -177,9 +185,23 @@ public class BushStealth : MonoBehaviour
             g.SetFloat("_GhostAlpha", GhostAlpha);
             g.renderQueue = 3000;
         }
+        else if (ghostShader != null && src.shader != null && !src.shader.name.Contains("Particle") && !src.shader.name.Contains("LightPlane"))
+        {
+            // other shaders (Toony Colors Pro, Mobile/Diffuse...): rebuild a ghost from their colour + texture
+            g = new Material(ghostShader) { name = src.name + "_ghost" };
+            Texture tex = src.HasProperty("_BaseMap") ? src.GetTexture("_BaseMap") : src.HasProperty("_MainTex") ? src.GetTexture("_MainTex") : null;
+            Color col = src.HasProperty("_BaseColor") ? src.GetColor("_BaseColor") : src.HasProperty("_Color") ? src.GetColor("_Color") : Color.white;
+            col.a = 1f;
+            g.SetTexture("_MainTex", tex);
+            g.SetColor("_Color", col);
+            g.SetColor("_ColorDim", col * 0.8f);
+            g.SetFloat("_CelPrimaryMode", 1); g.EnableKeyword("_CELPRIMARYMODE_SINGLE");
+            g.EnableKeyword("_TEXTUREBLENDINGMODE_MULTIPLY");
+            g.SetFloat("_GhostAlpha", GhostAlpha);
+            g.renderQueue = 3000;
+        }
         else
         {
-            // eyes and other opaque parts would show through the see-through body: hide them
             if (clearMaterial == null) clearMaterial = Resources.Load<Material>("Materials/InvisibilityMat");
             g = clearMaterial != null ? clearMaterial : src;
         }

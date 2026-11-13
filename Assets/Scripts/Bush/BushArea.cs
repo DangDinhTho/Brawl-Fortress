@@ -39,6 +39,21 @@ public class BushArea : MonoBehaviour
         return false;
     }
 
+    /// <summary>Contains test with every box grown by 'margin' on X/Z (used to leave a bush a bit later than entering).</summary>
+    public bool Contains(Vector3 point, float margin)
+    {
+        if (margin <= 0f) return Contains(point);
+        var grow = new Vector3(margin * 2f, 0f, margin * 2f);
+        var t = total; t.Expand(grow);
+        if (!t.Contains(point)) return false;
+        for (int i = 0; i < boxes.Count; i++)
+        {
+            var b = boxes[i]; b.Expand(grow);
+            if (b.Contains(point)) return true;
+        }
+        return false;
+    }
+
     /// <summary>Bush containing the point, or null.</summary>
     public static BushArea Find(Vector3 point)
     {

@@ -105,6 +105,14 @@ Shader "FlatKit/Stylized Surface Ghost"
         Pass {
             ZWrite On
             ColorMask 0
+            Offset 1, 1
+            CGPROGRAM
+            #pragma vertex vertDepth
+            #pragma fragment fragDepth
+            #include "UnityCG.cginc"
+            float4 vertDepth(float4 vertex : POSITION) : SV_POSITION { return UnityObjectToClipPos(vertex); }
+            fixed4 fragDepth() : SV_Target { return 0; }
+            ENDCG
         }
 
         CGPROGRAM
