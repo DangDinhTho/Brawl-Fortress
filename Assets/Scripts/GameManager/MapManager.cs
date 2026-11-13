@@ -80,5 +80,6 @@ public enum Map: byte
     BrawlScene,
     BrawlScene_2,
     Map_Brawl_Payload,
-    Map_Brawl_MvM
+    Map_Brawl_MvM,
+    Map_Brawl_ShowDown
 }
