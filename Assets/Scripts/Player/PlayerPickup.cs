@@ -27,12 +27,21 @@ public class PlayerPickup : MonoBehaviour
 
                 break;
             case "Flag":
-                FlagController flagController = other.transform.root.GetComponent<FlagController>();
-                if (flagController != null && flagController.team != player.team && flagController.state != FlagState.moving)
-                {
-                    flagController.Pickup(player);
-                }
+                TryPickupFlag(other);
                 break;
         }
+    }
+
+    // The trigger is bigger than the pickup distance, so keep checking while overlapping.
+    public virtual void OnTriggerStay(Collider other)
+    {
+        if (!other.CompareTag("Flag") || player.healthManager.death) return;
+        TryPickupFlag(other);
+    }
+
+    void TryPickupFlag(Collider other)
+    {
+        FlagController flagController = other.GetComponentInParent<FlagController>();
+        if (flagController != null) flagController.TryPickup(player);
     }
 }

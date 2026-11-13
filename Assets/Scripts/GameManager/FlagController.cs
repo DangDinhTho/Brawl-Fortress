@@ -6,6 +6,11 @@ using UnityEngine;
 
 public class FlagController : MonoBehaviour
 {
+    // Max horizontal distance (m) between the carrier's feet and the flag for a pickup.
+    // The pickup trigger spheres (r 1.25) are larger than this, so the distance is re-checked in OnTriggerStay.
+    public const float PickupDistance = 1.0f;
+    const string SpinePath = "bip_pelvis/bip_spine_0/bip_spine_1/bip_spine_2/bip_spine_3";
+
     public PhotonView photonView;
     public FlagState state;
     [HideInInspector]
@@ -13,8 +18,17 @@ public class FlagController : MonoBehaviour
     public LayerMask groundMask;
     public Team team;
 
+    [Header("Carry pose (on the carrier's back)")]
+    public float backOffset = 0.5f;
+    public float upOffset = -0.12f;
+    public float carryScale = 1.15f;
+
     public Action<FlagState> OnstateUpdate;
 
+    // Rotation (root space) that makes the case lie flat on the ground; used to build the carry pose.
+    static readonly Quaternion GroundRotation = Quaternion.Euler(-62f, 0, 0);
+    // Maps the lying case (thin axis = up, long axis = forward) onto an upright back pose: thin axis -> back, long axis -> up, width -> right.
+    static readonly Quaternion BackRotation = Quaternion.LookRotation(Vector3.up, Vector3.back);
 
     IEnumerator WaitBackHome()
     {
@@ -31,6 +45,20 @@ public class FlagController : MonoBehaviour
         }
     }
 
+    public bool CanBePickedBy(TF2Player player)
+    {
+        if (player == null || state == FlagState.moving || player.team == team) return false;
+        Vector3 d = transform.position - player.transform.position;
+        if (Mathf.Abs(d.y) > 2f) return false;
+        d.y = 0;
+        return d.sqrMagnitude <= PickupDistance * PickupDistance;
+    }
+
+    public void TryPickup(TF2Player player)
+    {
+        if (CanBePickedBy(player)) Pickup(player);
+    }
+
     public void Pickup(TF2Player player)
     {
         if (player.photonView.IsMine)
@@ -38,8 +66,6 @@ public class FlagController : MonoBehaviour
             Sync_Pickup(player.viewID);
         }
     }
-
-   
 
     public void OnPlayerDeath()
     {
@@ -64,8 +90,6 @@ public class FlagController : MonoBehaviour
         }
     }
 
-    
-    
     public void Sync_Pickup(int viewID)
     {
         RPC_Pickup(viewID);
@@ -77,20 +101,39 @@ public class FlagController : MonoBehaviour
         RPC_Drop(position);
         photonView.RPC(nameof(RPC_Drop), RpcTarget.Others, position);
     }
-    
+
     public void Sync_BackHome(bool success)
     {
         RPC_BackHome(success);
         photonView.RPC(nameof(RPC_BackHome), RpcTarget.Others, success);
     }
 
+    void AttachToBack(TF2Player player)
+    {
+        RemotePlayer rp = player.remotePlayer;
+        Transform body = rp != null ? rp.transform : player.transform;
+        Transform spine = null;
+        if (rp != null && rp.remoteBone != null) spine = rp.remoteBone.Find(SpinePath);
+        if (spine == null && rp != null) spine = rp.spine1;
+        if (spine == null) spine = body;
+
+        transform.SetParent(spine, true);
+        transform.rotation = body.rotation * BackRotation * GroundRotation;
+        transform.position = spine.position - body.forward * backOffset + body.up * upOffset;
+        Vector3 ls = spine.lossyScale;
+        transform.localScale = new Vector3(carryScale / Mathf.Max(ls.x, 0.0001f), carryScale / Mathf.Max(ls.y, 0.0001f), carryScale / Mathf.Max(ls.z, 0.0001f));
+    }
+
+    void ResetScale()
+    {
+        transform.localScale = Vector3.one;
+    }
+
     [PunRPC]
     public void RPC_Pickup(int viewID)
     {
         TF2Player player = PhotonView.Find(viewID).GetComponent<TF2Player>();
-        transform.parent = player.remotePlayer.remoteBone.Find("bip_pelvis/bip_spine_0/bip_spine_1/bip_spine_2/bip_spine_3");
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.Euler(0, 0, 0);
+        AttachToBack(player);
         state = FlagState.moving;
         OnstateUpdate?.Invoke(state);
         owner = player;
@@ -101,13 +144,13 @@ public class FlagController : MonoBehaviour
         }
     }
 
-
     [PunRPC]
     public void RPC_Drop(Vector3 position)
     {
         transform.parent = null;
+        ResetScale();
         transform.position = position;
-        transform.rotation = Quaternion.Euler(-62f, 0, 0);
+        transform.rotation = GroundRotation;
         state = FlagState.dropped;
         OnstateUpdate?.Invoke(state);
         owner.healthManager.OnDeath -= OnPlayerDeath;
@@ -119,14 +162,14 @@ public class FlagController : MonoBehaviour
 
         StartCoroutine(WaitBackHome());
     }
-    
-    
+
     [PunRPC]
     public void RPC_BackHome(bool sucsess)
     {
         transform.parent = null;
+        ResetScale();
         transform.position = CaptureTheFlagManager.instan.homePositions[(int)team];
-        transform.rotation = Quaternion.Euler(-62f, 0, 0);
+        transform.rotation = GroundRotation;
         state = FlagState.home;
         OnstateUpdate?.Invoke(state);
         if (owner != null)

@@ -29,12 +29,21 @@ public class BotPickup : MonoBehaviour
                 
                 break;
             case "Flag":
-                FlagController flagController = other.transform.root.GetComponent<FlagController>();
-                if (flagController != null && flagController.team != bot.team && flagController.state != FlagState.moving)
-                {
-                    flagController.Pickup(bot);
-                }
+                TryPickupFlag(other);
                 break;
         }
+    }
+
+    // The trigger sphere is bigger than the pickup distance, so keep checking while overlapping.
+    public virtual void OnTriggerStay(Collider other)
+    {
+        if (!other.CompareTag("Flag") || bot.healthManager.death) return;
+        TryPickupFlag(other);
+    }
+
+    void TryPickupFlag(Collider other)
+    {
+        FlagController flagController = other.GetComponentInParent<FlagController>();
+        if (flagController != null) flagController.TryPickup(bot);
     }
 }

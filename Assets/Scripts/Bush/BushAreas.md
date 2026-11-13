@@ -30,3 +30,5 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 | Map_Brawl_MvM | 14 |
 | Map_Brawl_Payload | 8 |
 | Map_Brawl_ShowDown (Moonlight Arena) | 12 |
+| Map_Brawl_CTF (Moonlight Arena, Capture The Flag) | 12 |
+| Map_Brawl_Koth (Bamboo Forest, King Of The Hill) | 10 |
