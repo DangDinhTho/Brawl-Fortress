@@ -138,6 +138,7 @@ public class TF2Player : MonoBehaviour
         remotePlayer.Init(this);
 
         if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
+        if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
 
         if (!isBot)
         {
