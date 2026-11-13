@@ -210,37 +210,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 16532109}
   m_Mesh: {fileID: -6936029174687224644, guid: 9d0b7e771beff4e3187322aef09e2647, type: 3}
---- !u!1 &24584533
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 24584534}
-  m_Layer: 0
-  m_Name: Bush_13_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &24584534
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 24584533}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.9992454, y: 0.070409775, z: 15.007096}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &28497587
 GameObject:
   m_ObjectHideFlags: 0
@@ -441,37 +410,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4263150826519718, guid: 159988839b3ba484ab867ba7d74f3371, type: 3}
   m_PrefabInstance: {fileID: 28868907}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &46588040
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 46588041}
-  m_Layer: 0
-  m_Name: Bush_0_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &46588041
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 46588040}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.0007546, y: 0.070409775, z: -14.992904}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &49197027
 GameObject:
   m_ObjectHideFlags: 0
@@ -2563,6 +2501,64 @@ Transform:
   - {fileID: 237147057}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &208734908
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 208734909}
+  - component: {fileID: 208734910}
+  m_Layer: 0
+  m_Name: Bush_10
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &208734909
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208734908}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.249246, y: 1.6966606, z: 11.277682}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &208734910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208734908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -11.999246, y: 1.6966606, z: 10.492904}
+    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
+  - m_Center: {x: -10.500754, y: 1.6966606, z: 10.507096}
+    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
+  - m_Center: {x: -11.992904, y: 1.6966606, z: 12.000754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -10.499246, y: 1.6966606, z: 11.992904}
+    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
+  renderers:
+  - {fileID: 439780840}
+  - {fileID: 822880475}
+  - {fileID: 51449325}
+  - {fileID: 1686865044}
 --- !u!1 &213463709
 GameObject:
   m_ObjectHideFlags: 0
@@ -2653,6 +2649,64 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 213463709}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &213522610
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 213522611}
+  - component: {fileID: 213522612}
+  m_Layer: 0
+  m_Name: Bush_4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &213522611
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 213522610}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.75, y: 1.6966606, z: -6.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &213522612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 213522610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -4.5070963, y: 1.6966606, z: -7.500755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -2.9929037, y: 1.6966606, z: -7.499245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -4.4929037, y: 1.6966606, z: -5.999245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -3.0070963, y: 1.6966606, z: -6.000755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 172893158}
+  - {fileID: 205872353}
+  - {fileID: 572655513}
+  - {fileID: 2104566909}
 --- !u!1 &213817011
 GameObject:
   m_ObjectHideFlags: 0
@@ -3014,6 +3068,95 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 249484338}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
+--- !u!1 &249553619
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 249553620}
+  - component: {fileID: 249553621}
+  m_Layer: 0
+  m_Name: Bush_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &249553620
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249553619}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.25, y: 1.6966606, z: -11.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &249553621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249553619}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -12.007096, y: 1.6966606, z: -12.000754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -10.492904, y: 1.6966606, z: -11.999246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -11.992904, y: 1.6966606, z: -10.499246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -10.507096, y: 1.6966606, z: -10.500754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1970605851}
+  - {fileID: 668732806}
+  - {fileID: 903971056}
+  - {fileID: 1376506251}
+--- !u!1 &255956661
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 255956662}
+  m_Layer: 0
+  m_Name: Bush_11_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &255956662
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 255956661}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 11.992904, y: 0.070409775, z: 11.999246}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &260685153
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3145,7 +3288,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.040349483, g: 1, b: 0, a: 1}
---- !u!1 &267816763
+--- !u!1 &266004499
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3153,28 +3296,28 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 267816764}
+  - component: {fileID: 266004500}
   m_Layer: 0
-  m_Name: Bush_9_0
+  m_Name: Bush_13_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &267816764
+--- !u!4 &266004500
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 267816763}
+  m_GameObject: {fileID: 266004499}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.4929037, y: 0.070409775, z: 7.499245}
+  m_LocalPosition: {x: 2.9992454, y: 0.070409775, z: 15.007096}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 413854848}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &277159386
 GameObject:
@@ -3266,6 +3409,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 277159386}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &286537210
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 286537211}
+  m_Layer: 0
+  m_Name: Bush_12_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &286537211
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 286537210}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.9929037, y: 0.070409775, z: 15.000754}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &287898156
 GameObject:
   m_ObjectHideFlags: 0
@@ -3380,6 +3554,64 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 287898156}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
+--- !u!1 &290011264
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 290011265}
+  - component: {fileID: 290011266}
+  m_Layer: 0
+  m_Name: Bush_11
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &290011265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 290011264}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 11.25, y: 1.6966606, z: 11.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &290011266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 290011264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 10.492904, y: 1.6966606, z: 10.499246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 12.007096, y: 1.6966606, z: 10.500754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 10.507096, y: 1.6966606, z: 12.000754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 11.992904, y: 1.6966606, z: 11.999246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 49197029}
+  - {fileID: 801147446}
+  - {fileID: 318980271}
+  - {fileID: 2021165759}
 --- !u!1 &310696985
 GameObject:
   m_ObjectHideFlags: 0
@@ -3814,6 +4046,64 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4194871152704900, guid: f8689626f34de81418202c627780dd27, type: 3}
   m_PrefabInstance: {fileID: 332164377}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &362526810
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 362526811}
+  - component: {fileID: 362526812}
+  m_Layer: 0
+  m_Name: Bush_5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &362526811
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362526810}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.75, y: 1.6966606, z: -6.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &362526812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362526810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 3.0070963, y: 1.6966606, z: -7.499245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 4.4929037, y: 1.6966606, z: -7.500755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 2.9929037, y: 1.6966606, z: -6.000755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 4.5070963, y: 1.6966606, z: -5.999245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1269837698}
+  - {fileID: 725570012}
+  - {fileID: 1148412517}
+  - {fileID: 809770911}
 --- !u!1 &367962998
 GameObject:
   m_ObjectHideFlags: 0
@@ -4284,6 +4574,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 846094267}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &411416669
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 411416670}
+  m_Layer: 0
+  m_Name: Bush_9_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &411416670
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 411416669}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.4929037, y: 0.070409775, z: 7.499245}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &412984698
 GameObject:
   m_ObjectHideFlags: 0
@@ -4315,6 +4636,53 @@ Transform:
   m_Children:
   - {fileID: 1744776353}
   m_Father: {fileID: 809945640}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &413854847
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 413854848}
+  m_Layer: 0
+  m_Name: BushPoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &413854848
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 413854847}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1894224999}
+  - {fileID: 1958492923}
+  - {fileID: 598984580}
+  - {fileID: 2096046091}
+  - {fileID: 572841845}
+  - {fileID: 1506918719}
+  - {fileID: 991724528}
+  - {fileID: 1684495941}
+  - {fileID: 1360348012}
+  - {fileID: 737753801}
+  - {fileID: 680453459}
+  - {fileID: 411416670}
+  - {fileID: 1078417975}
+  - {fileID: 255956662}
+  - {fileID: 286537211}
+  - {fileID: 266004500}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &420733904
 GameObject:
@@ -4406,51 +4774,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 420733904}
   m_Mesh: {fileID: 4300000, guid: 7a5d41f5919c9224ebbc1d109cce4a71, type: 2}
---- !u!1 &426873623
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 426873624}
-  m_Layer: 0
-  m_Name: Bushes
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &426873624
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 426873623}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 591352775}
-  - {fileID: 1497968187}
-  - {fileID: 664059840}
-  - {fileID: 1909178973}
-  - {fileID: 916034240}
-  - {fileID: 1943121490}
-  - {fileID: 828172977}
-  - {fileID: 894323556}
-  - {fileID: 1118894012}
-  - {fileID: 1810179416}
-  - {fileID: 1742498124}
-  - {fileID: 1923134756}
-  - {fileID: 606190516}
-  - {fileID: 1125770643}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &439780838
 GameObject:
   m_ObjectHideFlags: 0
@@ -4655,6 +4978,55 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 441547848}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
+--- !u!1 &451755465
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 451755466}
+  - component: {fileID: 451755467}
+  m_Layer: 0
+  m_Name: Bush_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &451755466
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 451755465}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.0007546, y: 1.6966606, z: -14.992904}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &451755467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 451755465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -3.0007546, y: 1.6966606, z: -14.992904}
+    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
+  renderers:
+  - {fileID: 1928684787}
 --- !u!1 &456040056
 GameObject:
   m_ObjectHideFlags: 0
@@ -5798,6 +6170,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 572655511}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &572841844
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 572841845}
+  m_Layer: 0
+  m_Name: Bush_4_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &572841845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 572841844}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.0070963, y: 0.070409775, z: -6.000755}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &575009220
 GameObject:
   m_ObjectHideFlags: 0
@@ -5957,7 +6360,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 588152375}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &591352774
+--- !u!1 &598984579
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5965,92 +6368,29 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 591352775}
-  - component: {fileID: 591352776}
+  - component: {fileID: 598984580}
   m_Layer: 0
-  m_Name: Bush_0
+  m_Name: Bush_2_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &591352775
+--- !u!4 &598984580
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591352774}
+  m_GameObject: {fileID: 598984579}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.0007546, y: 1.6966606, z: -14.992904}
+  m_LocalPosition: {x: -10.507096, y: 0.070409775, z: -10.500754}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 426873624}
+  m_Father: {fileID: 413854848}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &591352776
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591352774}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -3.0007546, y: 1.6966606, z: -14.992904}
-    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
---- !u!1 &606190515
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 606190516}
-  - component: {fileID: 606190517}
-  m_Layer: 0
-  m_Name: Bush_12
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &606190516
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 606190515}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.9929037, y: 1.6966606, z: 15.000754}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &606190517
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 606190515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -2.9929037, y: 1.6966606, z: 15.000754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1001 &616388660
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6358,59 +6698,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.08962262, g: 0.60332173, b: 1, a: 1}
---- !u!1 &664059839
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 664059840}
-  - component: {fileID: 664059841}
-  m_Layer: 0
-  m_Name: Bush_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &664059840
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664059839}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.25, y: 1.6966606, z: -11.25}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &664059841
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 664059839}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -12.007096, y: 1.6966606, z: -12.000754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -10.492904, y: 1.6966606, z: -11.999246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -11.992904, y: 1.6966606, z: -10.499246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -10.507096, y: 1.6966606, z: -10.500754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &665599099
 GameObject:
   m_ObjectHideFlags: 0
@@ -6733,6 +7020,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 678742759}
   m_Mesh: {fileID: -6936029174687224644, guid: 9d0b7e771beff4e3187322aef09e2647, type: 3}
+--- !u!1 &680453458
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 680453459}
+  m_Layer: 0
+  m_Name: Bush_8_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &680453459
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680453458}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.4929037, y: 0.08160658, z: 6.000755}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &698329685
 GameObject:
   m_ObjectHideFlags: 0
@@ -6914,6 +7232,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 725570010}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &737753800
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 737753801}
+  m_Layer: 0
+  m_Name: Bush_7_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &737753801
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 737753800}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 13.507096, y: 0.10349495, z: 1.5007547}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &760174222
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7886,63 +8235,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.040349483, g: 1, b: 0, a: 1}
---- !u!1 &828172976
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 828172977}
-  - component: {fileID: 828172978}
-  m_Layer: 0
-  m_Name: Bush_6
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &828172977
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 828172976}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.75, y: 1.6966606, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &828172978
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 828172976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -13.492904, y: 1.6966606, z: -1.4992453}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -12.007096, y: 1.6966606, z: -1.5007547}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -13.507096, y: 1.6966606, z: -0.00075468066}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -11.992904, y: 1.6966606, z: 0.0007546824}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -13.507096, y: 1.6966606, z: 1.4992453}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -11.992904, y: 1.6966606, z: 1.5007547}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &830006812
 GameObject:
   m_ObjectHideFlags: 0
@@ -8323,6 +8615,70 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 834324192}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &836493877
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 836493878}
+  - component: {fileID: 836493879}
+  m_Layer: 0
+  m_Name: Bush_6
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &836493878
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836493877}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -12.75, y: 1.6966606, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &836493879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836493877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -13.492904, y: 1.6966606, z: -1.4992453}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -12.007096, y: 1.6966606, z: -1.5007547}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -13.507096, y: 1.6966606, z: -0.00075468066}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -11.992904, y: 1.6966606, z: 0.0007546824}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -13.507096, y: 1.6966606, z: 1.4992453}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -11.992904, y: 1.6966606, z: 1.5007547}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1480102333}
+  - {fileID: 1466679425}
+  - {fileID: 1519499825}
+  - {fileID: 555532760}
+  - {fileID: 1016924192}
+  - {fileID: 277159388}
 --- !u!1 &846094265
 GameObject:
   m_ObjectHideFlags: 0
@@ -8940,7 +9296,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 886793423}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &894323555
+--- !u!1 &897264332
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8948,8 +9304,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 894323556}
-  - component: {fileID: 894323557}
+  - component: {fileID: 897264333}
+  - component: {fileID: 897264334}
   m_Layer: 0
   m_Name: Bush_7
   m_TagString: Untagged
@@ -8957,28 +9313,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &894323556
+--- !u!4 &897264333
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 894323555}
+  m_GameObject: {fileID: 897264332}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 12.75, y: 1.6966606, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 426873624}
+  m_Father: {fileID: 1972180225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &894323557
+--- !u!114 &897264334
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 894323555}
+  m_GameObject: {fileID: 897264332}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
@@ -8997,6 +9353,13 @@ MonoBehaviour:
     m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
   - m_Center: {x: 13.507096, y: 1.6966606, z: 1.5007547}
     m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1202268641}
+  - {fileID: 81881024}
+  - {fileID: 997720517}
+  - {fileID: 830006814}
+  - {fileID: 761532802}
+  - {fileID: 1953172457}
 --- !u!1 &903971054
 GameObject:
   m_ObjectHideFlags: 0
@@ -9312,59 +9675,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.040349483, g: 1, b: 0, a: 1}
---- !u!1 &916034239
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 916034240}
-  - component: {fileID: 916034241}
-  m_Layer: 0
-  m_Name: Bush_4
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &916034240
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 916034239}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.75, y: 1.6966606, z: -6.75}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &916034241
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 916034239}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -4.5070963, y: 1.6966606, z: -7.500755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -2.9929037, y: 1.6966606, z: -7.499245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -4.4929037, y: 1.6966606, z: -5.999245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -3.0070963, y: 1.6966606, z: -6.000755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &925757298
 GameObject:
   m_ObjectHideFlags: 0
@@ -9480,37 +9790,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 925757298}
   m_Mesh: {fileID: -69760931014144829, guid: 4643c2b3b89cb4f5d8d5e78a7aefcfff, type: 3}
---- !u!1 &934509841
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 934509842}
-  m_Layer: 0
-  m_Name: Bush_10_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &934509842
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 934509841}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.500754, y: 0.070409775, z: 10.507096}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &935691532
 GameObject:
   m_ObjectHideFlags: 0
@@ -9997,6 +10276,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 989398072}
   m_Mesh: {fileID: 4300000, guid: 7a5d41f5919c9224ebbc1d109cce4a71, type: 2}
+--- !u!1 &991724527
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 991724528}
+  m_Layer: 0
+  m_Name: Bush_6_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &991724528
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 991724527}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -13.507096, y: 0.2468283, z: -0.00075468066}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &997720515
 GameObject:
   m_ObjectHideFlags: 0
@@ -11208,6 +11518,64 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1048706174}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
+--- !u!1 &1050888444
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1050888445}
+  - component: {fileID: 1050888446}
+  m_Layer: 0
+  m_Name: Bush_9
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1050888445
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1050888444}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.75, y: 1.6966606, z: 6.75}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1050888446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1050888444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 2.9929037, y: 1.6966606, z: 5.999245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 4.5070963, y: 1.6966606, z: 6.000755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 3.0070963, y: 1.6966606, z: 7.500755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 4.4929037, y: 1.6966606, z: 7.499245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1574937898}
+  - {fileID: 1260308123}
+  - {fileID: 213463711}
+  - {fileID: 1138041149}
 --- !u!1 &1053879651
 GameObject:
   m_ObjectHideFlags: 0
@@ -11725,6 +12093,37 @@ Transform:
   - {fileID: 1218600692}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1078417974
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1078417975}
+  m_Layer: 0
+  m_Name: Bush_10_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1078417975
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078417974}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.500754, y: 0.070409775, z: 10.507096}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1078916901
 GameObject:
   m_ObjectHideFlags: 0
@@ -11839,37 +12238,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1078916901}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1086644555
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1086644556}
-  m_Layer: 0
-  m_Name: Bush_4_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1086644556
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1086644555}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.0070963, y: 0.070409775, z: -6.000755}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1094910632
 GameObject:
   m_ObjectHideFlags: 0
@@ -12160,106 +12528,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4194871152704900, guid: f8689626f34de81418202c627780dd27, type: 3}
   m_PrefabInstance: {fileID: 1108543524}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1118894011
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1118894012}
-  - component: {fileID: 1118894013}
-  m_Layer: 0
-  m_Name: Bush_8
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1118894012
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1118894011}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.75, y: 1.6966606, z: 6.7499995}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1118894013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1118894011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -4.4929037, y: 1.6966606, z: 6.000755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -3.0070963, y: 1.6966606, z: 5.999245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -4.5070963, y: 1.6966606, z: 7.499245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -2.9929037, y: 1.6966606, z: 7.500755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
---- !u!1 &1125770642
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1125770643}
-  - component: {fileID: 1125770644}
-  m_Layer: 0
-  m_Name: Bush_13
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1125770643
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125770642}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.9992454, y: 1.6966606, z: 15.007096}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1125770644
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125770642}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 2.9992454, y: 1.6966606, z: 15.007096}
-    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
 --- !u!1 &1138041147
 GameObject:
   m_ObjectHideFlags: 0
@@ -12667,6 +12935,55 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.08962262, g: 0.60332173, b: 1, a: 1}
+--- !u!1 &1179566650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1179566651}
+  - component: {fileID: 1179566652}
+  m_Layer: 0
+  m_Name: Bush_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1179566651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179566650}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.0070963, y: 1.6966606, z: -14.999246}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1179566652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179566650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 3.0070963, y: 1.6966606, z: -14.999246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 311586592}
 --- !u!1 &1183853335
 GameObject:
   m_ObjectHideFlags: 0
@@ -12986,6 +13303,55 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1202268639}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &1212107757
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1212107758}
+  - component: {fileID: 1212107759}
+  m_Layer: 0
+  m_Name: Bush_13
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1212107758
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1212107757}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.9992454, y: 1.6966606, z: 15.007096}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1212107759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1212107757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 2.9992454, y: 1.6966606, z: 15.007096}
+    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
+  renderers:
+  - {fileID: 884217390}
 --- !u!1 &1218600691
 GameObject:
   m_ObjectHideFlags: 0
@@ -13727,37 +14093,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1283963760}
   m_Mesh: {fileID: -6936029174687224644, guid: 9d0b7e771beff4e3187322aef09e2647, type: 3}
---- !u!1 &1286577598
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1286577599}
-  m_Layer: 0
-  m_Name: Bush_6_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1286577599
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1286577598}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.992904, y: 0.13766763, z: 1.5007547}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1294762374
 GameObject:
   m_ObjectHideFlags: 0
@@ -14353,7 +14688,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1356656564}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
---- !u!1 &1359925435
+--- !u!1 &1360348011
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -14361,28 +14696,28 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1359925436}
+  - component: {fileID: 1360348012}
   m_Layer: 0
-  m_Name: Bush_6_0
+  m_Name: Bush_7_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1359925436
+--- !u!4 &1360348012
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1359925435}
+  m_GameObject: {fileID: 1360348011}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -13.507096, y: 0.2468283, z: -0.00075468066}
+  m_LocalPosition: {x: 12.007096, y: 0.11765976, z: 0.0007546824}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 413854848}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1364732021
 GameObject:
@@ -14968,37 +15303,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1459975147}
   m_Mesh: {fileID: 4300000, guid: 7a5d41f5919c9224ebbc1d109cce4a71, type: 2}
---- !u!1 &1461340965
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1461340966}
-  m_Layer: 0
-  m_Name: Bush_2_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1461340966
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1461340965}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.507096, y: 0.070409775, z: -10.500754}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1461884200
 GameObject:
   m_ObjectHideFlags: 0
@@ -15590,53 +15894,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1495840798}
   m_Mesh: {fileID: 2578096556183617526, guid: 70e2049b030f3471887012426b5a0990, type: 3}
---- !u!1 &1497968186
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1497968187}
-  - component: {fileID: 1497968188}
-  m_Layer: 0
-  m_Name: Bush_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1497968187
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1497968186}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.0070963, y: 1.6966606, z: -14.999246}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1497968188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1497968186}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 3.0070963, y: 1.6966606, z: -14.999246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &1501495549
 GameObject:
   m_ObjectHideFlags: 0
@@ -15682,6 +15939,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.040349483, g: 1, b: 0, a: 1}
+--- !u!1 &1506918718
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1506918719}
+  m_Layer: 0
+  m_Name: Bush_5_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1506918719
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506918718}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.0070963, y: 0.09836284, z: -7.499245}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1510609849
 GameObject:
   m_ObjectHideFlags: 0
@@ -15969,53 +16257,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1519499823}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
---- !u!1 &1521731492
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1521731493}
-  m_Layer: 0
-  m_Name: BushPoints
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1521731493
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1521731492}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 46588041}
-  - {fileID: 1701813208}
-  - {fileID: 1461340966}
-  - {fileID: 1891026561}
-  - {fileID: 1086644556}
-  - {fileID: 1839988109}
-  - {fileID: 1359925436}
-  - {fileID: 1286577599}
-  - {fileID: 2006670114}
-  - {fileID: 1533869737}
-  - {fileID: 1618983017}
-  - {fileID: 267816764}
-  - {fileID: 934509842}
-  - {fileID: 1937316414}
-  - {fileID: 1654765822}
-  - {fileID: 24584534}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1532502668
 GameObject:
   m_ObjectHideFlags: 0
@@ -16130,37 +16371,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1532502668}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1533869736
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1533869737}
-  m_Layer: 0
-  m_Name: Bush_7_1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1533869737
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1533869736}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 13.507096, y: 0.10349495, z: 1.5007547}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1536178118
 GameObject:
   m_ObjectHideFlags: 0
@@ -16609,22 +16819,22 @@ MonoBehaviour:
   - {fileID: 826943088}
   - {fileID: 1473647247}
   BushPoints:
-  - {fileID: 46588041}
-  - {fileID: 1701813208}
-  - {fileID: 1461340966}
-  - {fileID: 1891026561}
-  - {fileID: 1086644556}
-  - {fileID: 1839988109}
-  - {fileID: 1359925436}
-  - {fileID: 1286577599}
-  - {fileID: 2006670114}
-  - {fileID: 1533869737}
-  - {fileID: 1618983017}
-  - {fileID: 267816764}
-  - {fileID: 934509842}
-  - {fileID: 1937316414}
-  - {fileID: 1654765822}
-  - {fileID: 24584534}
+  - {fileID: 1894224999}
+  - {fileID: 1958492923}
+  - {fileID: 598984580}
+  - {fileID: 2096046091}
+  - {fileID: 572841845}
+  - {fileID: 1506918719}
+  - {fileID: 991724528}
+  - {fileID: 1684495941}
+  - {fileID: 1360348012}
+  - {fileID: 737753801}
+  - {fileID: 680453459}
+  - {fileID: 411416670}
+  - {fileID: 1078417975}
+  - {fileID: 255956662}
+  - {fileID: 286537211}
+  - {fileID: 266004500}
   bushPatrolChance: 0.45
 --- !u!4 &1549561000
 Transform:
@@ -16931,6 +17141,55 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4263150826519718, guid: 159988839b3ba484ab867ba7d74f3371, type: 3}
   m_PrefabInstance: {fileID: 1570460315}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1572979706
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1572979707}
+  - component: {fileID: 1572979708}
+  m_Layer: 0
+  m_Name: Bush_12
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1572979707
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1572979706}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.9929037, y: 1.6966606, z: 15.000754}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1972180225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1572979708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1572979706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -2.9929037, y: 1.6966606, z: 15.000754}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1042898138}
 --- !u!1 &1573252563
 GameObject:
   m_ObjectHideFlags: 0
@@ -17560,7 +17819,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1605523399}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1618983016
+--- !u!1 &1618706083
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -17568,29 +17827,56 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1618983017}
+  - component: {fileID: 1618706084}
+  - component: {fileID: 1618706085}
   m_Layer: 0
-  m_Name: Bush_8_0
+  m_Name: Bush_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1618983017
+--- !u!4 &1618706084
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618983016}
+  m_GameObject: {fileID: 1618706083}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.4929037, y: 0.08160658, z: 6.000755}
+  m_LocalPosition: {x: 11.25, y: 1.6966606, z: -11.276928}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 1972180225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1618706085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1618706083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: 10.500754, y: 1.6966606, z: -12.007096}
+    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
+  - m_Center: {x: 12.007096, y: 1.6966606, z: -11.999246}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: 10.499246, y: 1.6966606, z: -10.492904}
+    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
+  - m_Center: {x: 12.000754, y: 1.6966606, z: -10.507096}
+    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
+  renderers:
+  - {fileID: 788882889}
+  - {fileID: 2077607331}
+  - {fileID: 1773468124}
+  - {fileID: 834324194}
 --- !u!1 &1620633851
 GameObject:
   m_ObjectHideFlags: 0
@@ -17994,7 +18280,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1633140187}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1654765821
+--- !u!1 &1684495940
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -18002,28 +18288,28 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1654765822}
+  - component: {fileID: 1684495941}
   m_Layer: 0
-  m_Name: Bush_12_0
+  m_Name: Bush_6_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1654765822
+--- !u!4 &1684495941
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1654765821}
+  m_GameObject: {fileID: 1684495940}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.9929037, y: 0.070409775, z: 15.000754}
+  m_LocalPosition: {x: -11.992904, y: 0.13766763, z: 1.5007547}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 413854848}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1686865042
 GameObject:
@@ -18115,37 +18401,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1686865042}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
---- !u!1 &1701813207
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1701813208}
-  m_Layer: 0
-  m_Name: Bush_1_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1701813208
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1701813207}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.0070963, y: 0.070409775, z: -14.999246}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1705072673
 GameObject:
   m_ObjectHideFlags: 0
@@ -18583,59 +18838,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1737861540}
   m_Mesh: {fileID: -69760931014144829, guid: 4643c2b3b89cb4f5d8d5e78a7aefcfff, type: 3}
---- !u!1 &1742498123
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1742498124}
-  - component: {fileID: 1742498125}
-  m_Layer: 0
-  m_Name: Bush_10
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1742498124
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742498123}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.249246, y: 1.6966606, z: 11.277682}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1742498125
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742498123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: -11.999246, y: 1.6966606, z: 10.492904}
-    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
-  - m_Center: {x: -10.500754, y: 1.6966606, z: 10.507096}
-    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
-  - m_Center: {x: -11.992904, y: 1.6966606, z: 12.000754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: -10.499246, y: 1.6966606, z: 11.992904}
-    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
 --- !u!1 &1744776352
 GameObject:
   m_ObjectHideFlags: 0
@@ -19291,59 +19493,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1779783978}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1810179415
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1810179416}
-  - component: {fileID: 1810179417}
-  m_Layer: 0
-  m_Name: Bush_9
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1810179416
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810179415}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.75, y: 1.6966606, z: 6.75}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1810179417
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810179415}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 2.9929037, y: 1.6966606, z: 5.999245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 4.5070963, y: 1.6966606, z: 6.000755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 3.0070963, y: 1.6966606, z: 7.500755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 4.4929037, y: 1.6966606, z: 7.499245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &1817823016
 GameObject:
   m_ObjectHideFlags: 0
@@ -19988,7 +20137,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1837069172}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1839988108
+--- !u!1 &1840157377
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -19996,29 +20145,56 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1839988109}
+  - component: {fileID: 1840157378}
+  - component: {fileID: 1840157379}
   m_Layer: 0
-  m_Name: Bush_5_0
+  m_Name: Bush_8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1839988109
+--- !u!4 &1840157378
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1839988108}
+  m_GameObject: {fileID: 1840157377}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.0070963, y: 0.09836284, z: -7.499245}
+  m_LocalPosition: {x: -3.75, y: 1.6966606, z: 6.7499995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 1972180225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1840157379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1840157377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BushArea
+  boxes:
+  - m_Center: {x: -4.4929037, y: 1.6966606, z: 6.000755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -3.0070963, y: 1.6966606, z: 5.999245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -4.5070963, y: 1.6966606, z: 7.499245}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  - m_Center: {x: -2.9929037, y: 1.6966606, z: 7.500755}
+    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
+  renderers:
+  - {fileID: 1569703903}
+  - {fileID: 1228589858}
+  - {fileID: 516580198}
+  - {fileID: 1356656566}
 --- !u!1 &1849245128
 GameObject:
   m_ObjectHideFlags: 0
@@ -20240,7 +20416,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1882326691}
   m_Mesh: {fileID: 4300000, guid: 7a5d41f5919c9224ebbc1d109cce4a71, type: 2}
---- !u!1 &1891026560
+--- !u!1 &1894224998
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20248,28 +20424,28 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1891026561}
+  - component: {fileID: 1894224999}
   m_Layer: 0
-  m_Name: Bush_3_0
+  m_Name: Bush_0_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1891026561
+--- !u!4 &1894224999
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1891026560}
+  m_GameObject: {fileID: 1894224998}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.000754, y: 0.070409775, z: -10.507096}
+  m_LocalPosition: {x: -3.0007546, y: 0.070409775, z: -14.992904}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1521731493}
+  m_Father: {fileID: 413854848}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1895990883
 GameObject:
@@ -20384,59 +20560,6 @@ Transform:
   - {fileID: 1059848771}
   m_Father: {fileID: 2064552482}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1909178972
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1909178973}
-  - component: {fileID: 1909178974}
-  m_Layer: 0
-  m_Name: Bush_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1909178973
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909178972}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.25, y: 1.6966606, z: -11.276928}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1909178974
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909178972}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 10.500754, y: 1.6966606, z: -12.007096}
-    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
-  - m_Center: {x: 12.007096, y: 1.6966606, z: -11.999246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 10.499246, y: 1.6966606, z: -10.492904}
-    m_Extent: {x: 0.75019336, y: 2.2296863, z: 0.6884881}
-  - m_Center: {x: 12.000754, y: 1.6966606, z: -10.507096}
-    m_Extent: {x: 0.7501933, y: 2.2296863, z: 0.68848807}
 --- !u!1 &1912594932
 GameObject:
   m_ObjectHideFlags: 0
@@ -20551,59 +20674,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1912594932}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1923134755
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1923134756}
-  - component: {fileID: 1923134757}
-  m_Layer: 0
-  m_Name: Bush_11
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1923134756
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1923134755}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.25, y: 1.6966606, z: 11.25}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1923134757
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1923134755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 10.492904, y: 1.6966606, z: 10.499246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 12.007096, y: 1.6966606, z: 10.500754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 10.507096, y: 1.6966606, z: 12.000754}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 11.992904, y: 1.6966606, z: 11.999246}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1 &1928684785
 GameObject:
   m_ObjectHideFlags: 0
@@ -20694,37 +20764,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1928684785}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
---- !u!1 &1937316413
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1937316414}
-  m_Layer: 0
-  m_Name: Bush_11_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1937316414
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1937316413}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 11.992904, y: 0.070409775, z: 11.999246}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1938248850
 GameObject:
   m_ObjectHideFlags: 0
@@ -20940,59 +20979,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1939591964}
   m_Mesh: {fileID: 4068819194752441167, guid: ad82c5049c72343dc8ea8683c18b8df6, type: 3}
---- !u!1 &1943121489
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1943121490}
-  - component: {fileID: 1943121491}
-  m_Layer: 0
-  m_Name: Bush_5
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1943121490
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1943121489}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.75, y: 1.6966606, z: -6.75}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 426873624}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1943121491
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1943121489}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea2f34e6e33660340b6498a6c83a207c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BushArea
-  boxes:
-  - m_Center: {x: 3.0070963, y: 1.6966606, z: -7.499245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 4.4929037, y: 1.6966606, z: -7.500755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 2.9929037, y: 1.6966606, z: -6.000755}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
-  - m_Center: {x: 4.5070963, y: 1.6966606, z: -5.999245}
-    m_Extent: {x: 0.68848825, y: 2.2296863, z: 0.7501934}
 --- !u!1001 &1946794284
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21259,6 +21245,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1954305407}
   m_Mesh: {fileID: 4300000, guid: 7a5d41f5919c9224ebbc1d109cce4a71, type: 2}
+--- !u!1 &1958492922
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1958492923}
+  m_Layer: 0
+  m_Name: Bush_1_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1958492923
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1958492922}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.0070963, y: 0.070409775, z: -14.999246}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1970605849
 GameObject:
   m_ObjectHideFlags: 0
@@ -21349,6 +21366,51 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1970605849}
   m_Mesh: {fileID: 4300000, guid: 4d5b11891e90bd147961c10bcc8eb975, type: 2}
+--- !u!1 &1972180224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1972180225}
+  m_Layer: 0
+  m_Name: Bushes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1972180225
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1972180224}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 451755466}
+  - {fileID: 1179566651}
+  - {fileID: 249553620}
+  - {fileID: 1618706084}
+  - {fileID: 213522611}
+  - {fileID: 362526811}
+  - {fileID: 836493878}
+  - {fileID: 897264333}
+  - {fileID: 1840157378}
+  - {fileID: 1050888445}
+  - {fileID: 208734909}
+  - {fileID: 290011265}
+  - {fileID: 1572979707}
+  - {fileID: 1212107758}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1974090087
 GameObject:
   m_ObjectHideFlags: 0
@@ -21394,37 +21456,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 0.08962262, g: 0.60332173, b: 1, a: 1}
---- !u!1 &2006670113
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2006670114}
-  m_Layer: 0
-  m_Name: Bush_7_0
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2006670114
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2006670113}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.007096, y: 0.11765976, z: 0.0007546824}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1521731493}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2021165757
 GameObject:
   m_ObjectHideFlags: 0
@@ -22437,6 +22468,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2082525891}
   m_Mesh: {fileID: 8327036091465664550, guid: 251345886a7d24fd6a8a4a7d15c538ff, type: 3}
+--- !u!1 &2096046090
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2096046091}
+  m_Layer: 0
+  m_Name: Bush_3_0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2096046091
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2096046090}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.000754, y: 0.070409775, z: -10.507096}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413854848}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2104566907
 GameObject:
   m_ObjectHideFlags: 0
@@ -22765,5 +22827,5 @@ SceneRoots:
   - {fileID: 1938248851}
   - {fileID: 846094267}
   - {fileID: 206159073}
-  - {fileID: 426873624}
-  - {fileID: 1521731493}
+  - {fileID: 1972180225}
+  - {fileID: 413854848}

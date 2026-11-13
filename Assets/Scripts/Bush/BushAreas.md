@@ -72,3 +72,8 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 ## Hiding needs most of the body inside (2026-11-13)
 - Before: a character was hidden as soon as its centre point touched a bush box (plus 0.35 m exit margin).
 - Now `BushStealth` samples the character footprint (disc of `BodyRadius` 0.5 m, 17 points) and becomes hidden when `EnterCoverage` = 80% of it is inside one bush; revealed again when less than `ExitCoverage` = 80% is inside (about 20% of the body out; Tho, 2026-11-13). `CurrentBush` = bush covering most of the footprint. Bots (FieldOfView) use the same rule.
+
+## Brawl Stars reveal zone (2026-11-13, replaces the ghost / same-bush rules)
+- Me / teammates in a bush: the character is drawn normally (no ghost material any more). Instead `BushGrassFade` (created automatically) fades the grass tiles within `BushStealth.RevealRadius` (2.4 m) of every character of the local viewer's team that is in a bush (`FadedAlpha` 0.35, `FadeTime` 0.15 s, shader `FlatKit/Stylized Surface Ghost` via `_GhostAlpha` property block).
+- An enemy in a bush is hidden from a team unless it is inside the reveal zone (RevealRadius) of a character of that team that is itself in a bush. `SameBushRange` was removed. `RevealDistance` (0 = off) still reveals enemies close to the observer regardless of bushes.
+- The fade needs `BushArea.renderers` (grass renderers of each bush), filled by `Tools/Bush/Build Bush Areas`. All 33 bush maps were rebaked on 2026-11-13 (bush counts unchanged).

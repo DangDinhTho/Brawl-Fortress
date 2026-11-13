@@ -11,6 +11,9 @@ public class BushArea : MonoBehaviour
 
     [Tooltip("World-space footprint boxes of the tiles in this bush")]
     public List<Bounds> boxes = new List<Bounds>();
+
+    [Tooltip("Grass / bush renderers of this bush (baked). Faded around allies by BushGrassFade.")]
+    public List<Renderer> renderers = new List<Renderer>();
     private Bounds total;
 
     private void OnEnable()

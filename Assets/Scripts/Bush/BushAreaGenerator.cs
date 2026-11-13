@@ -39,10 +39,10 @@ public static class BushAreaGenerator
             if (Application.isPlaying) Object.Destroy(old); else Object.DestroyImmediate(old);
         }
 
-        var tiles = scene.GetRootGameObjects()
+        var tileRenderers = scene.GetRootGameObjects()
             .SelectMany(g => g.GetComponentsInChildren<MeshRenderer>(true))
-            .Where(IsBushRenderer)
-            .Select(r => r.bounds).ToList();
+            .Where(IsBushRenderer).ToList();
+        var tiles = tileRenderers.Select(r => r.bounds).ToList();
         if (tiles.Count == 0) return 0;
 
         // footprint boxes: XZ of the mesh (at least MinFootprint), Y from just below the ground to above the head
@@ -75,6 +75,7 @@ public static class BushAreaGenerator
             go.transform.position = total.center;
             var area = go.AddComponent<BushArea>();
             area.boxes = list;
+            area.renderers = grp.Select(i => (Renderer)tileRenderers[i]).ToList();
             area.RecalculateTotal();
         }
         return count;

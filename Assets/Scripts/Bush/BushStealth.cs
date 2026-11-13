@@ -4,21 +4,21 @@ using UnityEngine;
 /// <summary>
 /// Brawl-Stars-like bush hiding, added at runtime to every TF2Player.
 /// Local viewer rules (computed on every client, no network traffic):
-///  - me / teammates in a bush  -> drawn see-through (ghost)
-///  - enemy in a bush           -> not drawn (model, weapon, header UI), unless the local player
-///                                 is in the SAME bush, or closer than RevealDistance
+///  - me / teammates in a bush  -> drawn normally; the grass within RevealRadius around them fades (BushGrassFade)
+///  - enemy in a bush           -> not drawn (model, weapon, header UI), unless it is inside the reveal zone
+///                                 (RevealRadius) of one of my team's characters that is itself in a bush
+/// 'In a bush' = about 80% of the body inside (EnterCoverage / ExitCoverage).
 /// Bots / sentries use IsHiddenFrom() in FieldOfView, so they do not target hidden players either.
 /// </summary>
 public class BushStealth : MonoBehaviour
 {
-    /// <summary>Enemies closer than this are visible even in a bush. 0 = only the same-bush rule.</summary>
+    /// <summary>All live BushStealth components (players and bots).</summary>
+    public static readonly List<BushStealth> AllStealth = new List<BushStealth>();
+    /// <summary>Radius of the zone around a character in a bush: grass fades for its team and enemies inside are revealed to its team.</summary>
+    public static float RevealRadius = 2.4f;
+    /// <summary>Enemies closer than this are visible even in a bush, whether or not anyone is in a bush. 0 = off.</summary>
     public static float RevealDistance = 0f;
-    /// <summary>Two characters in the same (connected) bush see each other only within this range,
-    /// so a long bush strip (e.g. the map border) does not reveal people at the other end.</summary>
-    public static float SameBushRange = 6f;
-    public const float GhostAlpha = 0.6f;
     const float CheckInterval = 0.1f;
-    const float RefreshInterval = 0.5f;
     /// <summary>Footprint radius of a character used to measure how much of it is inside a bush.</summary>
     public static float BodyRadius = 0.5f;  // = bot NavMeshAgent radius
     /// <summary>Share of the footprint that must be inside a bush to become hidden (0.8 = 80%).</summary>
@@ -44,21 +44,17 @@ public class BushStealth : MonoBehaviour
     private static readonly List<BushArea> tallyBush = new List<BushArea>(4);
     private static readonly List<int> tallyCount = new List<int>(4);
 
-    enum State { Normal, Ghost, Hidden }
-
     private TF2Player player;
-    private State state = State.Normal;
-    private float nextCheck, nextRefresh;
+    private bool hidden;
+    private float nextCheck;
     private readonly List<Renderer> renderers = new List<Renderer>();
-    private readonly Dictionary<Renderer, (Material[] original, Material[] ghost)> ghosted = new Dictionary<Renderer, (Material[], Material[])>();
-    private readonly Dictionary<Material, Material> ghostCache = new Dictionary<Material, Material>();
     private CanvasGroup headerGroup;
-
-    private static Shader ghostShader;
-    private static Material clearMaterial;
 
     public BushArea CurrentBush { get; private set; }
     public Team Team => player != null ? player.team : Team.None;
+    public bool IsDead => player == null || player.healthManager == null || player.healthManager.death;
+    /// <summary>True when this character is in a bush and alive: its reveal zone is active.</summary>
+    public bool InBush => CurrentBush != null && !IsDead;
 
     public Vector3 Position => player != null && player.remotePlayer != null ? player.remotePlayer.transform.position : transform.position;
 
@@ -67,7 +63,11 @@ public class BushStealth : MonoBehaviour
         player = GetComponent<TF2Player>();
     }
 
-    private bool IsDead => player == null || player.healthManager == null || player.healthManager.death;
+    private void OnEnable()
+    {
+        if (!AllStealth.Contains(this)) AllStealth.Add(this);
+        BushGrassFade.Ensure();
+    }
 
     private void Update()
     {
@@ -87,7 +87,7 @@ public class BushStealth : MonoBehaviour
                 if (best != null && cov >= EnterCoverage) CurrentBush = best;
             }
         }
-        Apply(ComputeState());
+        SetHidden(ComputeHidden());
     }
 
     /// <summary>Share (0..1) of a character footprint centred at p that lies inside the bush.</summary>
@@ -120,71 +120,57 @@ public class BushStealth : MonoBehaviour
         return best;
     }
 
-    private State ComputeState()
+    private bool ComputeHidden()
     {
-        if (CurrentBush == null) return State.Normal;
+        if (CurrentBush == null) return false;
         var arena = ArenaManager.Instance;
         TF2Player viewer = arena != null ? arena.mainPlayer : null;
-        if (viewer == null) return State.Normal;
-        if (player.team == viewer.team) return State.Ghost;
-
+        if (viewer == null || player.team == viewer.team) return false;   // me / teammates: always drawn normally
         var viewerStealth = viewer.GetComponent<BushStealth>();
-        BushArea viewerBush = viewerStealth != null ? viewerStealth.CurrentBush : null;
         Vector3 viewerPos = viewerStealth != null ? viewerStealth.Position : viewer.transform.position;
-        return IsHiddenFrom(this, viewer.team, viewerPos, viewerBush) ? State.Hidden : State.Normal;
+        return IsHiddenFrom(this, viewer.team, viewerPos, viewerStealth != null ? viewerStealth.CurrentBush : null);
     }
 
-    /// <summary>True when 'target' is in a bush and must not be seen/targeted by an observer of the given team.</summary>
+    /// <summary>True when 'target' is in a bush and must not be seen/targeted by the observer's team:
+    /// it is revealed only inside the reveal zone (RevealRadius) of an observer-team character that is in a bush.</summary>
     public static bool IsHiddenFrom(BushStealth target, Team observerTeam, Vector3 observerPos, BushArea observerBush)
     {
         if (target == null || target.CurrentBush == null) return false;
         if (target.Team == observerTeam) return false;
-        if (observerBush != null && observerBush == target.CurrentBush
-            && (observerPos - target.Position).sqrMagnitude <= SameBushRange * SameBushRange) return false;
-        if (RevealDistance > 0f && (observerPos - target.Position).sqrMagnitude <= RevealDistance * RevealDistance) return false;
+        Vector3 tp = target.Position;
+        if (RevealDistance > 0f && FlatSqr(observerPos - tp) <= RevealDistance * RevealDistance) return false;
+        float r2 = RevealRadius * RevealRadius;
+        for (int i = 0; i < AllStealth.Count; i++)
+        {
+            var s = AllStealth[i];
+            if (s == null || s == target || s.Team != observerTeam || !s.InBush) continue;
+            if (FlatSqr(s.Position - tp) <= r2) return false;
+        }
         return true;
     }
 
+    private static float FlatSqr(Vector3 v) { v.y = 0f; return v.sqrMagnitude; }
+
     #region Visuals
-    private void Apply(State next)
+    private void SetHidden(bool hide)
     {
-        bool refresh = next != State.Normal && Time.unscaledTime >= nextRefresh;
-        if (next == state && !refresh) return;
-        nextRefresh = Time.unscaledTime + RefreshInterval;
-
-        if (next != state)
-        {
-            // leave current state
-            if (state == State.Hidden) SetRenderingOff(false);
-            if (state == State.Ghost) RestoreGhost();
-            state = next;
-        }
-
-        CollectRenderers();
-        switch (state)
-        {
-            case State.Hidden: SetRenderingOff(true); SetHeaderVisible(false); break;
-            case State.Ghost: ApplyGhost(); SetHeaderVisible(true); break;
-            default: SetHeaderVisible(true); break;
-        }
-    }
-
-    private void CollectRenderers()
-    {
-        renderers.Clear();
-        GetComponentsInChildren(true, renderers);
+        if (hide == hidden) { if (hide) SetRenderingOff(true); return; } // re-apply: weapons may have been swapped
+        hidden = hide;
+        SetRenderingOff(hide);
+        SetHeaderVisible(!hide);
     }
 
     private void SetRenderingOff(bool off)
     {
-        if (!off) CollectRenderers();
+        renderers.Clear();
+        GetComponentsInChildren(true, renderers);
         for (int i = 0; i < renderers.Count; i++)
             if (renderers[i] != null) renderers[i].forceRenderingOff = off;
     }
 
     private void SetHeaderVisible(bool visible)
     {
-        if (player.headerUIForFun == null) return;
+        if (player == null || player.headerUIForFun == null) return;
         if (headerGroup == null)
         {
             headerGroup = player.headerUIForFun.GetComponent<CanvasGroup>();
@@ -192,102 +178,14 @@ public class BushStealth : MonoBehaviour
         }
         headerGroup.alpha = visible ? 1f : 0f;
     }
-
-    private void ApplyGhost()
-    {
-        for (int i = 0; i < renderers.Count; i++)
-        {
-            var rd = renderers[i];
-            if (rd == null || rd is ParticleSystemRenderer || rd is LineRenderer || rd is TrailRenderer) continue;
-            var current = rd.sharedMaterials;
-            if (ghosted.TryGetValue(rd, out var entry) && SameMaterials(current, entry.ghost)) continue; // already ghost
-            var ghost = new Material[current.Length];
-            bool changed = false;
-            for (int m = 0; m < current.Length; m++)
-            {
-                ghost[m] = GetGhost(current[m]);
-                if (ghost[m] != current[m]) changed = true;
-            }
-            if (!changed) continue;
-            ghosted[rd] = (current, ghost);
-            rd.sharedMaterials = ghost;
-        }
-    }
-
-    private void RestoreGhost()
-    {
-        foreach (var kv in ghosted)
-        {
-            // only restore if nobody else (team colour, spy cloak) replaced the materials meanwhile
-            if (kv.Key != null && SameMaterials(kv.Key.sharedMaterials, kv.Value.ghost))
-                kv.Key.sharedMaterials = kv.Value.original;
-        }
-        ghosted.Clear();
-    }
-
-    private Material GetGhost(Material src)
-    {
-        if (src == null) return null;
-        if (src.name.StartsWith("InvisibilityMat")) return src; // spy cloak already handles it
-        if (ghostCache.TryGetValue(src, out var g)) return g;
-
-        if (ghostShader == null)
-        {
-            var template = Resources.Load<Material>("Materials/BushGhost");
-            ghostShader = template != null ? template.shader : Shader.Find("FlatKit/Stylized Surface Ghost");
-        }
-        if (src.shader != null && src.shader.name.StartsWith("FlatKit/Stylized Surface") && ghostShader != null)
-        {
-            g = new Material(src) { name = src.name + "_ghost" };
-            g.shader = ghostShader;
-            g.SetFloat("_GhostAlpha", GhostAlpha);
-            g.renderQueue = 3000;
-        }
-        else if (ghostShader != null && src.shader != null && !src.shader.name.Contains("Particle") && !src.shader.name.Contains("LightPlane"))
-        {
-            // other shaders (Toony Colors Pro, Mobile/Diffuse...): rebuild a ghost from their colour + texture
-            g = new Material(ghostShader) { name = src.name + "_ghost" };
-            Texture tex = src.HasProperty("_BaseMap") ? src.GetTexture("_BaseMap") : src.HasProperty("_MainTex") ? src.GetTexture("_MainTex") : null;
-            Color col = src.HasProperty("_BaseColor") ? src.GetColor("_BaseColor") : src.HasProperty("_Color") ? src.GetColor("_Color") : Color.white;
-            col.a = 1f;
-            g.SetTexture("_MainTex", tex);
-            g.SetColor("_Color", col);
-            g.SetColor("_ColorDim", col * 0.8f);
-            g.SetFloat("_CelPrimaryMode", 1); g.EnableKeyword("_CELPRIMARYMODE_SINGLE");
-            g.EnableKeyword("_TEXTUREBLENDINGMODE_MULTIPLY");
-            g.SetFloat("_GhostAlpha", GhostAlpha);
-            g.renderQueue = 3000;
-        }
-        else
-        {
-            if (clearMaterial == null) clearMaterial = Resources.Load<Material>("Materials/InvisibilityMat");
-            g = clearMaterial != null ? clearMaterial : src;
-        }
-        ghostCache[src] = g;
-        return g;
-    }
-
-    private static bool SameMaterials(Material[] a, Material[] b)
-    {
-        if (a == null || b == null || a.Length != b.Length) return false;
-        for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
-        return true;
-    }
     #endregion
 
     private void OnDisable()
     {
-        if (state == State.Hidden) SetRenderingOff(false);
-        if (state == State.Ghost) RestoreGhost();
+        AllStealth.Remove(this);
+        if (hidden) SetRenderingOff(false);
         SetHeaderVisible(true);
-        state = State.Normal;
+        hidden = false;
         CurrentBush = null;
-    }
-
-    private void OnDestroy()
-    {
-        foreach (var kv in ghostCache)
-            if (kv.Value != null && kv.Value != kv.Key && kv.Value != clearMaterial) Destroy(kv.Value);
-        ghostCache.Clear();
     }
 }
