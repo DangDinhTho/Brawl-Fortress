@@ -1,37 +1,22 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Fake blob shadow under a character (added to every TF2Player in CreateCharacter).
-/// The shape follows the map's main directional light, computed ONCE per map (the light never moves):
-///  - stretched along the light direction (longer when the light is low),
-///  - shifted away from the light so it starts under the feet and points the way real shadows point,
-///  - darkness = how dark real shadows are on that map: shadowStrength * direct / (direct + ambient).
-/// The disc is a child of the player, so BushStealth hides it with the character. Hidden while dead.
-/// Material: Resources/Materials/FakeShadow.mat (shader BrawlFortress/FakeShadow, procedural disc).
+/// Fake blob shadow: a small soft round dark disc centred under the character's feet
+/// (added to every TF2Player / TF2Bot / TF2Robot in CreateCharacter).
+/// Its size depends on the class (SizeFor: Heavy biggest, Scout smallest) times the model scale. The disc is a child of the player, so BushStealth hides it with the character.
+/// Hidden while dead. Material: Resources/Materials/FakeShadow.mat (shader BrawlFortress/FakeShadow).
 /// </summary>
 public class FakeShadow : MonoBehaviour
 {
-    /// <summary>Width of the shadow (m), roughly the body width.</summary>
-    public static float Size = 1.3f;
-    /// <summary>Approximate character height used to project the shadow (m).</summary>
-    public static float CharacterHeight = 2.0f;
-    /// <summary>Share of the real projected length kept by the soft blob (1 = full projection).</summary>
-    public static float StretchFactor = 0.6f;
-    /// <summary>Longest stretch allowed, as a multiple of CharacterHeight (very low sun).</summary>
-    public static float MaxStretch = 2f;
-    /// <summary>Multiplier on the computed darkness, and its limits.</summary>
-    public static float OpacityScale = 1f, MinOpacity = 0.2f, MaxOpacity = 0.8f;
-    /// <summary>Darkness used when the map has no directional light / no real-time shadows.</summary>
-    public static float FallbackOpacity = 0.45f;
-    /// <summary>Stop the character's own real-time shadow (only drawn on High+ quality / in the editor) so it is not doubled with the blob.</summary>
+    /// <summary>Darkness at the centre (0..1).</summary>
+    public static float Opacity = 0.25f;
+    /// <summary>Global multiplier on the per-class size, and limits (m).</summary>
+    public static float SizeScale = 1f, MinSize = 0.5f, MaxSize = 2.5f;
+    /// <summary>Used until / if the body cannot be measured (m).</summary>
+    public static float DefaultSize = 0.95f;
+    /// <summary>Stop the character's own real-time shadow so it is not doubled with the blob.</summary>
     public static bool DisableRealShadow = true;
-
-    // ---- computed once per map
-    static int lightSceneHandle = int.MinValue;
-    static Vector3 shadowDir = Vector3.forward;   // ground direction the shadow points to
-    static float shadowLen;                        // extra length along shadowDir (m)
-    static float opacity = 0.45f;
 
     static Mesh quad;
     static Material material;
@@ -42,10 +27,12 @@ public class FakeShadow : MonoBehaviour
     MeshRenderer rend;
     MaterialPropertyBlock mpb;
     float visible = 1f;
-    float nextShadowOff;
-    readonly System.Collections.Generic.List<Renderer> own = new System.Collections.Generic.List<Renderer>();
+    float size;
+    int measureTries;
+    float nextMeasure, nextShadowOff;
+    readonly List<Renderer> own = new List<Renderer>();
 
-    void Awake() { player = GetComponent<TF2Player>(); }
+    void Awake() { player = GetComponent<TF2Player>(); size = DefaultSize; }
 
     void Start()
     {
@@ -64,51 +51,35 @@ public class FakeShadow : MonoBehaviour
         rend.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
         rend.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         mpb = new MaterialPropertyBlock();
-        EnsureLight();
+        nextMeasure = Time.time + 0.3f; // let the animator pose the body first
     }
 
-    /// <summary>Reads the map light once per map (when the active scene changes).</summary>
-    static void EnsureLight()
+    /// <summary>Shadow diameter per class at model scale 1 (m). The skinned-mesh bounds were too loose to measure reliably.</summary>
+    public static float SizeFor(TF2Class c)
     {
-        int h = SceneManager.GetActiveScene().handle;
-        if (h == lightSceneHandle) return;
-        lightSceneHandle = h;
-
-        Light sun = RenderSettings.sun;
-        if (sun == null || sun.type != LightType.Directional || !sun.isActiveAndEnabled)
+        switch (c)
         {
-            sun = null; float best = -1f;
-            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
-            {
-                if (l.type != LightType.Directional || !l.isActiveAndEnabled) continue;
-                float w = l.intensity * l.color.grayscale;
-                if (w > best) { best = w; sun = l; }
-            }
+            case TF2Class.heavy: return 1.25f;
+            case TF2Class.soldier: return 1.0f;
+            case TF2Class.demoman: return 1.0f;
+            case TF2Class.pyro: return 1.0f;
+            case TF2Class.medic: return 0.95f;
+            case TF2Class.engineer: return 0.95f;
+            case TF2Class.sniper: return 0.9f;
+            case TF2Class.spy: return 0.85f;
+            case TF2Class.scout: return 0.8f;
+            default: return DefaultSize;
         }
-        if (sun == null) { shadowLen = 0f; opacity = FallbackOpacity; return; }
+    }
 
-        Vector3 d = sun.transform.forward;
-        float sinE = Mathf.Clamp(-d.y, 0.05f, 1f);                 // light elevation
-        Vector3 flat = new Vector3(d.x, 0f, d.z);
-        shadowDir = flat.sqrMagnitude > 1e-6f ? flat.normalized : Vector3.forward;
-        float tan = Mathf.Min(flat.magnitude / sinE, MaxStretch);  // shadow length per metre of height
-        shadowLen = CharacterHeight * tan * StretchFactor;
-
-        if (sun.shadows == LightShadows.None) { opacity = FallbackOpacity; return; }
-        float direct = sun.intensity * sun.color.linear.grayscale * sinE;
-        float ambient;
-        switch (RenderSettings.ambientMode)
-        {
-            case UnityEngine.Rendering.AmbientMode.Skybox:
-                var c = new Color[1]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up }, c);
-                ambient = c[0].grayscale; break;
-            case UnityEngine.Rendering.AmbientMode.Trilight:
-                ambient = RenderSettings.ambientSkyColor.linear.grayscale * RenderSettings.ambientIntensity; break;
-            default:
-                ambient = RenderSettings.ambientLight.linear.grayscale * RenderSettings.ambientIntensity; break;
-        }
-        float dark = sun.shadowStrength * direct / Mathf.Max(direct + ambient, 1e-4f);
-        opacity = Mathf.Clamp(dark * OpacityScale, MinOpacity, MaxOpacity);
+    /// <summary>Size from the class table, scaled by the model's scale (e.g. bigger MvM robots).</summary>
+    bool Measure()
+    {
+        if (player == null) return false;
+        float s = SizeFor(player.tF2Class);
+        if (player.remotePlayer != null) s *= player.remotePlayer.transform.lossyScale.x;
+        size = Mathf.Clamp(s * SizeScale, MinSize, MaxSize);
+        return player.tF2Class != TF2Class.None;
     }
 
     Vector3 Feet => player != null && player.remotePlayer != null ? player.remotePlayer.transform.position : transform.position;
@@ -117,10 +88,11 @@ public class FakeShadow : MonoBehaviour
     void LateUpdate()
     {
         if (disc == null) return;
-        visible = Mathf.MoveTowards(visible, Dead ? 0f : 1f, Time.deltaTime * 6f);
-        if (visible <= 0f) { if (rend.enabled) rend.enabled = false; return; }
-        if (!rend.enabled) rend.enabled = true;
-
+        if (measureTries < 3 && Time.time >= nextMeasure)
+        {
+            measureTries = Measure() ? 3 : measureTries + 1;
+            nextMeasure = Time.time + 0.5f;
+        }
         if (DisableRealShadow && Time.unscaledTime >= nextShadowOff)
         {
             nextShadowOff = Time.unscaledTime + 2f; // weapons / cosmetics can be swapped at runtime
@@ -129,14 +101,17 @@ public class FakeShadow : MonoBehaviour
                 if (own[i] != null && own[i] != rend) own[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
-        Vector3 feet = Feet;
-        float length = Size + shadowLen;
-        disc.position = new Vector3(feet.x, feet.y + 0.03f, feet.z) + shadowDir * (shadowLen * 0.5f);
-        disc.rotation = Quaternion.LookRotation(shadowDir, Vector3.up);
-        var ps = transform.lossyScale;
-        disc.localScale = new Vector3(Size / Mathf.Max(ps.x, 1e-4f), 1f / Mathf.Max(ps.y, 1e-4f), length / Mathf.Max(ps.z, 1e-4f));
+        visible = Mathf.MoveTowards(visible, Dead ? 0f : 1f, Time.deltaTime * 6f);
+        if (visible <= 0f) { if (rend.enabled) rend.enabled = false; return; }
+        if (!rend.enabled) rend.enabled = true;
 
-        mpb.SetColor(ColorId, new Color(0f, 0f, 0f, opacity * visible));
+        Vector3 feet = Feet;
+        disc.position = new Vector3(feet.x, feet.y + 0.03f, feet.z);
+        disc.rotation = Quaternion.identity;
+        var ps = transform.lossyScale;
+        disc.localScale = new Vector3(size / Mathf.Max(ps.x, 1e-4f), 1f / Mathf.Max(ps.y, 1e-4f), size / Mathf.Max(ps.z, 1e-4f));
+
+        mpb.SetColor(ColorId, new Color(0f, 0f, 0f, Opacity * visible));
         rend.SetPropertyBlock(mpb);
     }
 
@@ -151,8 +126,8 @@ public class FakeShadow : MonoBehaviour
         return m;
     }
 
-    /// <summary>Editor/debug: values computed for the current map.</summary>
-    public static string Describe() { EnsureLight(); return "dir=" + shadowDir.ToString("F2") + " extraLen=" + shadowLen.ToString("F2") + " opacity=" + opacity.ToString("F2"); }
+    /// <summary>Current diameter (m), for debugging.</summary>
+    public float CurrentSize => size;
 
     void OnDestroy() { if (disc != null) Destroy(disc.gameObject); }
 }
