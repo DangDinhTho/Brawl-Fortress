@@ -48,6 +48,7 @@ public class FieldOfView : MonoBehaviour
 
         if (rangeChecks.Length != 0)
         {
+            BushArea myBush = BushArea.All.Count > 0 ? BushArea.Find(transform.position + Vector3.up * 0.3f) : null;
             for (int i = 0; i < rangeChecks.Length; i++)
             {
                 Transform target = rangeChecks[i].transform;
@@ -62,6 +63,9 @@ public class FieldOfView : MonoBehaviour
                         HealthBase health = target.transform.root.GetComponent<HealthBase>();
                         if (health != null && !health .death && health.team != team)
                         {
+                            // hidden in a bush (and we are not in the same bush) -> cannot be seen
+                            if (BushStealth.IsHiddenFrom(health.GetComponentInParent<BushStealth>(), team, transform.position, myBush))
+                                continue;
                             canSeePlayer = true;
                             targetInField = health.transform;
                             return;

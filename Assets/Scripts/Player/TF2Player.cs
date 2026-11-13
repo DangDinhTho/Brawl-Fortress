@@ -137,6 +137,8 @@ public class TF2Player : MonoBehaviour
         playerNetwork.Init();
         remotePlayer.Init(this);
 
+        if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
+
         if (!isBot)
         {
             BoxCollider boxCollider = gameObject.GetComponent<BoxCollider>();
