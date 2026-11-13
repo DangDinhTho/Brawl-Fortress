@@ -68,3 +68,7 @@ Detection rules (`BushAreaGenerator.cs`, editor-only):
 - Runs automatically after `Tools/Bush/Build Bush Areas (Active Scene)`; alone: `Tools/Bush/Build Bush Patrol Points (Active Scene)`. Save the scene afterwards.
 - Bots: `MapManager.GetPatrolPoint()` returns a bush point with probability `bushPatrolChance` (default 0.45), otherwise a PathPoint. Used by FindRandomTarget, FindFlag, CheckFlagState, KothMoveFree.
 - Map builder NavMesh ignores bush renderers (NavMeshBuildMarkup ignoreFromBuild), so bushes are walkable for bots. Existing builder maps + Oasis were rebaked with `BrawlMapBuilder.RebakeNavMesh(id)`.
+
+## Hiding needs most of the body inside (2026-11-13)
+- Before: a character was hidden as soon as its centre point touched a bush box (plus 0.35 m exit margin).
+- Now `BushStealth` samples the character footprint (disc of `BodyRadius` 0.5 m, 17 points) and becomes hidden when `EnterCoverage` = 80% of it is inside one bush; revealed again when less than `ExitCoverage` = 80% is inside (about 20% of the body out; Tho, 2026-11-13). `CurrentBush` = bush covering most of the footprint. Bots (FieldOfView) use the same rule.

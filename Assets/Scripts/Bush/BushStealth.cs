@@ -19,8 +19,30 @@ public class BushStealth : MonoBehaviour
     public const float GhostAlpha = 0.6f;
     const float CheckInterval = 0.1f;
     const float RefreshInterval = 0.5f;
-    /// <summary>Stay 'in bush' until this far outside it, so walking along an edge does not flicker.</summary>
-    const float ExitMargin = 0.35f;
+    /// <summary>Footprint radius of a character used to measure how much of it is inside a bush.</summary>
+    public static float BodyRadius = 0.5f;  // = bot NavMeshAgent radius
+    /// <summary>Share of the footprint that must be inside a bush to become hidden (0.8 = 80%).</summary>
+    public static float EnterCoverage = 0.8f;
+    /// <summary>Revealed again as soon as less than this share is inside (0.8 = about 20% of the body out).
+    /// Samples come in steps of 1/17, so with 0.8 a character is hidden from 14/17 (82%) and revealed at 13/17 (76%).</summary>
+    public static float ExitCoverage = 0.8f;
+
+    // footprint sample points (unit disc): centre + inner ring of 8 + outer ring of 8
+    private static readonly Vector2[] Samples = BuildSamples();
+    private static Vector2[] BuildSamples()
+    {
+        var s = new Vector2[17];
+        s[0] = Vector2.zero;
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i * Mathf.PI / 4f;
+            s[1 + i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.55f;
+            s[9 + i] = new Vector2(Mathf.Cos(a + Mathf.PI / 8f), Mathf.Sin(a + Mathf.PI / 8f));
+        }
+        return s;
+    }
+    private static readonly List<BushArea> tallyBush = new List<BushArea>(4);
+    private static readonly List<int> tallyCount = new List<int>(4);
 
     enum State { Normal, Ghost, Hidden }
 
@@ -56,10 +78,46 @@ public class BushStealth : MonoBehaviour
         else
         {
             Vector3 p = Position + Vector3.up * 0.3f;
-            if (CurrentBush == null || !CurrentBush.isActiveAndEnabled || !CurrentBush.Contains(p, ExitMargin))
-                CurrentBush = BushArea.Find(p);
+            // hidden only when most of the body is inside the bush, not when it merely touches it
+            if (CurrentBush != null && (!CurrentBush.isActiveAndEnabled || Coverage(CurrentBush, p) < ExitCoverage))
+                CurrentBush = null;
+            if (CurrentBush == null)
+            {
+                var best = BestBush(p, out float cov);
+                if (best != null && cov >= EnterCoverage) CurrentBush = best;
+            }
         }
         Apply(ComputeState());
+    }
+
+    /// <summary>Share (0..1) of a character footprint centred at p that lies inside the bush.</summary>
+    public static float Coverage(BushArea bush, Vector3 p)
+    {
+        int inside = 0;
+        for (int i = 0; i < Samples.Length; i++)
+        {
+            var s = Samples[i] * BodyRadius;
+            if (bush.Contains(new Vector3(p.x + s.x, p.y, p.z + s.y))) inside++;
+        }
+        return inside / (float)Samples.Length;
+    }
+
+    /// <summary>The bush covering the largest share of the footprint at p.</summary>
+    public static BushArea BestBush(Vector3 p, out float coverage)
+    {
+        tallyBush.Clear(); tallyCount.Clear();
+        for (int i = 0; i < Samples.Length; i++)
+        {
+            var s = Samples[i] * BodyRadius;
+            var b = BushArea.Find(new Vector3(p.x + s.x, p.y, p.z + s.y));
+            if (b == null) continue;
+            int k = tallyBush.IndexOf(b);
+            if (k < 0) { tallyBush.Add(b); tallyCount.Add(1); } else tallyCount[k]++;
+        }
+        BushArea best = null; int bestN = 0;
+        for (int i = 0; i < tallyBush.Count; i++) if (tallyCount[i] > bestN) { bestN = tallyCount[i]; best = tallyBush[i]; }
+        coverage = bestN / (float)Samples.Length;
+        return best;
     }
 
     private State ComputeState()
