@@ -6,7 +6,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// args[0] = RewardData, args[1] (optional) = double source ("endgame", "daily"...).
-/// When a source is given, a "Watch ad: x2" button is shown (rewarded ad, opt-in).
+/// When a source is given, a "Watch ad: x2" button is shown (rewarded ad, opt-in),
+/// on the same row as the receive button (the receive button is centred when x2 is not offered).
 /// </summary>
 public class PopupReward : PopupBase
 {
@@ -16,6 +17,10 @@ public class PopupReward : PopupBase
 
     [Tooltip("Button 'Watch ad: x2 reward'. Hidden when the reward cannot be doubled.")]
     public GameObject doubleBtn;
+    [Tooltip("Receive / close button, on the same row as doubleBtn")]
+    public RectTransform receiveBtn;
+    [Tooltip("Horizontal gap between the two buttons")]
+    public float buttonGap = 30f;
 
     private string doubleSource;
     private bool doubling;
@@ -30,9 +35,27 @@ public class PopupReward : PopupBase
         if (doubleBtn != null)
         {
             doubleBtn.SetActive(!string.IsNullOrEmpty(doubleSource) && HasAnything(rewardData));
-            SetButtonLabel(doubleBtn, LocalizationManager.Localize("x2_reward_ads"));
+            SetButtonLabel(doubleBtn, LocalizationManager.Localize("x2_reward_btn"));
         }
+        LayoutButtons();
         SetReward();
+    }
+
+    /// <summary>Both buttons side by side, centred as a pair; the receive button alone is centred.</summary>
+    void LayoutButtons()
+    {
+        if (receiveBtn == null) return;
+        bool both = doubleBtn != null && doubleBtn.activeSelf;
+        if (!both)
+        {
+            receiveBtn.anchoredPosition = new Vector2(0f, receiveBtn.anchoredPosition.y);
+            return;
+        }
+        var d = (RectTransform)doubleBtn.transform;
+        float wd = d.rect.width, wr = receiveBtn.rect.width;
+        float total = wd + buttonGap + wr;
+        d.anchoredPosition = new Vector2(-total * 0.5f + wd * 0.5f, receiveBtn.anchoredPosition.y);
+        receiveBtn.anchoredPosition = new Vector2(total * 0.5f - wr * 0.5f, receiveBtn.anchoredPosition.y);
     }
 
     static bool HasAnything(RewardData r)
@@ -65,6 +88,7 @@ public class PopupReward : PopupBase
     {
         doubleSource = null;
         if (doubleBtn != null) doubleBtn.SetActive(false);
+        LayoutButtons();
         rewardData = Merge(rewardData, extra);
         SetReward();
     }
@@ -74,6 +98,7 @@ public class PopupReward : PopupBase
         doubling = false;
         doubleSource = null; // already claimed / expired: don't offer it again
         if (doubleBtn != null) doubleBtn.SetActive(false);
+        LayoutButtons();
         GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
     }
 

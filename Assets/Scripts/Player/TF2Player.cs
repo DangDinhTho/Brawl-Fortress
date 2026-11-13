@@ -263,10 +263,39 @@ public class TF2Player : MonoBehaviour
         AdsManager.instan.HideNavtiveAds();
     }
 
+    /// <summary>Take-damage voice limiter, so voices do not stack when many characters (or one under continuous damage) get hit:
+    ///  - each character waits at least PerCharacterGap seconds, and until its previous voice has (mostly) finished;
+    ///  - across all characters, a new voice needs GlobalGap seconds since the last one and at most MaxConcurrent are playing.
+    /// The local player's own voice ignores the global limits (it is the player's own feedback), only its own gap applies.</summary>
+    public static float PerCharacterGap = 0.7f;
+    public static float GlobalGap = 0.18f;
+    public static int MaxConcurrent = 2;
+    /// <summary>Volume scale of the voice: the local player keeps the old 1.5, others are softer.</summary>
+    public static float LocalVoiceVolume = 1.5f, OtherVoiceVolume = 1f;
+
+    static float lastGlobalVoiceTime = -10f;
+    static readonly List<float> voiceEndTimes = new List<float>();
+    float nextOwnVoiceTime;
+
     public void OnPlayerTakeDamage(Vector3 direction)
     {
-        if (characterConfig.takeDamageVoices != null)
-            audioSource.PlayOneShot(characterConfig.takeDamageVoices[Random.Range(0, characterConfig.takeDamageVoices.Length)], 1.5f);
+        var clips = characterConfig != null ? characterConfig.takeDamageVoices : null;
+        if (clips == null || clips.Length == 0 || audioSource == null) return;
+
+        float now = Time.time;
+        if (now < nextOwnVoiceTime) return;
+
+        bool local = isMainPlayer || (ArenaManager.Instance != null && ArenaManager.Instance.mainPlayer == this);
+        voiceEndTimes.RemoveAll(t => t <= now);
+        if (!local && (now - lastGlobalVoiceTime < GlobalGap || voiceEndTimes.Count >= MaxConcurrent)) return;
+
+        AudioClip clip = clips[Random.Range(0, clips.Length)];
+        if (clip == null) return;
+        audioSource.PlayOneShot(clip, local ? LocalVoiceVolume : OtherVoiceVolume);
+
+        lastGlobalVoiceTime = now;
+        voiceEndTimes.Add(now + clip.length);
+        nextOwnVoiceTime = now + Mathf.Max(PerCharacterGap, clip.length * 0.9f);
     }
 }
 

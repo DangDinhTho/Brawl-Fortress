@@ -45,11 +45,32 @@ public class AdmobManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         CountLaunch();
         AppStateEventNotifier.AppStateChanged += OnAppStateChanged;
+        // The UMP consent callback (GDPRScript.Finish) and every ad callback go through MobileAdsEventExecutor.ExecuteInUpdate,
+        // whose queue only runs once the executor object exists. It used to be created by MobileAds.Initialize, which is
+        // called only after consent: the consent callback was never run, so ads never initialized. Create it up front.
+        MobileAdsEventExecutor.Initialize();
     }
 
     private void OnDestroy()
     {
         if (insan == this) AppStateEventNotifier.AppStateChanged -= OnAppStateChanged;
+    }
+
+    /// <summary>Retries a failed ad load after 5, 10, 20, 40, 60, 60... seconds (attempt resets on a successful load).
+    /// skipIf: checked when the delay ends; true = an ad is already loaded / loading, nothing to do.</summary>
+    void RetryLater(Action load, ref int attempt, Func<bool> skipIf = null)
+    {
+        float delay = Mathf.Min(60f, 5f * Mathf.Pow(2f, attempt));
+        attempt++;
+        Debug.Log("Ad load retry in " + delay + " s");
+        StartCoroutine(RetryAfter(delay, load, skipIf));
+    }
+
+    System.Collections.IEnumerator RetryAfter(float delay, Action load, Func<bool> skipIf)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        if (skipIf != null && skipIf()) yield break;
+        load?.Invoke();
     }
 
     static void OnMainThread(Action action)
@@ -137,6 +158,7 @@ public class AdmobManager : MonoBehaviour
     public string _interAdUnitId_iOS = "ca-app-pub-3940256099942544/4411468910";
 
     private InterstitialAd _interstitialAd;
+    int interRetry;
     private Action interCallback;
 
     public void LoadInterstitialAd()
@@ -155,10 +177,12 @@ public class AdmobManager : MonoBehaviour
             if (error != null || ad == null)
             {
                 Debug.LogError("interstitial ad failed to load an ad with error : " + error);
+                RetryLater(LoadInterstitialAd, ref interRetry, () => _interstitialAd != null && _interstitialAd.CanShowAd());
                 return;
             }
 
             Debug.Log("Interstitial ad loaded with response : " + ad.GetResponseInfo());
+            interRetry = 0;
             _interstitialAd = ad;
             RegisterReloadInterHandler(ad);
         }));
@@ -177,6 +201,7 @@ public class AdmobManager : MonoBehaviour
         {
             callback?.Invoke();
             Debug.LogError("Interstitial ad is not ready yet.");
+            if (!initStarted) InitAds();
         }
     }
 
@@ -208,6 +233,8 @@ public class AdmobManager : MonoBehaviour
     public string _rewardAdUnitId_iOS = "ca-app-pub-3940256099942544/1712485313";
 
     private RewardedAd _rewardedAd;
+    bool rewardedLoading;
+    int rewardedRetry;
 
     public void LoadRewardedAd()
     {
@@ -218,17 +245,22 @@ public class AdmobManager : MonoBehaviour
         }
 
         Debug.Log("Loading the rewarded ad.");
+        rewardedLoading = true;
         var adRequest = new AdRequest();
 
         RewardedAd.Load(_rewardAdUnitId, adRequest, (RewardedAd ad, LoadAdError error) => OnMainThread(() =>
         {
+            rewardedLoading = false;
             if (error != null || ad == null)
             {
                 Debug.LogError("Rewarded ad failed to load an ad with error : " + error);
+                // used to stop here: one failed load (no fill / network) left the game without rewarded ads for the session
+                RetryLater(LoadRewardedAd, ref rewardedRetry, () => rewardedLoading || (_rewardedAd != null && _rewardedAd.CanShowAd()));
                 return;
             }
 
             Debug.Log("Rewarded ad loaded with response : " + ad.GetResponseInfo());
+            rewardedRetry = 0;
             _rewardedAd = ad;
             RegisterReloadVideoHandler(ad);
         }));
@@ -236,7 +268,11 @@ public class AdmobManager : MonoBehaviour
 
     public bool RewardVideosReady()
     {
-        return _rewardedAd != null && _rewardedAd.CanShowAd();
+        if (!initStarted) InitAds(); // game started from a scene other than FlashScene: LoginManager never called InitAds
+        bool ready = _rewardedAd != null && _rewardedAd.CanShowAd();
+        // the player wants a video now: if nothing is loaded or loading (e.g. waiting for a retry), load immediately
+        if (!ready && !rewardedLoading && sdkInitialized) LoadRewardedAd();
+        return ready;
     }
 
     public void ShowRewardedAd(Action callback)
@@ -426,6 +462,12 @@ public class AdmobManager : MonoBehaviour
     public string _naviveAdUnitId_iOS = "ca-app-pub-3940256099942544/2934735716";
 
     BannerView _naviveView;
+    // An AdMob BannerView is visible as soon as it is created and shows itself again when an ad loads / refreshes.
+    // The MREC must only be visible between ShowNavtive and HideNavtive, so the wanted state is tracked here and
+    // re-applied on every load (it used to be hidden only after the load callback, so it flashed on Home,
+    // and a refresh while a screen was showing it hid it).
+    bool _naviveWanted;
+    AdCorner _navivePosition = AdCorner.TopLeft;
 
     public void CreateNavtiveView()
     {
@@ -435,15 +477,32 @@ public class AdmobManager : MonoBehaviour
             DestroyNaviveView();
         }
 
-        _naviveView = new BannerView(_naviveAdUnitId, AdSize.MediumRectangle, AdPosition.TopLeft);
+        _naviveView = new BannerView(_naviveAdUnitId, AdSize.MediumRectangle, ToAdPosition(_navivePosition));
         var view = _naviveView;
-        view.OnBannerAdLoaded += () => OnMainThread(() =>
+        if (!_naviveWanted) view.Hide(); // hidden before anything is loaded into it
+        view.OnBannerAdLoaded += () =>
         {
-            Debug.Log("MREC view loaded an ad with response : " + view.GetResponseInfo());
-            HideNavtive();
-        });
+            // hide right away (not one frame later) when nobody asked for it
+            if (!_naviveWanted) view.Hide();
+            OnMainThread(() =>
+            {
+                Debug.Log("MREC view loaded an ad with response : " + view.GetResponseInfo());
+                ApplyNavtiveVisibility(view);
+            });
+        };
         view.OnBannerAdLoadFailed += (LoadAdError error) => OnMainThread(() =>
             Debug.LogError("MREC view failed to load an ad with error : " + error));
+    }
+
+    void ApplyNavtiveVisibility(BannerView view)
+    {
+        if (view == null || view != _naviveView) return;
+        if (_naviveWanted)
+        {
+            view.SetPosition(ToAdPosition(_navivePosition));
+            view.Show();
+        }
+        else view.Hide();
     }
 
     public void LoadNavtiveAd()
@@ -452,6 +511,7 @@ public class AdmobManager : MonoBehaviour
         {
             CreateNavtiveView();
         }
+        if (!_naviveWanted) _naviveView.Hide();
         Debug.Log("Loading MREC ad.");
         _naviveView.LoadAd(new AdRequest());
     }
@@ -460,9 +520,9 @@ public class AdmobManager : MonoBehaviour
 
     public void ShowNavtive(AdCorner position)
     {
-        if (_naviveView == null) return;
-        _naviveView.SetPosition(ToAdPosition(position));
-        _naviveView.Show();
+        _naviveWanted = true;
+        _navivePosition = position;
+        ApplyNavtiveVisibility(_naviveView); // if the ad is not loaded yet, it appears when the load completes
     }
 
     static AdPosition ToAdPosition(AdCorner c)
@@ -481,6 +541,7 @@ public class AdmobManager : MonoBehaviour
 
     public void HideNavtive()
     {
+        _naviveWanted = false;
         if (_naviveView != null) _naviveView.Hide();
     }
 
@@ -500,6 +561,8 @@ public class AdmobManager : MonoBehaviour
     public string _bannerAdUnitId_iOS = "ca-app-pub-3940256099942544/2934735716";
 
     BannerView _bannerView;
+    // Same as the MREC: hidden from creation, shown only between ShowBanner and HideBanner, re-applied on every load.
+    bool _bannerWanted;
 
     public void CreateBannerView()
     {
@@ -511,11 +574,17 @@ public class AdmobManager : MonoBehaviour
 
         _bannerView = new BannerView(_bannerAdUnitId, AdSize.Banner, AdPosition.TopLeft);
         var view = _bannerView;
-        view.OnBannerAdLoaded += () => OnMainThread(() =>
+        if (!_bannerWanted) view.Hide();
+        view.OnBannerAdLoaded += () =>
         {
-            Debug.Log("Banner view loaded an ad with response : " + view.GetResponseInfo());
-            HideBanner();
-        });
+            if (!_bannerWanted) view.Hide();
+            OnMainThread(() =>
+            {
+                Debug.Log("Banner view loaded an ad with response : " + view.GetResponseInfo());
+                if (view != _bannerView) return;
+                if (_bannerWanted) view.Show(); else view.Hide();
+            });
+        };
         view.OnBannerAdLoadFailed += (LoadAdError error) => OnMainThread(() =>
             Debug.LogError("Banner view failed to load an ad with error : " + error));
     }
@@ -527,17 +596,20 @@ public class AdmobManager : MonoBehaviour
         {
             CreateBannerView();
         }
+        if (!_bannerWanted) _bannerView.Hide();
         Debug.Log("Loading banner ad.");
         _bannerView.LoadAd(new AdRequest());
     }
 
     public void ShowBanner()
     {
+        _bannerWanted = true;
         if (_bannerView != null) _bannerView.Show();
     }
 
     public void HideBanner()
     {
+        _bannerWanted = false;
         if (_bannerView != null) _bannerView.Hide();
     }
 

@@ -1,7 +1,7 @@
 // =====================================================================
 // Brawl Fortress - rewarded-ad handlers (appended to CloudScript rev 6)
 //   ClaimDoubleReward : x2 end-game / daily reward (one claim, 10 min)
-//   GetTicketByAds    : watch ad -> tickets for a map (daily cap); args: map, mapId, amount (fallback price)
+//   GetTicketByAds    : watch ad -> +1 ticket (daily cap); args: map, mapId
 // EndGame and AddDailyReward call savePendingDouble(...) before returning.
 // =====================================================================
 
@@ -125,12 +125,8 @@ handlers.GetTicketByAds = function (args, context) {
     ticket = ticket || allTicket || anyTicket;
     if (!ticket) return { messageValue: "error" };
 
-    // Title Data map_config wins; for maps it does not list, use the client's price (ConfigManager defaults), clamped to 1..5
-    var amount = adsFindStickPerPlay(td.map_config, mapName, mapId);
-    if (amount === null) {
-        var asked = parseInt(args && args.amount, 10);
-        amount = asked >= 1 ? Math.min(asked, 5) : 1;
-    }
+    // One rewarded video = 1 ticket, whatever the map costs (client: TicketAds.TicketsPerAd)
+    var amount = 1;
     var inventory = server.GetUserInventory({ PlayFabId: currentPlayerId }).Inventory || [];
     adsAddConsumable(ticket.ItemId, amount, inventory);
 

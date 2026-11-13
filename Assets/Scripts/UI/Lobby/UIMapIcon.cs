@@ -104,7 +104,8 @@ public class UIMapIcon : MonoBehaviour
                 if (this == null || popupSelectMap == null) return;
                 popupSelectMap.SetTicket();
                 popupSelectMap.RefreshCards();
-                SetSelect();
+                // 1 ticket per video: pick the map only once the player can afford it
+                if (ConfigManager.CheckSelectMap(map)) SetSelect();
             });
             return;
         }

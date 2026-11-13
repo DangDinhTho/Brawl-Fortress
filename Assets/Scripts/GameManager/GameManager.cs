@@ -636,8 +636,8 @@ public class GameManager : MonoBehaviour
         {
             GeneratePlayStreamEvent = true,
             FunctionName = "GetTicketByAds",
-            // amount = this map's ticket price (client default); CloudScript uses it when Title Data map_config does not list the map
-            FunctionParameter = new { map = map.ToString(), mapId = (int)map, amount = Mathf.Max(1, ConfigManager.GetTicketCost(map)) }
+            // one rewarded video = 1 ticket, whatever the map costs (CloudScript GetTicketByAds grants 1 too)
+            FunctionParameter = new { map = map.ToString(), mapId = (int)map, amount = TicketAds.TicketsPerAd }
         }, result =>
         {
             if (!TryGetCloudScriptMessage(result, out var msg)) { onFail?.Invoke(false); return; }
