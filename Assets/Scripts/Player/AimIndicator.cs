@@ -57,6 +57,8 @@ public class AimIndicator : MonoBehaviour
         var weapon = ctrl != null ? ctrl.currWeapon : null;
         bool show = weapon != null && weapon.weaponConfig != null && weapon.weaponConfig.range > 0f
                     && ctrl.isActiveAndEnabled && ctrl.IsAiming && !IsDead(weapon);
+        // the medigun locked on a teammate: the range fan is not needed any more
+        if (show && weapon is Medicgun medigun && medigun.HasTarget) show = false;
         if (!show) { if (go.activeSelf) go.SetActive(false); return; }
 
         var cfg = weapon.weaponConfig;

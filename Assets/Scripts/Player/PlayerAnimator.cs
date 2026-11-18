@@ -174,27 +174,27 @@ public class PlayerAnimator : AnimatorBase
 
         //CheckPlayerStates();
 
-        Animator.SetInteger(animatorHashes["BodyState"], (int)BodyState);
-        Animator.SetFloat(animatorHashes["Vertical"], vertical);
-        Animator.SetFloat(animatorHashes["Horizontal"], horizontal);
-        Animator.SetInteger(animatorHashes["UpperState"], (int)FPState);
-        //Animator.SetInteger(animatorHashes["WeaponType"], (int)remotePlayer.weaponType);
-        //Animator.SetFloat(animatorHashes["Speed"], movementSpeed);
-        //Animator.SetFloat(animatorHashes["Turn"], TurnLerp);
-        //Animator.SetBool(animatorHashes["isGround"], IsGrounded);
+        SetIntSafe(animatorHashes["BodyState"], (int)BodyState);
+        SetFloatSafe(animatorHashes["Vertical"], vertical);
+        SetFloatSafe(animatorHashes["Horizontal"], horizontal);
+        SetIntSafe(animatorHashes["UpperState"], (int)FPState);
+        //SetIntSafe(animatorHashes["WeaponType"], (int)remotePlayer.weaponType);
+        //SetFloatSafe(animatorHashes["Speed"], movementSpeed);
+        //SetFloatSafe(animatorHashes["Turn"], TurnLerp);
+        //SetBoolSafe(animatorHashes["isGround"], IsGrounded);
     }
 
     public void SwitchWeapon(WeaponType weaponType)
     {
-        Animator.SetInteger(animatorHashes["WeaponType"], (int)weaponType);
-        Animator.SetTrigger(animatorHashes["SwitchWeapon"]);
+        SetIntSafe(animatorHashes["WeaponType"], (int)weaponType);
+        SetTriggerSafe(animatorHashes["SwitchWeapon"]);
         //StartCoroutine(SwitchWeaponDelay());   
     }
 
     //IEnumerator SwitchWeaponDelay()
     //{
     //    yield return new WaitForSeconds(0.1f);
-    //    Animator.SetTrigger(animatorHashes["SwitchWeapon"]);
+    //    SetTriggerSafe(animatorHashes["SwitchWeapon"]);
     //}
 
     /// <summary>
@@ -262,45 +262,65 @@ public class PlayerAnimator : AnimatorBase
     {
         int _fpState = (int)FPState;
         //if (_fpState == 9) { _fpState = 1; }
-        Animator.SetInteger(animatorHashes["UpperState"], _fpState);
+        SetIntSafe(animatorHashes["UpperState"], _fpState);
     }
 
+
+    // ---- parameters missing from some class controllers are skipped (no 'Parameter does not exist' spam)
+    readonly System.Collections.Generic.HashSet<int> paramHashes = new System.Collections.Generic.HashSet<int>();
+    RuntimeAnimatorController paramsOf;
+    bool HasParam(int hash)
+    {
+        if (Animator == null) return false;
+        if (paramsOf != Animator.runtimeAnimatorController)
+        {
+            paramsOf = Animator.runtimeAnimatorController;
+            paramHashes.Clear();
+            foreach (var p in Animator.parameters) paramHashes.Add(p.nameHash);
+        }
+        return paramHashes.Contains(hash);
+    }
+    void SetIntSafe(int h, int v) { if (HasParam(h)) Animator.SetInteger(h, v); }
+    void SetBoolSafe(int h, bool v) { if (HasParam(h)) Animator.SetBool(h, v); }
+    void SetTriggerSafe(int h) { if (HasParam(h)) Animator.SetTrigger(h); }
+    void SetFloatSafe(int h, float v) { if (HasParam(h)) Animator.SetFloat(h, v); }
+    void SetFloatSafe(int h, float v, float damp, float dt) { if (HasParam(h)) Animator.SetFloat(h, v, damp, dt); }
 
     public void FireAnimator()
     {
         //Animator.Play(remotePlayer.weapon.weaponConfig.weaponType.ToString(), 1, 0);
-        Animator.SetInteger(animatorHashes["RandomInt"], Random.Range(0, 3));
-        Animator.SetTrigger(animatorHashes["Fire"]);
+        SetIntSafe(animatorHashes["RandomInt"], Random.Range(0, 3));
+        SetTriggerSafe(animatorHashes["Fire"]);
         //Animator.SetBool("FireLoop", true);
     }
 
     public void FireLoopStartAnimator()
     {
-        Animator.SetBool(animatorHashes["FireLoop"], true);
+        SetBoolSafe(animatorHashes["FireLoop"], true);
     }
 
     public void FireLoopFinishAnimator()
     {
         //Animator.Play(remotePlayer.weapon.weaponConfig.weaponType.ToString(), 1, 0);
-        Animator.SetBool(animatorHashes["FireLoop"], false);
+        SetBoolSafe(animatorHashes["FireLoop"], false);
         //Animator.SetBool("FireLoop", true);
     }
 
     public void WeaponDeployedAnimator()
     {
-        Animator.SetBool(animatorHashes["Deployed"], true);
+        SetBoolSafe(animatorHashes["Deployed"], true);
     }
 
     public void WeaponDeployFinishAnimator()
     {
-        Animator.SetBool(animatorHashes["Deployed"], false);
+        SetBoolSafe(animatorHashes["Deployed"], false);
     }
 
 
 
     public void ReloadAnimator()
     {
-        Animator.SetTrigger(animatorHashes["Reload"]);
+        SetTriggerSafe(animatorHashes["Reload"]);
     }
 
     public void PlayTaunt(Taunt taunt)
@@ -349,7 +369,7 @@ public class PlayerAnimator : AnimatorBase
     //        // -1 is the ID for play the bared arms animations in the player animator controller.
     //        int id = baredHands ? -1 : (int)cacheWeaponType;
 
-    //        Animator.SetInteger(animatorHashes["GunType"], id);
+    //        SetIntSafe(animatorHashes["GunType"], id);
     //    }
     //}
 

@@ -88,9 +88,9 @@ public class Ragdoll : MonoBehaviour
         RebaseJoints();
         foreach (var rigidBody in rigidBodies)
         {
+            rigidBody.isKinematic = false; // velocities can only be set on dynamic bodies
             rigidBody.linearVelocity = Vector3.zero;
             rigidBody.angularVelocity = Vector3.zero;
-            rigidBody.isKinematic = false;
         }
         ApplyForce(direction);
     }

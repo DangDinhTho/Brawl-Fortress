@@ -32,7 +32,7 @@ public class MoveToTarget : Action
                 if(r == 0)
                 {
                     botController.BuffWeapon(0.5f);
-                    botController.SwitchWeapon(botController.bot.characterConfig.defaultWeapon);
+                    botController.SwitchWeapon(botController.AttackWeapon);
                 }
             }
             return TaskStatus.Success;

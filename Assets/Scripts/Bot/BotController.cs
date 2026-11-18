@@ -23,10 +23,21 @@ public class BotController : MonoBehaviour
     [HideInInspector]
     public bool blockAttack;
 
+    /// <summary>Weapon the bot fights with. A medic's default (what a player spawns with) is the medigun, but a medic bot
+    /// fights with its primary and only takes the medigun out to heal (BotMedic).</summary>
+    public WeaponType AttackWeapon => bot != null && bot.tF2Class == TF2Class.medic ? WeaponType.Primary : bot.characterConfig.defaultWeapon;
+    BotMedic medic;
+
     public void Init()
     {
         //behaviorTree = GetComponent<BehaviorTree>();
-        SwitchWeapon(bot.characterConfig.defaultWeapon);
+        if (bot.tF2Class == TF2Class.medic)
+        {
+            medic = GetComponent<BotMedic>();
+            if (medic == null) medic = gameObject.AddComponent<BotMedic>();
+            medic.Init(bot, this);
+        }
+        SwitchWeapon(AttackWeapon);
         //SwitchWeapon(WeaponType.Secondary);
         bot.healthManager.OnDeath += OnDeath;
         bot.healthManager.OnRespawn += OnSpawn;
@@ -66,7 +77,7 @@ public class BotController : MonoBehaviour
         BuffWeapon(1, true);
         agent.isStopped = false;
         bot.behaviorTree.enabled = true;
-        SwitchWeapon(bot.characterConfig.defaultWeapon);
+        SwitchWeapon(AttackWeapon);
         bot.botPickup.gameObject.SetActive(true);
     }
 
@@ -133,6 +144,7 @@ public class BotController : MonoBehaviour
         if (bot == null || currWeapon == null || !currWeapon.fire || !bot.photonView.IsMine) { noTargetFireTime = 0f; return; }
         if (fov == null) fov = GetComponent<FieldOfView>();
         if (fov != null && fov.canSeePlayer) { noTargetFireTime = 0f; return; }
+        if (medic != null && medic.Healing) { noTargetFireTime = 0f; return; } // healing a teammate: no enemy needed
         noTargetFireTime += Time.deltaTime;
         if (noTargetFireTime >= releaseFireWithoutTarget) { noTargetFireTime = 0f; FinishFire(); }
     }

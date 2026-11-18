@@ -85,51 +85,95 @@ public class Medicgun : Gun
         return;
     }
 
+    /// <summary>Half-angle of the cone around the aim in which a teammate is picked up (mobile aiming is rough).</summary>
+    public float lockAngle = 25f;
+    static readonly Collider[] overlap = new Collider[64];
+
+    Vector3 BeamOrigin => playerOwner.transform.position + Vector3.up * 1.4f;
+
+    /// <summary>Players aim with the TPS camera; bots aim with their body.</summary>
+    Vector3 AimDirection
+    {
+        get
+        {
+            if (!playerOwner.isBot && Camera.main != null) return Camera.main.transform.forward;
+            return playerOwner.transform.forward;
+        }
+    }
+
+    void ReleaseTarget()
+    {
+        lockTarget = false;
+        target.parent = playerOwner.transform;
+        target.localPosition = Vector3.up;
+        targetViewId = playerOwner.viewID;
+        healthTarget = null;
+    }
+
+    bool Blocked(Vector3 from, Vector3 to)
+    {
+        Vector3 d = to - from;
+        return Physics.Raycast(from, d.normalized, d.magnitude, obstructionMask);
+    }
+
+    /// <summary>The living teammate (never the medic himself) closest to the aim inside the lock cone, in range and in sight.</summary>
+    float LockRange => MaxDistance; // = the aim indicator's range: what the player sees is what he gets
+    /// <summary>Half-angle of the lock cone = half the aim indicator's fan (weaponConfig.aimAngle), else lockAngle.</summary>
+    float LockHalfAngle => weaponConfig != null && weaponConfig.aimAngle > 0f ? weaponConfig.aimAngle * 0.5f : lockAngle;
+    /// <summary>True while the beam is locked on a teammate (the aim indicator hides then).</summary>
+    public bool HasTarget => lockTarget && healthTarget != null;
+
+    /// <summary>The living teammate (never the medic himself) closest to the aim inside the lock cone, in range and in
+    /// sight. The aim is the camera for players (the body for bots); the body direction is accepted too, because on mobile
+    /// the character turns to where the player shoots while the camera may lag.</summary>
+    HealthManager FindTeammate()
+    {
+        Vector3 origin = BeamOrigin;
+        Vector3 aim = AimDirection.normalized, body = playerOwner.transform.forward;
+        int count = Physics.OverlapSphereNonAlloc(origin, LockRange, overlap, checkMark, QueryTriggerInteraction.Collide);
+        HealthManager best = null; float bestAngle = LockHalfAngle;
+        for (int i = 0; i < count; i++)
+        {
+            var health = overlap[i].transform.root.GetComponent<HealthManager>();
+            if (health == null || health == playerOwner.healthManager || health.death || health.team != playerOwner.team) continue;
+            if (health.transform == playerOwner.transform) continue;
+            Vector3 center = health.transform.position + Vector3.up;
+            Vector3 to = center - origin;
+            if (to.magnitude > LockRange) continue;
+            Vector3 flat = new Vector3(to.x, 0f, to.z);
+            float angle = Mathf.Min(Vector3.Angle(aim, to), Vector3.Angle(new Vector3(aim.x, 0f, aim.z), flat), Vector3.Angle(body, flat));
+            if (angle > bestAngle || Blocked(origin, center)) continue;
+            bestAngle = angle; best = health;
+        }
+        return best;
+    }
+
     public override void Shoot()
     {
+        if (lockTarget)
+        {
+            // keep healing while the teammate is alive, on our team, in range and in sight
+            bool keep = healthTarget != null && !healthTarget.death && healthTarget.team == playerOwner.team && healthTarget != playerOwner.healthManager;
+            if (keep)
+            {
+                Vector3 center = healthTarget.transform.position + Vector3.up;
+                keep = Vector3.Distance(BeamOrigin, center) <= LockRange + 0.5f && !Blocked(BeamOrigin, center);
+            }
+            if (keep) healthTarget.Buff(0.01f);
+            else ReleaseTarget();
+        }
         if (!lockTarget)
         {
-            target.parent = playerOwner.transform;
-            target.localPosition = Vector3.up;
+            if (target.parent != playerOwner.transform) { target.parent = playerOwner.transform; target.localPosition = Vector3.up; }
             targetViewId = playerOwner.viewID;
-            //target.position = playerOwner.transform.position + playerOwner.transform.forward * 3 + Vector3.up * 1.5f;
-            //float distanceToTarget = Vector3.Distance(transform.position, target.position);
-            //Vector3 directionToTarget = (target.position - transform.position).normalized;
-            //Ray ray = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0)); //Just a ray through the middle of your current view
-
-            RaycastHit hit;
-
-            if (Physics.Raycast(playerOwner.transform.position + Vector3.up, playerOwner.transform.forward, out hit, MaxDistance, checkMark))
+            var health = FindTeammate();
+            if (health != null)
             {
-                HealthManager health = hit.transform.root.GetComponent<HealthManager>();
-                if (health != null && !health.death && health.team == playerOwner.team)
-                {
-                    target.parent = health.transform;
-                    target.localPosition = Vector3.up;
-                    healthTarget = health;
-                    targetViewId = health.photonView.ViewID;
-                    lockTarget = true;
-                }
-            }
-
-        }
-        else
-        {
-            float distanceToTarget = Vector3.Distance(playerOwner.transform.position, target.position);
-            Vector3 directionToTarget = (target.position - fpsCam.transform.position).normalized;
-            if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstructionMask) && distanceToTarget < MaxDistance)
-            {
-                if (healthTarget != null)
-                    healthTarget.Buff(0.01f);
-                print("Buff");
-            }
-            else
-            {
-                lockTarget = false;
-                target.parent = playerOwner.transform;
+                target.parent = health.transform;
                 target.localPosition = Vector3.up;
-                targetViewId = playerOwner.viewID;
-                healthTarget = null;
+                healthTarget = health;
+                targetViewId = health.photonView.ViewID;
+                lockTarget = true;
             }
         }
         playerOwner.playerNetwork.SyncMedicGunTarget(targetViewId);
