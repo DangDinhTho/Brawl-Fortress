@@ -117,6 +117,13 @@ public class BotMedic : MonoBehaviour
         if (controller.agent != null && controller.agent.isOnNavMesh) controller.agent.isStopped = false;
     }
 
+    Vector3 strafeOffset;
+    float nextStrafe;
+    bool hasStrafe;
+
+    /// <summary>Keeps up with the patient and moves around him while healing (never stands still like a turret):
+    /// far away it chases him straight; close it picks a new spot around him every 1.2-2.2 s, 25-60 degrees to a side,
+    /// 4-6 m away, and runs there while facing him (strafe animation).</summary>
     void Follow()
     {
         var agent = controller.agent;
@@ -124,10 +131,32 @@ public class BotMedic : MonoBehaviour
         float dist = Vector3.Distance(me, him);
         if (agent != null && agent.isOnNavMesh && Time.time >= nextMove)
         {
-            nextMove = Time.time + 0.4f;
-            if (dist > followMax) { agent.isStopped = false; agent.SetDestination(him + (me - him).normalized * followMin); }
-            else if (dist < followMin * 0.75f) { agent.isStopped = false; agent.SetDestination(me + (me - him).normalized * 2f); }
-            else agent.isStopped = true;
+            nextMove = Time.time + 0.25f;
+            Vector3 desired;
+            if (dist > followMax + 0.5f) // stay inside the medigun range (7 m)
+            {
+                // too far: run straight to him
+                desired = him + (me - him).normalized * followMin;
+                hasStrafe = false;
+            }
+            else
+            {
+                if (!hasStrafe || Time.time >= nextStrafe)
+                {
+                    Vector3 fromHim = me - him; fromHim.y = 0f;
+                    if (fromHim.sqrMagnitude < 0.01f) fromHim = -patient.transform.forward;
+                    float side = Random.value < 0.5f ? -1f : 1f;
+                    var dir = Quaternion.Euler(0f, side * Random.Range(25f, 60f), 0f) * fromHim.normalized;
+                    strafeOffset = dir * Random.Range(followMin, followMax);
+                    nextStrafe = Time.time + Random.Range(1.2f, 2.2f);
+                    hasStrafe = true;
+                }
+                desired = him + strafeOffset;   // follows the patient as he moves
+            }
+            if (UnityEngine.AI.NavMesh.SamplePosition(desired, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) desired = hit.position;
+            else nextStrafe = 0f; // unreachable spot: pick another one next time
+            agent.isStopped = false;
+            agent.SetDestination(desired);
         }
         // keep the trigger down on the medigun
         if (controller.weaponType != WeaponType.Secondary) controller.SwitchWeapon(WeaponType.Secondary);
