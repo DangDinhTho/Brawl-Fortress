@@ -297,6 +297,16 @@ public class ConfigManager
         (GameMode.MannVsMachine, Map.Map_Brawl_LastStand, 5),
         (GameMode.JungleBoss, Map.Map_Brawl_HaleJungle, 0),
         (GameMode.Zombie, Map.Map_Brawl_ZombieYard, 0),
+        (GameMode.JungleBoss, Map.Map_Brawl_HaleMesa, 1),
+        (GameMode.JungleBoss, Map.Map_Brawl_DustDevil, 2),
+        (GameMode.JungleBoss, Map.Map_Brawl_RedRockPit, 3),
+        (GameMode.JungleBoss, Map.Map_Brawl_FrontierOutpost, 4),
+        (GameMode.JungleBoss, Map.Map_Brawl_LunarColossus, 5),
+        (GameMode.Zombie, Map.Map_Brawl_GhoulMine, 1),
+        (GameMode.Zombie, Map.Map_Brawl_MoonGraveyard, 2),
+        (GameMode.Zombie, Map.Map_Brawl_CryptTunnels, 3),
+        (GameMode.Zombie, Map.Map_Brawl_DeadCrater, 4),
+        (GameMode.Zombie, Map.Map_Brawl_LastLight, 5),
     };
 
     /// <summary>Adds the default ticket config for every map mapConfigs does not have yet (called after Title Data is read).</summary>

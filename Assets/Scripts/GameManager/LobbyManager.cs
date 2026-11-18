@@ -32,6 +32,8 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     private void Start()
     {
         roomListBtn.SetActive(false);
+        // back from a solo match (offline mode): go online again for multiplayer rooms
+        if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
         PhotonNetwork.EnableCloseConnection = true;
         PhotonNetwork.LocalPlayer.NickName = GameManager.instan.userData.userName;
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InRoom)

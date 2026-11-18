@@ -196,6 +196,7 @@ public static partial class BrawlMapBuilder
         PrepareBorderAndGround(d.theme);
         Physics.SyncTransforms();
         PlaceGrid(d);
+        GrassHeight.Raise(scene); // grass about as tall as the characters
         if (d.theme == Theme.Moon) PlaceMoonBackdrop(d.seed);
         var holder = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "_templates");
         if (holder) Object.DestroyImmediate(holder);

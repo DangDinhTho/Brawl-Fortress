@@ -296,7 +296,11 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     public override void OnDisconnected(DisconnectCause cause)
     {
-        //UnityEngine.SceneManagement.SceneManager.LoadScene("DemoAsteroids-LobbyScene");
+        // a solo match runs offline; leaving on purpose is not an error
+        if (PhotonNetwork.OfflineMode || cause == DisconnectCause.DisconnectByClientLogic) return;
+        Debug.LogWarning("Photon disconnected during the match: " + cause);
+        GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"), GUIManager.instan.iconAtlas.GetSprite("disconnected"),
+            (System.Action)(() => UnityEngine.SceneManagement.SceneManager.LoadScene("Home")));
     }
 
     public override void OnLeftRoom()

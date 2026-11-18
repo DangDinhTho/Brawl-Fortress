@@ -146,30 +146,11 @@ public class PopupSelectClass : PopupBase
         if (siglePlayer)
         {
             if (singleStarting) return; // double tap on Done
-            if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InRoom)
-            {
-                singleStarting = true;
-                LobbyManager.instance.singlePlayer = true;
-                string roomName = null; // let the server generate a unique name (a fixed name could collide)
-
-                 ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable
-            {
-                {TF2GameProps.GameModeKey, LobbyManager.instance.sigleGameMode},
-                {TF2GameProps.Map, LobbyManager.instance.sigleMap}
-
-            };
-                Debug.Log(LobbyManager.instance.sigleMap);
-
-                RoomOptions options = new RoomOptions { MaxPlayers = (byte)ConfigManager.maxPlayerPerRoom, CustomRoomProperties = props, IsVisible = false };
-                PhotonNetwork.CreateRoom(roomName, options, null);
-                StartCoroutine(WaitPlaySingle());
-                popupLoading = GUIManager.instan.CreatePopup<PopupLoading>(LocalizationManager.Localize("matching"));
-                CharacterSave.SaveLastCharacter(HomeManager.instance.characterPref.tF2Class);
-            }
-            else
-            {
-                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"), GUIManager.instan.iconAtlas.GetSprite("disconnected"), (System.Action)(() => PhotonNetwork.ConnectUsingSettings()));
-            }
+            singleStarting = true;
+            LobbyManager.instance.singlePlayer = true;
+            popupLoading = GUIManager.instan.CreatePopup<PopupLoading>(LocalizationManager.Localize("matching"));
+            CharacterSave.SaveLastCharacter(HomeManager.instance.characterPref.tF2Class);
+            StartCoroutine(StartSingleOffline());
         }
         else
         {
@@ -179,6 +160,31 @@ public class PopupSelectClass : PopupBase
     }
 
     private bool singleStarting;
+
+    /// <summary>Solo vs bots needs no server: Photon offline mode creates the room on this device right away, so the
+    /// match cannot fail to start ("disconnected" on the first Play) nor drop mid-game. Home switches back online.</summary>
+    IEnumerator StartSingleOffline()
+    {
+        if (!PhotonNetwork.OfflineMode)
+        {
+            if (PhotonNetwork.IsConnected)
+            {
+                PhotonNetwork.Disconnect(); // offline mode cannot start while connected
+                float t = 0f;
+                while (PhotonNetwork.IsConnected && t < 3f) { t += Time.unscaledDeltaTime; yield return null; }
+            }
+            PhotonNetwork.OfflineMode = true;
+        }
+        yield return null;
+        ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable
+        {
+            {TF2GameProps.GameModeKey, LobbyManager.instance.sigleGameMode},
+            {TF2GameProps.Map, LobbyManager.instance.sigleMap}
+        };
+        RoomOptions options = new RoomOptions { MaxPlayers = (byte)ConfigManager.maxPlayerPerRoom, CustomRoomProperties = props, IsVisible = false };
+        PhotonNetwork.CreateRoom(null, options, null);
+        yield return WaitPlaySingle();
+    }
 
     IEnumerator WaitPlaySingle()
     {

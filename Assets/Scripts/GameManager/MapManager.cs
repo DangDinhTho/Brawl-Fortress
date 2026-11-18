@@ -136,4 +136,14 @@ public enum Map: byte
     Map_Brawl_LastStand,
     Map_Brawl_HaleJungle,   // JungleBoss (ported mode)
     Map_Brawl_ZombieYard,   // Zombie (ported mode)
+    Map_Brawl_HaleMesa,
+    Map_Brawl_DustDevil,
+    Map_Brawl_RedRockPit,
+    Map_Brawl_FrontierOutpost,
+    Map_Brawl_LunarColossus,
+    Map_Brawl_GhoulMine,
+    Map_Brawl_MoonGraveyard,
+    Map_Brawl_CryptTunnels,
+    Map_Brawl_DeadCrater,
+    Map_Brawl_LastLight,
 }

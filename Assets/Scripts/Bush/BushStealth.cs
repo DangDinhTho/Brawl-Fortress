@@ -46,6 +46,11 @@ public class BushStealth : MonoBehaviour
 
     private TF2Player player;
     private bool hidden;
+    /// <summary>Attacking from a bush gives the position away: hidden characters show for this long after their last shot (s).</summary>
+    public static float AttackRevealTime = 1f;
+    private float revealUntil;
+    /// <summary>True while this character is attacking (and AttackRevealTime after): visible to everyone even in a bush.</summary>
+    public bool RevealedByAttack => Time.time < revealUntil;
     private float nextCheck;
     private readonly List<Renderer> renderers = new List<Renderer>();
     private CanvasGroup headerGroup;
@@ -71,6 +76,13 @@ public class BushStealth : MonoBehaviour
 
     private void Update()
     {
+        // every frame (cheap): firing reveals at once, e.g. a flamethrower flame must never come out of an invisible Pyro
+        var w = player != null && player.remotePlayer != null ? player.remotePlayer.weapon : null;
+        if (w != null && w.fire && !IsDead)
+        {
+            revealUntil = Time.time + AttackRevealTime;
+            if (hidden) nextCheck = 0f;
+        }
         if (Time.unscaledTime < nextCheck) return;
         nextCheck = Time.unscaledTime + CheckInterval;
 
@@ -136,6 +148,7 @@ public class BushStealth : MonoBehaviour
     public static bool IsHiddenFrom(BushStealth target, Team observerTeam, Vector3 observerPos, BushArea observerBush)
     {
         if (target == null || target.CurrentBush == null) return false;
+        if (target.RevealedByAttack) return false; // attacking from a bush gives the position away
         if (target.Team == observerTeam) return false;
         Vector3 tp = target.Position;
         if (RevealDistance > 0f && FlatSqr(observerPos - tp) <= RevealDistance * RevealDistance) return false;
