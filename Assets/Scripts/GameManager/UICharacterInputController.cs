@@ -21,6 +21,7 @@ public class UICharacterInputController : MonoBehaviour
     private bool freeLookCam;
     public Text txtDeathReason;
     public Text txtTimeSpawn;
+    private DeathOverlay deathOverlay;
     public GameObject chatInMatchItemPref;
     public Transform chatContainer;
     private List<GameObject> chatStack = new List<GameObject>();
@@ -117,12 +118,16 @@ public class UICharacterInputController : MonoBehaviour
         }
         txtDeathReason.gameObject.SetActive(true);
         txtTimeSpawn.gameObject.SetActive(true);
+        // dark overlay + skull + red, bold, outlined texts
+        if (deathOverlay == null) deathOverlay = DeathOverlay.Ensure(txtDeathReason, txtTimeSpawn);
+        if (deathOverlay != null) deathOverlay.Show();
     }
 
     public void OnPlayerRespawn()
     {
         txtDeathReason.gameObject.SetActive(false);
         txtTimeSpawn.gameObject.SetActive(false);
+        if (deathOverlay != null) deathOverlay.Hide();
     }
     
     public void OnTimeRespawnUpdate(int time)

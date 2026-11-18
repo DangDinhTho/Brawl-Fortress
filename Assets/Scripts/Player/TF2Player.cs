@@ -111,6 +111,7 @@ public class TF2Player : MonoBehaviour
     public void PlayFootStep()
     {
         if (healthManager.death) return;
+        if (stepSounds == null || stepSounds.Length == 0 || audioSource == null) return; // bosses / zombies have no step sounds
         audioSource.PlayOneShot(stepSounds[Random.Range(0, stepSounds.Length)], 0.5f);
     }
 

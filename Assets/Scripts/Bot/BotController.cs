@@ -121,6 +121,22 @@ public class BotController : MonoBehaviour
     //    blockAttack = false;
     //}
 
+    [Tooltip("A bot holding the trigger with no enemy in sight releases it after this many seconds")]
+    public float releaseFireWithoutTarget = 0.5f;
+    float noTargetFireTime;
+    FieldOfView fov;
+
+    /// <summary>Safety net for every AI task that pulls the trigger: continuous weapons (flamethrower, minigun...) stop
+    /// once no enemy has been in sight (FieldOfView; enemies hidden in a bush count as not seen) for a short while.</summary>
+    private void LateUpdate()
+    {
+        if (bot == null || currWeapon == null || !currWeapon.fire || !bot.photonView.IsMine) { noTargetFireTime = 0f; return; }
+        if (fov == null) fov = GetComponent<FieldOfView>();
+        if (fov != null && fov.canSeePlayer) { noTargetFireTime = 0f; return; }
+        noTargetFireTime += Time.deltaTime;
+        if (noTargetFireTime >= releaseFireWithoutTarget) { noTargetFireTime = 0f; FinishFire(); }
+    }
+
     public void Fire()
     {
 

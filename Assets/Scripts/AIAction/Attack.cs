@@ -79,6 +79,15 @@ public class Attack : Action
 
     /// <summary>Normal bots stop at the per-weapon-type distance. A boss is far bigger than a player: it never gets that
     /// close (it only shoves the target), so it attacks from its weapon's attackRange and stops a bit inside it.</summary>
+    /// <summary>Called by Behavior Designer whenever this task ends or is aborted (the tree switched to patrolling,
+    /// another target, a pickup...): release the trigger, otherwise a flamethrower / minigun keeps firing while walking.</summary>
+    public override void OnEnd()
+    {
+        if (attacked || (botController.currWeapon != null && botController.currWeapon.fire))
+            botController.FinishFire();
+        attacked = false;
+    }
+
     void SetStopDistance()
     {
         distanceStop = ConfigManager.stopDistances[botController.weaponType];

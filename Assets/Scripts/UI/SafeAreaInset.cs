@@ -5,9 +5,10 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Keeps UI out of the notch / rounded corners (Screen.safeArea) on every screen-space canvas, popups included.
 /// Added automatically to each root screen-space canvas when a scene loads (the GUIManager popup canvas too).
-/// Full-screen stretch objects (backgrounds, dimmers, containers) keep covering the whole screen; their content is
-/// moved inside the safe area instead: left-anchored things shift right, right-anchored shift left, stretched things
-/// shrink, centred things shift by half the difference. New children (popups opened later) are picked up within 0.25 s.
+/// Only decoration reaches into the notch (full-screen backgrounds, full-width bars); everything the player reads or
+/// uses (text, titles, icons, buttons, panels, scroll views) is moved inside the safe area. A bar keeps its full width
+/// and only its content moves. Moved things: left-anchored shift right, right-anchored shift left, stretched ones
+/// shrink, centred ones shift by half the difference. New children (popups opened later) are picked up within 0.25 s.
 /// Put SafeAreaIgnore on an object to leave it (and its children) alone.
 /// </summary>
 [DisallowMultipleComponent]
@@ -58,8 +59,38 @@ public class SafeAreaInset : MonoBehaviour
         Visit(root, left, right, bottom, top, reapplyAll, 0);
     }
 
+    enum Kind { Decor, Container, Shift }
+    readonly Dictionary<RectTransform, Kind> kinds = new Dictionary<RectTransform, Kind>();
+    static readonly List<MonoBehaviour> scratch = new List<MonoBehaviour>();
+
+    /// <summary>Something the player can touch: buttons, toggles, sliders, inputs, scroll views, joysticks, EventTriggers...</summary>
+    static bool IsInteractive(Component c)
+    {
+        scratch.Clear();
+        c.GetComponents(scratch);
+        for (int i = 0; i < scratch.Count; i++)
+            if (scratch[i] is UnityEngine.EventSystems.IEventSystemHandler) return true;
+        return false;
+    }
+
+    /// <summary>Only decoration may reach into the notch: full-screen backgrounds and full-width bars / stripes. A
+    /// full-screen object or a full-width bar that holds something keeps its own size and its content is checked one
+    /// by one. Everything the player reads or uses (text and titles, icons, buttons, panels, scroll views) is moved
+    /// inside the safe area.</summary>
+    Kind Classify(RectTransform c)
+    {
+        if (IsFullScreen(c)) return c.childCount > 0 ? Kind.Container : Kind.Decor;
+        bool wide = c.anchorMin.x <= 0.01f && c.anchorMax.x >= 0.99f;
+        if (wide && !IsInteractive(c) && !IsText(c))
+            return c.childCount > 0 ? Kind.Container : Kind.Decor;   // bar: stays full width, its content moves
+        return Kind.Shift;
+    }
+
     static bool IsFullScreen(RectTransform c) =>
-        c.anchorMin == Vector2.zero && c.anchorMax == Vector2.one && c.offsetMin.sqrMagnitude < 1f && c.offsetMax.sqrMagnitude < 1f;
+        c.anchorMin.x <= 0.01f && c.anchorMin.y <= 0.01f && c.anchorMax.x >= 0.99f && c.anchorMax.y >= 0.99f && c.offsetMin.sqrMagnitude < 4f && c.offsetMax.sqrMagnitude < 4f;
+
+    static bool IsText(Component c) =>
+        c.GetComponent<UnityEngine.UI.Text>() != null || c.GetComponent<TMPro.TMP_Text>() != null;
 
     void Visit(RectTransform parent, float left, float right, float bottom, float top, bool reapplyAll, int depth)
     {
@@ -67,18 +98,15 @@ public class SafeAreaInset : MonoBehaviour
         {
             var c = t as RectTransform;
             if (c == null || c.GetComponent<SafeAreaIgnore>() != null) continue;
-            bool known = originals.TryGetValue(c, out var o);
-            if (!known)
+            if (!kinds.TryGetValue(c, out var kind)) { kind = Classify(c); kinds[c] = kind; }
+            if (kind == Kind.Decor) continue;
+            if (kind == Kind.Container)
             {
-                if (IsFullScreen(c))
-                {
-                    // background (no children) stays full screen; a container: fit what it holds
-                    if (c.childCount > 0 && depth < 3) Visit(c, left, right, bottom, top, reapplyAll, depth + 1);
-                    continue;
-                }
-                o = new Original { min = c.offsetMin, max = c.offsetMax };
-                originals[c] = o;
+                if (depth < 5) Visit(c, left, right, bottom, top, reapplyAll, depth + 1);
+                continue;
             }
+            bool known = originals.TryGetValue(c, out var o);
+            if (!known) { o = new Original { min = c.offsetMin, max = c.offsetMax }; originals[c] = o; }
             else if (!reapplyAll) continue;
 
             Shift(c.anchorMin.x, c.anchorMax.x, left, right, out float xMin, out float xMax);

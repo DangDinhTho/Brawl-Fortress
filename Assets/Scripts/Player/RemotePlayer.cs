@@ -488,9 +488,14 @@ public class RemotePlayer : MonoBehaviour
         }
     }
 
+    private Ragdoll ragdollRef;
+
     private void LateUpdate()
     {
-        if (spine1)
+        // never while the ragdoll simulates: touching a parent bone every frame re-syncs the child rigidbodies
+        // (spine_2, arms, head) to their transforms and makes the dead body jitter
+        if (ragdollRef == null) ragdollRef = GetComponent<Ragdoll>();
+        if (spine1 && (ragdollRef == null || !ragdollRef.IsActive))
         {
             spine1.localScale = Vector3.one * bodyScale;
         }
