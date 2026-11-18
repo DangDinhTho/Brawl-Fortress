@@ -146,4 +146,60 @@ public class BotController : MonoBehaviour
         }
     }
 
+
+    /// <summary>Boss dodge roll (BossFollowEnemy / BossMoveToTarget). Ported from TF2_AI.</summary>
+    [Header("Boss roll")]
+    [Tooltip("Distance covered by one dodge roll (m)")]
+    public float rollDistance = 5f;
+    bool rolling;
+    float rollClipLength = -1f;
+
+    /// <summary>Dodge roll: plays the roll animation AND dashes the body along the current path (or forward), front-loaded
+    /// speed for the length of the roll clip, through NavMeshAgent.Move so it never leaves the NavMesh. Path following is
+    /// paused meanwhile so the two motions do not fight.</summary>
+    public void Roll()
+    {
+        if (rolling || bot == null || bot.remotePlayer == null) return;
+        StartCoroutine(RollRoutine());
+    }
+
+    System.Collections.IEnumerator RollRoutine()
+    {
+        rolling = true;
+        var nav = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        Vector3 dir = nav != null && nav.hasPath ? nav.steeringTarget - transform.position : transform.forward;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) dir = transform.forward;
+        dir.Normalize();
+        transform.rotation = Quaternion.LookRotation(dir);
+        bot.remotePlayer.playerAnimator.Roll();
+
+        float duration = RollDuration();
+        bool wasStopped = nav != null && nav.isOnNavMesh && nav.isStopped;
+        if (nav != null && nav.isOnNavMesh) nav.isStopped = true;
+        float t = 0f;
+        while (t < duration)
+        {
+            float dt = Time.deltaTime;
+            // speed 2*D/T at the start falling linearly to 0: covers exactly rollDistance
+            float speed = 2f * rollDistance / duration * (1f - t / duration);
+            if (nav != null && nav.isOnNavMesh) nav.Move(dir * speed * dt);
+            else transform.position += dir * speed * dt;
+            t += dt;
+            yield return null;
+        }
+        if (nav != null && nav.isOnNavMesh) nav.isStopped = wasStopped;
+        rolling = false;
+    }
+
+    float RollDuration()
+    {
+        if (rollClipLength > 0f) return rollClipLength;
+        rollClipLength = 0.7f;
+        var anim = bot.remotePlayer.playerAnimator.Animator;
+        if (anim != null && anim.runtimeAnimatorController != null)
+            foreach (var clip in anim.runtimeAnimatorController.animationClips)
+                if (clip != null && clip.name.ToLower().Contains("roll")) { rollClipLength = Mathf.Clamp(clip.length * 0.55f, 0.4f, 1.2f); break; } // the clip is roll + get-up-to-run (in place): dash only during the roll part
+        return rollClipLength;
+    }
 }

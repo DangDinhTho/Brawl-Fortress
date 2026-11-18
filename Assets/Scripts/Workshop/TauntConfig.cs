@@ -76,6 +76,10 @@ public enum Taunt : byte
     taunt_3,
     taunt_4,
     taunt_5,
+    hale_taunt_1, // boss taunts ported from TF2_AI
+    hale_taunt_2,
+    yeti_taunt_1,
+    yeti_taunt_2,
 
     Max
 }

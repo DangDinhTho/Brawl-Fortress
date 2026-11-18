@@ -178,7 +178,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         //{
         //    maxPlayer = (byte)maxPlayerObj;
         //}
-        if (gameMode == GameMode.MannVsMachine)
+        if (ConfigManager.IsCoopMode(gameMode))
         {
             maxPlayer = ConfigManager.maxPlayerPerRoom;
         }
@@ -240,9 +240,9 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     private IEnumerator SpawnBot(bool force)
     {
-        //Team teamMax = gameMode == GameMode.MannVsMachine ? Team.red : Team.blue;
+        //Team teamMax = ConfigManager.IsCoopMode(gameMode) ? Team.red : Team.blue;
 
-        if (gameMode != GameMode.MannVsMachine)
+        if (!ConfigManager.IsCoopMode(gameMode))
         {
             int[] botTeams = new int[] { teamPlayerCount[(Team)0], teamPlayerCount[(Team)1] };
             Team _team = Team.red;
@@ -380,7 +380,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         
         object teamId;
         Team playerTeam = Team.red;
-        if (gameMode != GameMode.MannVsMachine)
+        if (!ConfigManager.IsCoopMode(gameMode))
         {
             if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue(TF2GameProps.TeamKey, out teamId))
             {
@@ -616,7 +616,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         float score = 0;
         int cPlayer = 0;
         int maxP = maxPlayer;
-        if (gameMode != GameMode.MannVsMachine)
+        if (!ConfigManager.IsCoopMode(gameMode))
         {
             if (teamMembers.TryGetValue(mainPlayer.team, out var myTeam) &&
                 teamMembers.TryGetValue(ConfigManager.GetEnemyTeam(mainPlayer.team), out var enemyTeam))

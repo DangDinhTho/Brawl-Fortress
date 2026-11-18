@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -58,7 +58,7 @@ public class TPSLookAt : MonoBehaviour
     }
 
     // Update is called once per frame
-    void LateUpdate()
+    public virtual void LateUpdate() // virtual: ZombieTFSLookAt (zombies) turns the aim-follow off
     {
         Vector3 target = GetTargetPosition();
         for (int i = 0; i < iterations; i++)

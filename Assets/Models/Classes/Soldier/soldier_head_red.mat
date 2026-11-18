@@ -9,7 +9,11 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: soldier_head_red
   m_Shader: {fileID: 4800000, guid: f7e38193b7f064d7380403618fd8b69e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - DR_RIM_ON
+  - DR_SPECULAR_ON
   - _CELPRIMARYMODE_SINGLE
   - _TEXTUREBLENDINGMODE_MULTIPLY
   m_InvalidKeywords:
@@ -24,6 +28,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -60,7 +65,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 27c938e2d50536e48b2511b70c92d693, type: 3}
+        m_Texture: {fileID: 2800000, guid: ce480359634b2394c99b4ceec5118331, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MatCapMask:
@@ -113,12 +118,12 @@ Material:
     - _DirectIntensityOutline: 1
     - _DstBlend: 0
     - _EmissionChannel: 4
-    - _FlatRimEdgeSmoothness: 0.5
-    - _FlatRimLightAlign: 0
-    - _FlatRimSize: 0.5
-    - _FlatSpecularEdgeSmoothness: 0
-    - _FlatSpecularSize: 0.1
-    - _Flatness: 1
+    - _FlatRimEdgeSmoothness: 0.3
+    - _FlatRimLightAlign: 0.3
+    - _FlatRimSize: 0.35
+    - _FlatSpecularEdgeSmoothness: 0.2
+    - _FlatSpecularSize: 0.06
+    - _Flatness: 0.5
     - _FlatnessExtra: 1
     - _FresnelMax: 1.5
     - _FresnelMin: 0
@@ -166,17 +171,17 @@ Material:
     - _ReflectionMapType: 0
     - _ReflectionSmoothness: 0.5
     - _RenderingMode: 0
-    - _RimEnabled: 0
+    - _RimEnabled: 1
     - _RimMax: 1
     - _RimMin: 0.5
-    - _SelfShadingSize: 0.5
+    - _SelfShadingSize: 0.45
     - _SelfShadingSizeExtra: 0.6
     - _ShadowColorLightAtten: 1
-    - _ShadowEdgeSize: 0.05
+    - _ShadowEdgeSize: 0.03
     - _ShadowEdgeSizeExtra: 0.05
     - _SingleIndirectColor: 0
     - _SmoothnessTextureChannel: 0
-    - _SpecularEnabled: 0
+    - _SpecularEnabled: 1
     - _SpecularHighlights: 1
     - _SpecularMapType: 0
     - _SpecularRoughness: 0.5
@@ -210,14 +215,14 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _ColorDim: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorDim: {r: 0.58, g: 0.6, b: 0.72, a: 1}
     - _ColorDimCurve: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
     - _ColorDimExtra: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
     - _ColorDimSteps: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
     - _ColorGradient: {r: 0.85023, g: 0.85034, b: 0.85045, a: 0.85056}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FlatRimColor: {r: 0.85023, g: 0.85034, b: 0.85045, a: 0.85056}
-    - _FlatSpecularColor: {r: 0.85023, g: 0.85034, b: 0.85045, a: 0.85056}
+    - _FlatRimColor: {r: 1, g: 0.96, b: 0.88, a: 1}
+    - _FlatSpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _HColor: {r: 1, g: 1, b: 1, a: 1}
     - _LightmapDirection: {r: 0, g: 1, b: 0, a: 0}
     - _MatCapColor: {r: 1, g: 1, b: 1, a: 1}
@@ -228,3 +233,4 @@ Material:
     - _SpecularColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
     - _UnityShadowColor: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

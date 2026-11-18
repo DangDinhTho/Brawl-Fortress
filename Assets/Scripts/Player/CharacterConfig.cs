@@ -40,5 +40,8 @@ public enum TF2Class : byte
     scout,
     sniper,
     soldier,
-    spy
+    spy,
+    END_CHARACTER, // not a playable class: everything below is a boss (ported from TF2_AI)
+    hale,
+    yeti,
 }

@@ -98,6 +98,37 @@ public class ConfigManager
         }
     }
     
+    /// <summary>Stats for the boss / zombie attacks until Title Data weapon_stats has them (do not add them before the
+    /// build with lenient title-data parsing is on the store). Cloned from Fists so every field is set like a normal melee.</summary>
+    public static WeaponStats DefaultAiWeaponStats(WeaponId id)
+    {
+        WeaponStats s = null;
+        if (weaponStats != null && weaponStats.TryGetValue(WeaponId.Fists, out var fists))
+            s = Newtonsoft.Json.JsonConvert.DeserializeObject<WeaponStats>(Newtonsoft.Json.JsonConvert.SerializeObject(fists));
+        if (s == null) s = new WeaponStats { interval = 1f };
+        switch (id)
+        {
+            case WeaponId.HalePunch: s.minDamage = 50; s.maxDamage = 80; s.interval = 0.9f; break;
+            case WeaponId.YetiPunch: s.minDamage = 60; s.maxDamage = 90; s.interval = 1.0f; break;
+            case WeaponId.Zombie_Attack: s.minDamage = 20; s.maxDamage = 30; s.interval = 1f; break;
+        }
+        s.damage = (s.minDamage + s.maxDamage) / 2f;
+        return s;
+    }
+
+    /// <summary>Boss stats used until Title Data character_stats has an entry for the boss (do not add one before
+    /// the build with lenient title-data parsing is on the store). Speed: Heavy's + 25%, already converted like the others.</summary>
+    public static CharacterStats DefaultBossStats(TF2Class tf2Class)
+    {
+        float heavySpeed = characterStats != null && characterStats.TryGetValue(TF2Class.heavy, out var h) ? h.speed / 1.75f : 3f;
+        return new CharacterStats
+        {
+            characterClass = tf2Class,
+            maxHealth = tf2Class == TF2Class.yeti ? 12000 : 10000,
+            speed = heavySpeed * 1.25f, // aggressive: clearly faster than a Heavy
+        };
+    }
+
     public static CharacterConfig GetCharacterConfig(TF2Class tf2Class)
     {
         if (characterConfigs.TryGetValue(tf2Class, out var characterConfig))
@@ -107,8 +138,17 @@ public class ConfigManager
         else
         {
             characterConfig = Resources.Load<CharacterConfig>($"Config/Characters/{tf2Class}");
-            characterConfig.characterStats = characterStats[tf2Class];
-            characterConfig.characterStats.speed = characterStats[tf2Class].speed / 1.75f;
+            // bosses (hale, yeti) are not in Title Data character_stats: keep the stats of their config asset
+            if (characterStats != null && characterStats.TryGetValue(tf2Class, out var stats))
+            {
+                characterConfig.characterStats = stats;
+                characterConfig.characterStats.speed = stats.speed / 1.75f;
+            }
+            else if (characterConfig.characterStats == null)
+            {
+                // stats are not serialized in the config asset: bosses without Title Data entry get code defaults
+                characterConfig.characterStats = DefaultBossStats(tf2Class);
+            }
             characterConfigs.Add(tf2Class, characterConfig);
             return characterConfig;
         }
@@ -196,6 +236,10 @@ public class ConfigManager
 
     }
 
+    /// <summary>Co-op modes against AI (robots, boss, zombies): every player is on the red team, no bots fill the
+    /// enemy team from the room size, and only half the room size can join.</summary>
+    public static bool IsCoopMode(GameMode m) => m == GameMode.MannVsMachine || m == GameMode.JungleBoss || m == GameMode.Zombie;
+
     public static bool CheckSelectMap(Map map)
     {
         int cost = GetTicketCost(map);
@@ -251,6 +295,8 @@ public class ConfigManager
         (GameMode.MannVsMachine, Map.Map_Brawl_CrystalFactory, 3),
         (GameMode.MannVsMachine, Map.Map_Brawl_MoonbaseSiege, 4),
         (GameMode.MannVsMachine, Map.Map_Brawl_LastStand, 5),
+        (GameMode.JungleBoss, Map.Map_Brawl_HaleJungle, 0),
+        (GameMode.Zombie, Map.Map_Brawl_ZombieYard, 0),
     };
 
     /// <summary>Adds the default ticket config for every map mapConfigs does not have yet (called after Title Data is read).</summary>
@@ -306,6 +352,9 @@ public class ConfigManager
         { GameMode.KingOfTheHill, 7 },
         { GameMode.Payload, 12 },
         { GameMode.MannVsMachine, 17 },
+        // TODO before release: JungleBoss 22, Zombie 27 (one mode every ~10 matches). Level 1 while the ported modes are being tested.
+        { GameMode.JungleBoss, 1 },
+        { GameMode.Zombie, 1 },
     };
 
     /// <summary>Level from a rank score; level 1 at 0 points.</summary>

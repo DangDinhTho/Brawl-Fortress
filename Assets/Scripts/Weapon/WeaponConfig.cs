@@ -34,6 +34,8 @@ public class WeaponConfig: ScriptableObject
     public float range = 6f;
     [Tooltip("Total width (degrees) of the aim cone. Bullets fly inside it; the indicator shows it.")]
     public float aimAngle = 6f;
+    /// <summary>Melee reach used by the boss AI (BossFollowEnemy). Ported from TF2_AI.</summary>
+    public float attackRange = 10;
     [Tooltip("Bullets per shot, spread evenly across the cone (shotguns). The damage of one shot is split between them.")]
     public int pellets = 1;
     [Tooltip("Tap = one shot when the aim joystick is released. Hold = fires while the aim joystick is pulled to the edge.")]
@@ -41,7 +43,9 @@ public class WeaponConfig: ScriptableObject
 
     public void LoadStats()
     {
-        weaponStats = ConfigManager.weaponStats[weaponId];
+        // weapons missing from Title Data weapon_stats (boss / zombie attacks) keep the stats of their asset
+        if (ConfigManager.weaponStats != null && ConfigManager.weaponStats.TryGetValue(weaponId, out var remoteStats)) weaponStats = remoteStats;
+        if (weaponStats == null) weaponStats = ConfigManager.DefaultAiWeaponStats(weaponId); // not serialized in the asset
     }
 }
 
@@ -159,6 +163,9 @@ public enum WeaponId : byte
     demoman_secondary_1,
     demoman_secondary_2,
     demoman_secondary_3,
+    HalePunch,      // ported from TF2_AI (same order: keeps the serialized ids)
+    YetiPunch,
+    Zombie_Attack,
 }
 
 public enum BulletId

@@ -417,6 +417,9 @@ public class AdmobManager : MonoBehaviour
 
     void TryShowAppOpenAd(string trigger)
     {
+#if UNITY_EDITOR
+        return; // no app-open ads while playing in the editor
+#endif
         if (!CanShowAppOpenNow(out var reason))
         {
             Debug.Log($"App open ({trigger}) skipped: {reason}");

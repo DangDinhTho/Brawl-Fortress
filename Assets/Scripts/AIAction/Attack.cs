@@ -17,8 +17,7 @@ public class Attack : Action
 
     public override void OnStart()
     {
-        distanceStop = ConfigManager.stopDistances[botController.weaponType];
-        agent.stoppingDistance = distanceStop;
+        SetStopDistance();
         attacked = false;
     }
 
@@ -67,8 +66,7 @@ public class Attack : Action
 
         if (!botController.currWeapon.fire && !botController.blockAttack && !attacked)
         {
-            distanceStop = ConfigManager.stopDistances[botController.weaponType];
-            agent.stoppingDistance = distanceStop;
+            SetStopDistance();
             botController.Fire();
             attacked = true;
         }
@@ -77,5 +75,19 @@ public class Attack : Action
 
         return TaskStatus.Running;
 
+    }
+
+    /// <summary>Normal bots stop at the per-weapon-type distance. A boss is far bigger than a player: it never gets that
+    /// close (it only shoves the target), so it attacks from its weapon's attackRange and stops a bit inside it.</summary>
+    void SetStopDistance()
+    {
+        distanceStop = ConfigManager.stopDistances[botController.weaponType];
+        if (botController.bot is TF2Boss && botController.currWeapon != null && botController.currWeapon.weaponConfig != null)
+        {
+            distanceStop = Mathf.Max(distanceStop, botController.currWeapon.weaponConfig.attackRange);
+            agent.stoppingDistance = distanceStop * 0.85f;
+            return;
+        }
+        agent.stoppingDistance = distanceStop;
     }
 }

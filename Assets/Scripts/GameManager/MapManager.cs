@@ -63,6 +63,8 @@ public enum GameMode : byte
     MannVsMachine,
     Payload,
     KingOfTheHill,
+    JungleBoss,   // ported from TF2_AI: team vs the Hale boss
+    Zombie,       // ported from TF2_AI: survive zombie waves
 
 }
 
@@ -131,5 +133,7 @@ public enum Map: byte
     Map_Brawl_IronGrove,
     Map_Brawl_CrystalFactory,
     Map_Brawl_MoonbaseSiege,
-    Map_Brawl_LastStand
+    Map_Brawl_LastStand,
+    Map_Brawl_HaleJungle,   // JungleBoss (ported mode)
+    Map_Brawl_ZombieYard,   // Zombie (ported mode)
 }

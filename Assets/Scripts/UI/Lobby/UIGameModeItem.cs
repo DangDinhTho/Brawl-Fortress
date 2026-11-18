@@ -31,7 +31,7 @@ public class UIGameModeItem : MonoBehaviour
             ModeUnlock.ShowLockedPopup(gameMode);
             return;
         }
-        if (gameMode == GameMode.MannVsMachine)
+        if (ConfigManager.IsCoopMode(gameMode))
         {
             if (PhotonNetwork.CurrentRoom != null &&
                     PhotonNetwork.CurrentRoom.MaxPlayers > ConfigManager.maxPlayerPerRoom / 2)

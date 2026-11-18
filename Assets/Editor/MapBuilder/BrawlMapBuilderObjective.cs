@@ -351,6 +351,8 @@ public static partial class BrawlMapBuilder
             new[] { "BezierCurves", "BombCart", "Target", "MegaExplosionYellow", "Main Camera" }, typeof(PayloadManager), "BombCart", 0.25f);
         else if (d.mode == GameMode.MannVsMachine) SetupObjective(d, mmGo, "Assets/Scenes/Map_Brawl_MvM.unity",
             new[] { "BezierCurves", "BombTank", "AtomBomb", "Target", "MegaExplosionYellow", "BasicZoneBlue", "DeployCam" }, typeof(ManvsMachineManager), "BombTank", 0.0f);
+        else if (d.mode == GameMode.JungleBoss) { var j = mmGo.GetComponent<JungleModeManager>() ?? mmGo.AddComponent<JungleModeManager>(); j.bossType = TF2Class.hale; }
+        else if (d.mode == GameMode.Zombie) { if (!mmGo.GetComponent<ZombieModeManager>()) mmGo.AddComponent<ZombieModeManager>(); }
     }
 
     static void SetupObjective(Def d, GameObject mmGo, string srcPath, string[] roots, Type managerType, string vehicleName, float pathY)

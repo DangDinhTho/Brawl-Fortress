@@ -313,6 +313,13 @@ public class PlayerAnimator : AnimatorBase
         Animator.SetTrigger("EndTaunt");
     }
 
+    /// <summary>Dodge roll (boss / zombie animators have a "Roll" trigger). Ported from TF2_AI.</summary>
+    public void Roll()
+    {
+        Animator.SetInteger("RandomInt", Random.Range(0, 3));
+        Animator.SetTrigger("Roll");
+    }
+
 
     /// <summary>
     /// 
