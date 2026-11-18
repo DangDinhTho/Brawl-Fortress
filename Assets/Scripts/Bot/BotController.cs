@@ -25,13 +25,16 @@ public class BotController : MonoBehaviour
 
     /// <summary>Weapon the bot fights with. A medic's default (what a player spawns with) is the medigun, but a medic bot
     /// fights with its primary and only takes the medigun out to heal (BotMedic).</summary>
-    public WeaponType AttackWeapon => bot != null && bot.tF2Class == TF2Class.medic ? WeaponType.Primary : bot.characterConfig.defaultWeapon;
+    public WeaponType AttackWeapon => IsHealerMedic ? WeaponType.Primary : bot.characterConfig.defaultWeapon;
+    /// <summary>A medic bot with the medigun + primary loadout (not a zombie medic, which only has a melee attack).</summary>
+    bool IsHealerMedic => bot != null && bot.tF2Class == TF2Class.medic && !(bot is TF2Zombie)
+        && bot.remotePlayer != null && bot.remotePlayer.weaponSlots.ContainsKey(WeaponType.Primary) && bot.remotePlayer.weaponSlots.ContainsKey(WeaponType.Secondary);
     BotMedic medic;
 
     public void Init()
     {
         //behaviorTree = GetComponent<BehaviorTree>();
-        if (bot.tF2Class == TF2Class.medic)
+        if (IsHealerMedic)
         {
             medic = GetComponent<BotMedic>();
             if (medic == null) medic = gameObject.AddComponent<BotMedic>();

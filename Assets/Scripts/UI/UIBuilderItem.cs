@@ -19,14 +19,16 @@ public class UIBuilderItem : MonoBehaviour
     public void InitData(BuildableEntry _buildableEntry)
     {
         this.entry = _buildableEntry;
-        txtStatus.text = "builded";
+        txtStatus.text = "BUILT";
+        txtStatus.color = new Color(0.45f, 1f, 0.3f);
         buildedObj.SetActive(true);
     }
 
     public void InitEmpty()
     {
         this.entry = null;
-        txtStatus.text = "+";
+        txtStatus.text = "BUILD";
+        txtStatus.color = new Color(1f, 0.85f, 0.25f);
         buildedObj.SetActive(false);
     }
 

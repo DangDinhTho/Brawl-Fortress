@@ -146,6 +146,7 @@ public class PopupEngineerBuilder : PopupBase
     {
         if (isMoveBuildable) return;
         var entry = engineerBlueprint.Build();
+        if (entry == null) return; // blueprint on an invalid spot (red): stay in build mode
         uiEngineerHUD.uiBuildableHUDItems[entry.buildableType].SetBuildable(entry);
         wrench.UseExp(engineerBlueprint.blueprints[entry.buildableType].expRequired);
         Dismiss();

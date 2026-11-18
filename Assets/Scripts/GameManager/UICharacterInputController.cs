@@ -105,17 +105,43 @@ public class UICharacterInputController : MonoBehaviour
         }
     }
 
+    static string Nice(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
+
+    /// <summary>Readable killer from the attacker's view id. 'special' = zombie, boss, robot, building or self
+    /// (their description wins over a score-board name). Null when the attacker is unknown (falls, environment).</summary>
+    string DescribeKiller(int attacker, out bool special)
+    {
+        special = false;
+        if (mainPlayer != null && attacker == mainPlayer.viewID) { special = true; return "yourself"; }
+        var pv = Photon.Pun.PhotonNetwork.GetPhotonView(attacker);
+        if (pv == null) return null;
+        var building = pv.GetComponent<BuildableEntry>();
+        if (building != null)
+        {
+            special = true;
+            string what = building.buildableType == BuildableType.Sentry ? "Sentry Gun"
+                : building.buildableType == BuildableType.Dispenser ? "Dispenser" : "Teleporter";
+            string owner = building.owner != null ? building.owner.playerName : null;
+            return string.IsNullOrEmpty(owner) ? "a " + what : owner + "'s " + what;
+        }
+        var p = pv.GetComponent<TF2Player>();
+        if (p == null) return null;
+        string cls = Nice(p.tF2Class.ToString());
+        if (p is TF2Zombie) { special = true; return "a " + cls + " Zombie"; }
+        if (p is TF2Boss) { special = true; return "the Boss " + cls; }
+        if (p is TF2Robot) { special = true; return "a Robot " + cls; }
+        return !string.IsNullOrEmpty(p.playerName) ? p.playerName : cls;
+    }
+
     public void OnPlayerDeath(int attacker)
     {
-        if (ArenaManager.Instance.characterScores.TryGetValue(attacker, out var playerScore))
-        {
-            
-            txtDeathReason.text = string.Format(LocalizationManager.Localize("death_reason"), playerScore.playerName);
-        }
-        else
-        {
-            txtDeathReason.text = LocalizationManager.Localize("death_no_reason");
-        }
+        // who killed us: zombies, bosses, robots and buildings are not in the score board, they used to show 'unknown reason'
+        string killer = DescribeKiller(attacker, out bool special);
+        if (!special && ArenaManager.Instance.characterScores.TryGetValue(attacker, out var playerScore) && !string.IsNullOrEmpty(playerScore.playerName))
+            killer = playerScore.playerName;
+        txtDeathReason.text = !string.IsNullOrEmpty(killer)
+            ? string.Format(LocalizationManager.Localize("death_reason"), killer)
+            : LocalizationManager.Localize("death_no_reason");
         txtDeathReason.gameObject.SetActive(true);
         txtTimeSpawn.gameObject.SetActive(true);
         // dark overlay + skull + red, bold, outlined texts

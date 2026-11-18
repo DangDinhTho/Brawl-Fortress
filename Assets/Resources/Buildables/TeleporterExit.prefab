@@ -24,13 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 398122684}
+  serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6208378397465506096}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &398122686
 BoxCollider:
@@ -40,11 +40,19 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 398122684}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 0.33813003, z: 1}
-  m_Center: {x: 0, y: 0.14185958, z: 0}
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.08, z: 1}
+  m_Center: {x: 0, y: 0.04, z: 0}
 --- !u!1 &6208378397465506093
 GameObject:
   m_ObjectHideFlags: 0
@@ -73,6 +81,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6208378397465506093}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -3.348, y: 0, z: 24.118}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -82,7 +91,6 @@ Transform:
   - {fileID: 535742869}
   - {fileID: 398122685}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6208378397465506099
 MonoBehaviour:
@@ -179,11 +187,19 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6208378397465506093}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 0.85, y: 0.27246356, z: 0.85}
-  m_Center: {x: 0, y: 0.09707001, z: 0}
+  serializedVersion: 3
+  m_Size: {x: 0.85, y: 0.04, z: 0.85}
+  m_Center: {x: 0, y: 0.02, z: 0}
 --- !u!82 &-5328415795163503090
 AudioSource:
   m_ObjectHideFlags: 0
@@ -195,6 +211,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -285,6 +302,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 6208378397465506096}
     m_Modifications:
     - target: {fileID: 104520, guid: e9f0a68c0d308a04a80446a65945efc5, type: 3}
@@ -380,6 +398,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e9f0a68c0d308a04a80446a65945efc5, type: 3}
 --- !u!1 &535530863 stripped
 GameObject:
@@ -396,6 +417,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 6208378397465506096}
     m_Modifications:
     - target: {fileID: -9167045577931139654, guid: 312e682baa908fc488c85a51fe870141, type: 3}
@@ -1215,6 +1237,45 @@ PrefabInstance:
       value: 14
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6208378396417021805}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6208378396417021804}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6208378396417021807}
+    - targetCorrespondingSourceObject: {fileID: -3945180658029351867, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1317935707}
+    - targetCorrespondingSourceObject: {fileID: 6207276276708667789, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1317935706}
+    - targetCorrespondingSourceObject: {fileID: -1794054327351312295, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1317935705}
+    - targetCorrespondingSourceObject: {fileID: 1941260252096345552, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8810390660781439655}
+    - targetCorrespondingSourceObject: {fileID: -3278517179015892720, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8005349372702631379}
+    - targetCorrespondingSourceObject: {fileID: -8514480132648966669, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4797446731857305685}
+    - targetCorrespondingSourceObject: {fileID: 4945961943923310083, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 639176226}
+    - targetCorrespondingSourceObject: {fileID: -7183034760803834600, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 639176225}
+    - targetCorrespondingSourceObject: {fileID: -1189757046742341347, guid: 312e682baa908fc488c85a51fe870141, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 639176224}
   m_SourcePrefab: {fileID: 100100000, guid: 312e682baa908fc488c85a51fe870141, type: 3}
 --- !u!1 &3443261360875031 stripped
 GameObject:
@@ -1509,7 +1570,7 @@ LODGroup:
   m_Enabled: 1
 --- !u!95 &6208378396417021804
 Animator:
-  serializedVersion: 4
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1523,10 +1584,12 @@ Animator:
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorControllerStateOnDisable: 0
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &6208378396417021807
 MonoBehaviour:
   m_ObjectHideFlags: 0

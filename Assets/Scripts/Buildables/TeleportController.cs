@@ -33,8 +33,9 @@ public class TeleportController : BuildableEntry
         if (photonView.InstantiationData != null && photonView.InstantiationData.Length > 1)
         {
             int otherViewId = (int)photonView.InstantiationData[1];
-            otherTeleport = PhotonNetwork.GetPhotonView(otherViewId)?.transform.GetComponent<TeleportController>();
-            otherTeleport.SetOtherTeleport(this);
+            var pv = PhotonNetwork.GetPhotonView(otherViewId);
+            otherTeleport = pv != null ? pv.GetComponent<TeleportController>() : null;
+            if (otherTeleport != null) otherTeleport.SetOtherTeleport(this); // the pair may already be destroyed
         }
     }
 
@@ -80,93 +81,93 @@ public class TeleportController : BuildableEntry
         
     }
 
+    // ---- teleport (only the entrance moves people; the exit only plays its effect)
+    static readonly Collider[] padHits = new Collider[12];
+    float nextScan;
+
+    void HideArrows()
+    {
+        if (!arrowActive) return;
+        for (int i = 0; i < arrowObjs.Length; i++) arrowObjs[i].SetActive(false);
+        effect.SetActive(false);
+        targetMove = null;
+        timeDelay = 0;
+        arrowActive = false;
+    }
+
+    /// <summary>A living team mate standing on the pad (box over the whole pad, not one ray at its centre).</summary>
+    TF2Player FindRider()
+    {
+        Vector3 c = transform.position + Vector3.up * 0.7f;
+        int n = Physics.OverlapBoxNonAlloc(c, new Vector3(0.5f, 0.7f, 0.5f), padHits, transform.rotation, checkMark, QueryTriggerInteraction.Collide);
+        for (int i = 0; i < n; i++)
+        {
+            var p = padHits[i] != null ? padHits[i].transform.root.GetComponent<TF2Player>() : null;
+            if (p != null && p.team == team && p.healthManager != null && !p.healthManager.death) return p;
+        }
+        return null;
+    }
+
     private void Update()
     {
-        //check if ray hits something
-        if (buildableType != BuildableType.TeleporterEnter || state != BuildableState.Idle || (otherTeleport != null && otherTeleport.state != BuildableState.Idle))
+        if (buildableType != BuildableType.TeleporterEnter || state != BuildableState.Idle || otherTeleport == null || otherTeleport.state != BuildableState.Idle)
         {
-            if (arrowActive)
-            {
-                for (int i = 0; i < arrowObjs.Length; i++)
-                {
-                    arrowObjs[i].SetActive(false);
-                }
-                effect.SetActive(false);
-                targetMove = null;
-                timeDelay = 0;
-                arrowActive = false;
-            }
+            HideArrows();
             return;
         }
 
-        if (otherTeleport != null)
+        if (!arrowActive)
         {
-            if(!arrowActive)
+            for (int i = 0; i < arrowObjs.Length; i++) arrowObjs[i].SetActive(true);
+            arrowActive = true;
+        }
+        Vector3 otherPos = otherTeleport.transform.position;
+        otherPos.y = arrow.position.y;
+        arrow.LookAt(otherPos);
+
+        // who stands on the pad: checked 10 times a second
+        if (Time.time >= nextScan)
+        {
+            nextScan = Time.time + 0.1f;
+            var rider = FindRider();
+            Transform riderT = rider != null ? rider.transform : null;
+            if (riderT != targetMove)
             {
-                for (int i = 0; i < arrowObjs.Length; i++)
-                {
-                    arrowObjs[i].SetActive(true);
-                }
-
-                arrowActive = true;
-            }
-            Vector3 otherPos = otherTeleport.transform.position;
-            otherPos.y = arrow.position.y;
-            arrow.LookAt(otherPos);
-            
-            if (Physics.Raycast(transform.position, Vector3.up, out hit, 1f, checkMark))
-            {
-                if (targetMove == null || targetMove != hit.transform.root)
-                {
-                    
-                    TF2Player tf2Player = hit.transform.root.GetComponent<TF2Player>();
-                    if (tf2Player != null && tf2Player.team == team)
-                    {
-                        targetMove = hit.transform.root;
-                        timeDelay = 0;
-                        effect.SetActive(true);
-                    }
-                }
-
-
-                if (targetMove != null && timeDelay >= timeDelayTeleports[level - 1])
-                {
-                    TF2Player tf2Player = targetMove.GetComponent<TF2Player>();
-                    if (tf2Player != null && tf2Player.photonView.IsMine && tf2Player.team == team)
-                    {
-                        tf2Player.FPSPlayer.State = PlayerState.Teleport;
-                        tf2Player.transform.position = otherTeleport.transform.position + Vector3.up * 0.2f;
-                        otherTeleport.OnPlayerExit(tf2Player);
-                    }
-
-                    timeDelay = 0;
-                    targetMove = null;
-                    effect.SetActive(false);
-                }
-               
-
-                timeDelay += Time.deltaTime;
-
-            }
-            else if(timeDelay > 0)
-            {
-                targetMove = null;
+                targetMove = riderT;
                 timeDelay = 0;
-                effect.SetActive(false);
+                effect.SetActive(riderT != null);
             }
         }
-        else if(arrowActive)
+        if (targetMove == null) return;
+
+        timeDelay += Time.deltaTime;
+        if (timeDelay < timeDelayTeleports[Mathf.Clamp(level - 1, 0, timeDelayTeleports.Length - 1)]) return;
+
+        var player = targetMove.GetComponent<TF2Player>();
+        if (player != null && player.photonView.IsMine) TeleportPlayer(player);
+        timeDelay = 0;
+        targetMove = null;
+        effect.SetActive(false);
+    }
+
+    /// <summary>Moves the rider onto the exit. Bots walk with a NavMeshAgent (Warp, or it pulls them back); players move
+    /// with a CharacterController (disabled while the position is set, or it can overwrite it).</summary>
+    void TeleportPlayer(TF2Player player)
+    {
+        Vector3 dest = otherTeleport.transform.position + Vector3.up * 0.05f;
+        if (player.FPSPlayer != null) player.FPSPlayer.State = PlayerState.Teleport;
+        var agent = player.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        var cc = player.GetComponent<CharacterController>();
+        if (agent != null && agent.enabled && agent.isOnNavMesh) agent.Warp(dest);
+        else
         {
-            for (int i = 0; i < arrowObjs.Length; i++)
-            {
-                arrowObjs[i].SetActive(false);
-            }
-            effect.SetActive(false);
-            targetMove = null;
-            timeDelay = 0;
-            arrowActive = false;
+            bool ccOn = cc != null && cc.enabled;
+            if (ccOn) cc.enabled = false;
+            player.transform.position = dest;
+            if (ccOn) cc.enabled = true;
         }
-        
+        Physics.SyncTransforms();
+        otherTeleport.OnPlayerExit(player);
     }
 
     public void OnPlayerExit(TF2Player player)
@@ -179,7 +180,7 @@ public class TeleportController : BuildableEntry
     {
         effect.SetActive(true);
         yield return new WaitForSeconds(0.2f);
-        if (tF2Player != null && tF2Player.photonView.IsMine)
+        if (tF2Player != null && tF2Player.photonView.IsMine && tF2Player.FPSPlayer != null)
         {
             tF2Player.FPSPlayer.State = PlayerState.Idle;
         }

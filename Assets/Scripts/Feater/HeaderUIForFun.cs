@@ -38,6 +38,7 @@ public class HeaderUIForFun : MonoBehaviour
         mainCamera = CameraController.instan.GetCurrentCamera().transform;
         image.gameObject.SetActive(false);
         BuildBar();
+        if (ownerPlayer is TF2Zombie && txtName != null) txtName.gameObject.SetActive(false); // zombies: health bar only
         hpMax = ownerPlayer.healthManager.maxHealth > 0 ? (int)ownerPlayer.healthManager.maxHealth : 0;
         hp = (int)ownerPlayer.healthManager.currentHealth;
         UpdateHpText();

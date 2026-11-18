@@ -35,6 +35,7 @@ public class BuildableEntry : MonoBehaviour
 
     public virtual void Start()
     {
+        if (GetComponent<BuildableMarker>() == null) gameObject.AddComponent<BuildableMarker>(); // team ring + health bar
         if (photonView.InstantiationData != null)
         {
             int ownerId = (int)photonView.InstantiationData[0];

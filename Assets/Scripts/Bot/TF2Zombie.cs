@@ -27,6 +27,10 @@ public class TF2Zombie : TF2Bot
         if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
         if (GetComponent<FootRing>() == null) gameObject.AddComponent<FootRing>();
         healthManager.Init(this);
+        // steady shamble, body facing its walk, clip rate matching the ground speed (see ZombieMotion)
+        var motion = GetComponent<ZombieMotion>();
+        if (motion == null) motion = gameObject.AddComponent<ZombieMotion>();
+        motion.Init(this);
         if (photonView.IsMine)
         {
             botController.Init();
@@ -81,8 +85,11 @@ public class TF2Zombie : TF2Bot
         }
     }
 
+    /// <summary>Was: x1.25 rush for 15 s, then x0.18 (crawl). Now one steady speed set by ZombieMotion.</summary>
     IEnumerator WaitSpeed()
     {
+        var motion = GetComponent<ZombieMotion>();
+        if (motion != null) { motion.ApplySpeed(); yield break; }
             agent.speed = characterConfig.characterStats.speed * 1.25f;
         yield return new WaitForSeconds(15);
         if (tF2Class == TF2Class.scout)

@@ -539,7 +539,7 @@ GameObject:
   - component: {fileID: 4198472903781650111}
   - component: {fileID: -2352415329082509910}
   m_Layer: 14
-  m_Name: Bot_Competitive
+  m_Name: Bot_Zombie
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -677,6 +677,7 @@ MonoBehaviour:
   canSeePlayer: 0
   targetInField: {fileID: 0}
   team: 0
+  closeSense: 4
 --- !u!114 &6378192914635144125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -735,6 +736,8 @@ MonoBehaviour:
   bot: {fileID: 6378192914635144125}
   currWeapon: {fileID: 0}
   blockAttack: 0
+  releaseFireWithoutTarget: 0.5
+  rollDistance: 5
 --- !u!114 &6378192914635144127
 MonoBehaviour:
   m_ObjectHideFlags: 0

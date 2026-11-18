@@ -51,7 +51,9 @@ public class Ragdoll : MonoBehaviour
         }
         foreach (var rb in rigidBodies)
         {
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            // NO interpolation while alive: a kinematic interpolated body writes its old physics pose over the
+            // animated bone, so after a respawn / teleport the ragdoll bones stayed behind and stretched the skin
+            rb.interpolation = RigidbodyInterpolation.None;
             rb.solverIterations = 12;
             rb.solverVelocityIterations = 4;
             rb.maxDepenetrationVelocity = 3f;
@@ -68,9 +70,14 @@ public class Ragdoll : MonoBehaviour
         if (animator) animator.enabled = true;
         foreach (var rigidBody in rigidBodies)
         {
-            rigidBody.ResetCenterOfMass();
+            rigidBody.interpolation = RigidbodyInterpolation.None;
             rigidBody.isKinematic = true;
+            rigidBody.ResetCenterOfMass();
+            // the physics pose follows the bone again (it would otherwise keep the place of death)
+            rigidBody.position = rigidBody.transform.position;
+            rigidBody.rotation = rigidBody.transform.rotation;
         }
+        Physics.SyncTransforms();
     }
 
     public void ActivateRagdoll(Vector3 direction)
@@ -88,7 +95,10 @@ public class Ragdoll : MonoBehaviour
         RebaseJoints();
         foreach (var rigidBody in rigidBodies)
         {
+            rigidBody.position = rigidBody.transform.position; // start the simulation from the pose of death
+            rigidBody.rotation = rigidBody.transform.rotation;
             rigidBody.isKinematic = false; // velocities can only be set on dynamic bodies
+            rigidBody.interpolation = RigidbodyInterpolation.Interpolate; // smooth only while simulated
             rigidBody.linearVelocity = Vector3.zero;
             rigidBody.angularVelocity = Vector3.zero;
         }

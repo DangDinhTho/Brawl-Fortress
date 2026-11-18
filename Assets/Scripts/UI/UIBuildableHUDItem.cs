@@ -31,7 +31,7 @@ public class UIBuildableHUDItem : MonoBehaviour
         buildableEntry.OnBuildComplete += OnBuildCompleted;
         buildableEntry.health.OnHealthChanged += OnHelthChange;
         buildableEntry.health.OnDeath += OnDied;
-        OnHelthChange(buildableEntry.health.maxHealth, buildableEntry.health.currentHealth);
+        OnHelthChange(buildableEntry.health.currentHealth, buildableEntry.health.maxHealth);
         if(buildableEntry.state == BuildableState.Building)
         {
             StartCoroutine(Building(buildableEntry.timeBuildingRemain));
@@ -60,10 +60,11 @@ public class UIBuildableHUDItem : MonoBehaviour
         this.level = _level;
     }
 
-    public void OnHelthChange(int maxHealth, int health)
+    /// <summary>Same order as HealthBase.OnHealthChanged: (current, max). Was reversed, so the HUD showed max/current.</summary>
+    public void OnHelthChange(int health, int maxHealth)
     {
         txtEntryHealth.text = $"{health}/{maxHealth}";
-        entryHealthUI.fillAmount = health * 1.0f / maxHealth;
+        SetFill(entryHealthUI, maxHealth > 0 ? health * 1.0f / maxHealth : 0f);
     }
 
     public void OnDied()
@@ -73,6 +74,17 @@ public class UIBuildableHUDItem : MonoBehaviour
         txtEntryHealth.gameObject.SetActive(false);
     }
 
+    /// <summary>Sliced (rounded) bars shrink by width so their rounded ends keep their shape; Filled images use fillAmount.</summary>
+    static void SetFill(Image img, float v)
+    {
+        if (img == null) return;
+        v = Mathf.Clamp01(v);
+        if (img.type != Image.Type.Sliced) { img.fillAmount = v; return; }
+        var r = img.rectTransform;
+        r.anchorMax = new Vector2(v, r.anchorMax.y);
+        img.enabled = v > 0.04f; // a rounded bar thinner than its height looks broken
+    }
+
     IEnumerator Building(float time)
     {
         entryHealthUI.transform.parent.gameObject.SetActive(false);
@@ -80,7 +92,7 @@ public class UIBuildableHUDItem : MonoBehaviour
         buildingProcessUI.transform.parent.gameObject.SetActive(true);
         while (_timeRun < time)
         {
-            buildingProcessUI.fillAmount = _timeRun / time;
+            SetFill(buildingProcessUI, _timeRun / time);
             _timeRun += Time.deltaTime;
             yield return null;
         }
