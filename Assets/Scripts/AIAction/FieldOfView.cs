@@ -44,6 +44,8 @@ public class FieldOfView : MonoBehaviour
 
     private void FieldOfViewCheck()
     {
+        // promo recording: bots stay passive so a shot can be staged (PromoHooks, editor only)
+        if (PromoHooks.BotsPassive) { canSeePlayer = false; return; }
         Collider[] rangeChecks = Physics.OverlapSphere(transform.position + Vector3.up, radius, targetMask);
 
         if (rangeChecks.Length != 0)

@@ -42,7 +42,7 @@ public class PopupScoreBoard : PopupBase
 
         InitData();
 
-        if (cantDismiss && !mrecShown)
+        if (cantDismiss && !mrecShown && ConfigManager.showMrecScoreboard)
         {
             mrecShown = true;
             AdsManager.instan.ShowNavtiveAds(mrecPosition);

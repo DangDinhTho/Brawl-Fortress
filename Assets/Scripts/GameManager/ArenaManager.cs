@@ -127,7 +127,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         }
         else
         {
-            time = 300;
+            time = ConfigManager.defaultBattleTime; // map not listed in battle_map_times (was 300)
         }
         gameStateTime.Add(GameState.BattleCountTime, time);
         GameManager.instan.played = true;

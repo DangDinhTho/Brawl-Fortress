@@ -558,6 +558,45 @@ public class LoginManager : MonoBehaviour
         }
     }
 
+    /// <summary>Object keyed by enum names (map, mode, weapon, class). An entry whose name this build does not know
+    /// (added for a later version) or whose value does not parse is skipped with a warning, instead of the whole key failing.
+    /// Returns null only when the key is missing or is not a JSON object.</summary>
+    static Dictionary<TKey, TValue> ParseEnumDict<TKey, TValue>(Dictionary<string, string> data, string key) where TKey : struct, Enum
+    {
+        if (!data.TryGetValue(key, out var json) || string.IsNullOrEmpty(json)) return null;
+        Newtonsoft.Json.Linq.JObject obj;
+        try { obj = Newtonsoft.Json.Linq.JObject.Parse(json); }
+        catch (Exception e) { Debug.LogError($"TitleData '{key}' parse error: {e.Message}"); return null; }
+        var res = new Dictionary<TKey, TValue>();
+        foreach (var p in obj.Properties())
+        {
+            if (!Enum.TryParse(p.Name, true, out TKey k) || !Enum.IsDefined(typeof(TKey), k))
+            {
+                Debug.LogWarning($"TitleData '{key}': unknown entry '{p.Name}' skipped");
+                continue;
+            }
+            try { res[k] = p.Value.ToObject<TValue>(); }
+            catch (Exception e) { Debug.LogWarning($"TitleData '{key}': entry '{p.Name}' skipped: {e.Message}"); }
+        }
+        return res;
+    }
+
+    /// <summary>JSON array: an item that does not parse (e.g. a map name this build does not know) is skipped with a warning.</summary>
+    static List<T> ParseListLenient<T>(Dictionary<string, string> data, string key)
+    {
+        if (!data.TryGetValue(key, out var json) || string.IsNullOrEmpty(json)) return null;
+        Newtonsoft.Json.Linq.JArray arr;
+        try { arr = Newtonsoft.Json.Linq.JArray.Parse(json); }
+        catch (Exception e) { Debug.LogError($"TitleData '{key}' parse error: {e.Message}"); return null; }
+        var res = new List<T>();
+        foreach (var item in arr)
+        {
+            try { res.Add(item.ToObject<T>()); }
+            catch (Exception e) { Debug.LogWarning($"TitleData '{key}': item skipped: {e.Message}"); }
+        }
+        return res;
+    }
+
     static void ReadBool(Dictionary<string, string> data, string key, ref bool target)
     {
         if (data.TryGetValue(key, out var s) && bool.TryParse(s, out var v)) target = v;
@@ -597,15 +636,15 @@ public class LoginManager : MonoBehaviour
         if (data.TryGetValue("score_per_level", out var spl) && int.TryParse(spl, out var splValue) && splValue > 0)
             ConfigManager.scorePerLevel = splValue;
 
-        var modeUnlock = ParseJson<Dictionary<GameMode, int>>(data, "mode_unlock_level");
+        var modeUnlock = ParseEnumDict<GameMode, int>(data, "mode_unlock_level");
         if (modeUnlock != null)
             foreach (var kv in modeUnlock) ConfigManager.modeUnlockLevels[kv.Key] = kv.Value;
 
-        var mapConfigsOld = ParseJson<List<MapConfig>>(data, "map_configs");
+        var mapConfigsOld = ParseListLenient<MapConfig>(data, "map_configs");
         if (mapConfigsOld != null)
             foreach (var mapCfg in mapConfigsOld) ConfigManager.mapConfigs[mapCfg.map] = mapCfg;
 
-        var mapConfigs = ParseJson<List<MapConfig>>(data, "map_config");
+        var mapConfigs = ParseListLenient<MapConfig>(data, "map_config");
         if (mapConfigs != null)
         {
             ConfigManager.mapConfigs.Clear();
@@ -613,7 +652,7 @@ public class LoginManager : MonoBehaviour
         }
 
         ConfigManager.ApplyMapTicketDefaults(); // maps missing from map_config keep their default ticket price
-        var battleTimes = ParseJson<Dictionary<Map, int>>(data, "battle_map_times");
+        var battleTimes = ParseEnumDict<Map, int>(data, "battle_map_times");
         if (battleTimes != null) ConfigManager.battleTimes = battleTimes;
 
         ReadString(data, "discord_link", ref ConfigManager.discordLink);
@@ -627,20 +666,24 @@ public class LoginManager : MonoBehaviour
         if (qc != null) ConfigManager.QcDatas = qc;
 
         ReadInt(data, "price_per_crate", ref ConfigManager.pricePerCrate);
+        ReadInt(data, "default_battle_time", ref ConfigManager.defaultBattleTime);
         ReadBool(data, "can_get_ticket_by_ads", ref ConfigManager.canGetTicketByAds);
         ReadBool(data, "show_banner", ref ConfigManager.showBanner);
         ReadBool(data, "multiplay", ref ConfigManager.multiplay);
         ReadBool(data, "show_inter_back_home", ref ConfigManager.showInterBackHome);
         ReadBool(data, "show_inter_die", ref ConfigManager.showInterDie);
+        ReadBool(data, "show_mrec_scoreboard", ref ConfigManager.showMrecScoreboard);
+        ReadBool(data, "show_mrec_medal", ref ConfigManager.showMrecMedal);
+        ReadBool(data, "show_mrec_die", ref ConfigManager.showMrecDie);
         ReadInt(data, "max_reward_video_per_season", ref ConfigManager.maxVideoPerDay);
 
         var trading = ParseJson<TradingData>(data, "trading_data");
         if (trading != null) ConfigManager.tradingData = trading;
 
-        var characterStats = ParseJson<Dictionary<TF2Class, CharacterStats>>(data, "character_stats");
+        var characterStats = ParseEnumDict<TF2Class, CharacterStats>(data, "character_stats");
         if (characterStats != null) ConfigManager.characterStats = characterStats;
 
-        var weaponStats = ParseJson<Dictionary<WeaponId, WeaponStats>>(data, "weapon_stats");
+        var weaponStats = ParseEnumDict<WeaponId, WeaponStats>(data, "weapon_stats");
         if (weaponStats != null) ConfigManager.weaponStats = weaponStats;
     }
     #endregion

@@ -66,7 +66,7 @@ public class AdsManager : MonoBehaviour
 
     public void LoadNavtiveAds()
     {
-        if (GameManager.instan.userData.ads_removed) return;
+        if ((GameManager.instan.userData.ads_removed || PromoHooks.Active)) return;
 #if YODO1
         Yodo1AdsManager.instan.RequestNative();
 #endif
@@ -79,7 +79,7 @@ public class AdsManager : MonoBehaviour
 
     public void ShowInterAds(Action callBack, bool resume = false)
     {
-        if (GameManager.instan.userData.ads_removed)
+        if ((GameManager.instan.userData.ads_removed || PromoHooks.Active))
         {
 #if YODO1
             OnInterAdsDone();
@@ -136,7 +136,7 @@ interAdsCallBack = callBack;
     /// <summary>Shows the MREC (300x250 banner) at the given screen position. Disabled by remove_ads.</summary>
     public void ShowNavtiveAds(AdCorner position)
     {
-        if (GameManager.instan.userData.ads_removed)
+        if ((GameManager.instan.userData.ads_removed || PromoHooks.Active))
         {
             return;
         }
@@ -162,7 +162,7 @@ interAdsCallBack = callBack;
 
     public void ShowBanner()
     {
-        if (GameManager.instan.userData.ads_removed || !ConfigManager.showBanner)
+        if ((GameManager.instan.userData.ads_removed || PromoHooks.Active) || !ConfigManager.showBanner)
         {
             return;
         }

@@ -253,7 +253,7 @@ public class TF2Player : MonoBehaviour
         {
             DOVirtual.DelayedCall(3, () => AdsManager.instan.ShowInterAds(null, true));
         }
-        else
+        else if (ConfigManager.showMrecDie)
             AdsManager.instan.ShowNavtiveAds();
     }
 

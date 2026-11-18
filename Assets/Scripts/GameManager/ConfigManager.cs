@@ -30,6 +30,10 @@ public class ConfigManager
     public static bool showBanner = false;
     public static bool showInterBackHome = true;
     public static bool showInterDie = false;
+    /// <summary>MREC (300x250 native banner) switches, Title Data "show_mrec_scoreboard" / "show_mrec_medal" / "show_mrec_die".</summary>
+    public static bool showMrecScoreboard = false; // off unless Title Data show_mrec_scoreboard = true
+    public static bool showMrecMedal = false;      // off unless Title Data show_mrec_medal = true
+    public static bool showMrecDie = true;
 
     public static bool multiplay = false;
 
@@ -60,6 +64,8 @@ public class ConfigManager
     };
 
     public static Dictionary<Map, int> battleTimes;
+    /// <summary>Match length (s) for a map missing from Title Data "battle_map_times"; Title Data "default_battle_time" overrides it.</summary>
+    public static int defaultBattleTime = 180;
     public static Dictionary<Map, MapConfig> mapConfigs = new Dictionary<Map, MapConfig>();
     public static List<DailyReward> dailyRewards;
     public static List<TF2Class> robotCanHoldBomb = new List<TF2Class>() { TF2Class.demoman, TF2Class.heavy, TF2Class.pyro, TF2Class.scout, TF2Class.sniper, TF2Class.soldier };

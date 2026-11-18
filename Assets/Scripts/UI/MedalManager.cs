@@ -37,7 +37,7 @@ public class MedalManager : MonoBehaviour
         int oldScore = Mathf.Min(user.oldScore, user.score);
         int newScore = user.score;
         StartCoroutine(Play(oldScore, newScore));
-        AdsManager.instan.ShowNavtiveAds(mrecPosition);
+        if (ConfigManager.showMrecMedal) AdsManager.instan.ShowNavtiveAds(mrecPosition);
     }
 
     private void OnDestroy()
