@@ -122,4 +122,18 @@ public class Flamethrower : Gun
     }
 
 
+
+    TF2Player flameOwner;
+
+    /// <summary>Top-down: the flame comes out of the barrel tip (its bone) but points flat along the character's aim, not
+    /// along the weapon bone, which the run / fire animations swing (the flame looked off the barrel, and tilted 17 deg up).</summary>
+    void LateUpdate()
+    {
+        if (flame == null || !flame.gameObject.activeInHierarchy) return;
+        if (flameOwner == null) flameOwner = GetComponentInParent<TF2Player>();
+        if (flameOwner == null) return;
+        Vector3 f = flameOwner.transform.forward; f.y = 0f;
+        if (f.sqrMagnitude < 1e-4f) return;
+        flame.transform.rotation = Quaternion.LookRotation(f.normalized, Vector3.up);
+    }
 }

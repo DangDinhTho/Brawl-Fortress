@@ -6,15 +6,37 @@ public class FlameDamage : MonoBehaviour
 {
     public DamageObject damageObject;
 
+    TF2Player flameOwner;
+    float nextBurnCheck;
+
+    /// <summary>Sets an enemy in the flame on fire (BurnFx, visual only, every client).</summary>
+    void Burn(Collider other)
+    {
+        if (flameOwner == null) flameOwner = GetComponentInParent<TF2Player>();
+        var target = other.transform.root.GetComponent<HealthBase>();
+        if (target == null || target.death) return;
+        if (flameOwner != null ? target.team == flameOwner.team : target.team == damageObject.team) return;
+        BurnFx.Ignite(target);
+    }
+
+    // standing in the flame keeps the target burning (checked a few times a second)
+    private void OnTriggerStay(Collider other)
+    {
+        if (Time.time < nextBurnCheck || !other.CompareTag("HitBox")) return;
+        Burn(other);
+    }
+
+    private void LateUpdate() { if (Time.time >= nextBurnCheck) nextBurnCheck = Time.time + 0.2f; }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("HitBox"))
         {
+            Burn(other);
             if (damageObject.isOwner)
             {
                 //damageObject.damage = direcDamage;
                 //direction = true;
-                print("hit");
                 DoCollisionDamage(other.transform.root);
             }
 
