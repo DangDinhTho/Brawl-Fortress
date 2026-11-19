@@ -33,8 +33,10 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     private void Start()
     {
         RefreshRoomListButton();
-        // back from a solo match (offline mode): go online again for multiplayer rooms
-        if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
+        // back from a solo match (offline mode): go online again for multiplayer rooms. The medal screen returns here
+        // without leaving the offline room, so offline mode was kept ("in a room"); and while offline Photon reports
+        // IsConnected = true, so nothing ever connected again. Leaving offline mode also drops that room.
+        LeaveOfflineMode();
         PhotonNetwork.EnableCloseConnection = true;
         PhotonNetwork.LocalPlayer.NickName = GameManager.instan.userData.userName;
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InRoom)
@@ -49,12 +51,31 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     }
 
     /// <summary>Connects to the region chosen by the player last time, or to the best region.</summary>
+    /// <summary>Drops offline mode (and its solo room) without opening the room list from OnLeftRoom.</summary>
+    public static void LeaveOfflineMode()
+    {
+        // only in Home, and never while a solo match is being started (its offline room is waiting for the Arena)
+        if (!PhotonNetwork.OfflineMode || instance == null || instance.singlePlayer) return;
+        instance.singlePlayer = true;    // OnLeftRoom: a solo room, no room list
+        PhotonNetwork.OfflineMode = false;
+        instance.singlePlayer = false;
+    }
+
     public static void Connect()
     {
+        LeaveOfflineMode();   // offline mode reports IsConnected = true: it is not a connection
         if (PhotonNetwork.IsConnected) return;
-        string region = PlayerPrefs.GetString(RegionPrefKey, "");
-        if (!string.IsNullOrEmpty(region)) PhotonNetwork.ConnectToRegion(region);
-        else PhotonNetwork.ConnectUsingSettings();
+        ConnectTo(PlayerPrefs.GetString(RegionPrefKey, ""));
+    }
+
+    /// <summary>Connects to a region (empty: the best region, pinged). Always through ConnectUsingSettings with a copy of the
+    /// settings: PhotonNetwork.ConnectToRegion does not set the AppId, so right after a launch it failed with
+    /// InvalidAuthentication every time a region had been saved (chosen in the room list) - nothing ever connected.</summary>
+    public static bool ConnectTo(string region)
+    {
+        var app = PhotonNetwork.PhotonServerSettings.AppSettings.CopyTo(new AppSettings());   // never edit the asset itself
+        if (!string.IsNullOrEmpty(region)) app.FixedRegion = region;
+        return PhotonNetwork.ConnectUsingSettings(app);
     }
 
     /// <summary>"Find a game" shows when multiplayer is on (Title Data "multiplay") and Photon is connected (not offline).
@@ -89,7 +110,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     void OnApplicationPause(bool paused)
     {
         // back from an ad / the home screen: reconnect at once if the connection was lost meanwhile
-        if (paused || PhotonNetwork.IsConnected || PhotonNetwork.OfflineMode) return;
+        if (paused || (PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode)) return;
         reconnectAttempt = 0;
         if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
         Connect();
@@ -123,7 +144,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         // Region switch: connect to the new region once the old connection is fully closed.
         if (LobbyPanel.TryConsumePendingRegion(out var region))
         {
-            PhotonNetwork.ConnectToRegion(region);
+            ConnectTo(region);
             return;
         }
         Debug.LogWarning("Photon disconnected: " + cause);
@@ -224,7 +245,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         var loading = GUIManager.instan.CreatePopup<PopupWaitingFocus>();   // the spinning waiting screen (same as an IAP purchase)
         float t = 0f;
-        if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
+        LeaveOfflineMode();
         reconnectAttempt = 0;
         if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
         // A connection in progress is left alone (the first one pings every region and can take several seconds on a
@@ -249,7 +270,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         if (!IsOnline)
         {
             // still connecting (not failed): show the waiting screen for it; truly offline: offer to reconnect
-            if (PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode) RetryConnect(); else ShowNotConnected();
+            if (PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode) RetryConnect();   // still connecting: wait for it
+            else if (PhotonNetwork.OfflineMode) RetryConnect();                         // stuck offline: go online now
+            else ShowNotConnected();
             return;
         }
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby && !PhotonNetwork.InRoom)

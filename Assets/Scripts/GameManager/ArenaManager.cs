@@ -146,6 +146,13 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     IEnumerator WaitLoadMap()
     {
+        // a map this build does not have (room made by an older version / an old default): play the mode's first map
+        // instead of failing here and leaving everyone on "Waiting for other players"
+        if (!Application.CanStreamedLevelBeLoaded(map.ToString()))
+        {
+            Debug.LogWarning("Map " + map + " is not in this build: playing " + ConfigManager.FirstMapOf(gameMode));
+            map = ConfigManager.FirstMapOf(gameMode);
+        }
         AsyncOperation loadingOperation = SceneManager.LoadSceneAsync(map.ToString(), LoadSceneMode.Additive);
         while (!loadingOperation.isDone)
         {

@@ -261,6 +261,15 @@ public class ConfigManager
     /// <summary>Default ticket price per map: in each game mode the first map is free (Competitive: the first 3),
     /// the next ones cost 1 to 5 tickets, in the order of the cards in PopupSelectMap.
     /// Title Data "map_config" overrides a map; maps it does not list keep these defaults (ApplyMapTicketDefaults).</summary>
+    /// <summary>The first map of a game mode (card order) that is in this build; a room's map that cannot be loaded falls
+    /// back to it (rooms made with the old default Map_ARN_Tumble, no longer in the build, hung on "Waiting for other players").</summary>
+    public static Map FirstMapOf(GameMode mode)
+    {
+        foreach (var e in DefaultTicketCosts) if (e.mode == mode && Application.CanStreamedLevelBeLoaded(e.map.ToString())) return e.map;
+        foreach (var e in DefaultTicketCosts) if (Application.CanStreamedLevelBeLoaded(e.map.ToString())) return e.map;
+        return Map.BrawlScene;
+    }
+
     static readonly (GameMode mode, Map map, int cost)[] DefaultTicketCosts =
     {
         (GameMode.Competitive, Map.BrawlScene, 0),

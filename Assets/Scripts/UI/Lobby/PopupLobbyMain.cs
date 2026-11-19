@@ -74,7 +74,7 @@ public class PopupLobbyMain : MonoBehaviour
         }
         else
         {
-            PhotonNetwork.ConnectToRegion(region);
+            LobbyManager.ConnectTo(region);   // ConnectToRegion skips the AppId
         }
     }
 
@@ -219,7 +219,7 @@ public class PopupLobbyMain : MonoBehaviour
         ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable
         {
             {TF2GameProps.GameModeKey, GameMode.Competitive},
-            {TF2GameProps.Map, Map.Map_ARN_Tumble}
+            {TF2GameProps.Map, ConfigManager.FirstMapOf(GameMode.Competitive)}   // was Map_ARN_Tumble: not in the build any more
         };
 
         string[] customPropertiesForLobby = new string[] { TF2GameProps.GameModeKey, TF2GameProps.Map };
