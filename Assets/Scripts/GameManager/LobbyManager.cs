@@ -31,7 +31,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        roomListBtn.SetActive(false);
+        RefreshRoomListButton();
         // back from a solo match (offline mode): go online again for multiplayer rooms
         if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
         PhotonNetwork.EnableCloseConnection = true;
@@ -62,7 +62,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         var lm = instance;
         if (lm == null || lm.roomListBtn == null) return;
-        lm.roomListBtn.SetActive(ConfigManager.multiplay && PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.OfflineMode);
+        lm.roomListBtn.SetActive(true);   // always shown: when not connected, a click offers to reconnect
     }
 
     // ---- reconnect: on a phone the connection drops while an ad is shown / the app is in the background or the network
@@ -113,7 +113,6 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             PhotonNetwork.ConnectToRegion(region);
             return;
         }
-        roomListBtn.SetActive(false);
         Debug.LogWarning("Photon disconnected: " + cause);
         // lost without asking for it (not: going offline for a solo match, region switch): try again
         if (cause != DisconnectCause.DisconnectByClientLogic && !PhotonNetwork.OfflineMode) ScheduleReconnect();
@@ -172,8 +171,50 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         }
     }
 
+    static bool IsOnline => PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.OfflineMode;
+
+    /// <summary>Not connected: a popup with Retry (waiting screen, up to RetryTimeout s to connect, then the room list or this
+    /// popup again) and Close.</summary>
+    void ShowNotConnected()
+    {
+        GUIManager.instan.CreatePopup<PopupConfirm>(LocalizationManager.Localize("online_not_connected"), (System.Action)RetryConnect, null, null,
+            LocalizationManager.Localize("retry_connect_btn"), LocalizationManager.Localize("close_btn"));
+    }
+
+    public const float RetryTimeout = 5f;
+    Coroutine retryRoutine;
+
+    void RetryConnect()
+    {
+        if (retryRoutine != null) return;
+        retryRoutine = StartCoroutine(RetryConnectRoutine());
+    }
+
+    System.Collections.IEnumerator RetryConnectRoutine()
+    {
+        var loading = GUIManager.instan.CreatePopup<PopupLoading>(LocalizationManager.Localize("connecting"));
+        float t = 0f;
+        if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
+        reconnectAttempt = 0;
+        if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
+        if (PhotonNetwork.IsConnected && !PhotonNetwork.IsConnectedAndReady)
+        {
+            // stuck half way from an earlier attempt: start a clean one
+            PhotonNetwork.Disconnect();
+            while (PhotonNetwork.IsConnected && t < 1.5f) { t += Time.unscaledDeltaTime; yield return null; }
+            if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
+        }
+        if (!PhotonNetwork.IsConnected) Connect();
+        while (t < RetryTimeout && !IsOnline) { t += Time.unscaledDeltaTime; yield return null; }
+        if (loading != null) loading.Dismiss();
+        retryRoutine = null;
+        if (IsOnline) OnRoomListButtonClicked();
+        else ShowNotConnected();
+    }
+
     public void OnRoomListButtonClicked()
     {
+        if (!IsOnline) { ShowNotConnected(); return; }
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
         {
             PhotonNetwork.JoinLobby();
