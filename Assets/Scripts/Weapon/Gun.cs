@@ -568,9 +568,10 @@ public class Gun : Weapon
         if (n == 1 && IsBot) half *= BotSniper ? BotSniperSpread : BotSpread;   // bots: tighter cone (sniper most)
         if (rollDamage)
             damageObject.damage = UnityEngine.Random.Range(weaponConfig.weaponStats.minDamage, weaponConfig.weaponStats.maxDamage) / n;
-        // The indicator fan starts at the player's feet. Flat shots therefore start on the fan's axis
-        // (player centre, at barrel height, pushed forward to the barrel) and fly only what is left of 'range',
-        // so a bullet never goes past the indicator, whatever the barrel offset is.
+        // Bullets leave from the real muzzle (shotPoint, set in the prefab). Flat shots then fly to the tip of the aim
+        // indicator (player centre + aim * range): they still end exactly where the indicator ends. They used to start
+        // on the player's centre line pushed forward, which is beside the gun (held to one side), so they did not
+        // come out of the barrel.
         Vector3 spawn = shotPoint.position;
         float dist = weaponConfig.range;
         if (FlatAim && playerOwner != null)
@@ -579,10 +580,15 @@ public class Gun : Weapon
             if (flat.sqrMagnitude > 1e-6f)
             {
                 flat.Normalize();
-                Vector3 center = playerOwner.transform.position; center.y = shotPoint.position.y;
-                float ahead = Mathf.Clamp(Vector3.Dot(shotPoint.position - center, flat), 0f, dist * 0.5f);
-                spawn = center + flat * ahead;
-                dist -= ahead;
+                Vector3 center = playerOwner.transform.position; center.y = spawn.y;
+                Vector3 tip = center + flat * weaponConfig.range;
+                Vector3 toTip = tip - spawn; toTip.y = 0f;
+                if (toTip.sqrMagnitude > 0.01f && Vector3.Dot(toTip, flat) > 0f)
+                {
+                    forward = toTip.normalized;
+                    dist = toTip.magnitude;
+                }
+                else forward = flat;
             }
         }
         for (int i = 0; i < n; i++)
