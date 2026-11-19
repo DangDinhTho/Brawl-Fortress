@@ -34,6 +34,13 @@ public class BotController : MonoBehaviour
     public void Init()
     {
         //behaviorTree = GetComponent<BehaviorTree>();
+        // engineer bots build a Sentry, then a Dispenser, when no enemy is around (see BotEngineer)
+        if (bot != null && bot.tF2Class == TF2Class.engineer && !(bot is TF2Zombie))
+        {
+            var engineer = GetComponent<BotEngineer>();
+            if (engineer == null) engineer = gameObject.AddComponent<BotEngineer>();
+            engineer.Init(this);
+        }
         if (IsHealerMedic)
         {
             medic = GetComponent<BotMedic>();
