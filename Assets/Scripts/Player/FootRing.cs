@@ -38,6 +38,11 @@ public class FootRing : MonoBehaviour
     /// <summary>Height above the feet (m); FakeShadow uses 0.03.</summary>
     public static float HeightOffset = 0.035f;
     public static int DashCount = 14;
+    /// <summary>Boss (Boss Battle): a fiery, thick, spinning dashed ring that always glows, whatever the viewer's team.</summary>
+    public static Color BossColor = new Color(1f, 0.42f, 0.1f);
+    public static Color BossGlowColor = new Color(1f, 0.62f, 0.15f);
+    public static float BossWidthScale = 2.2f, BossSpinSpeed = 35f;
+    public static int BossDashCount = 20;
 
     /// <summary>Set by an Übercharge feature (the game has none yet): strong pulsing glow on the local player's ring.</summary>
     public bool Ubercharged { get; set; }
@@ -183,7 +188,8 @@ public class FootRing : MonoBehaviour
         float half = radius / RingUv; // quad half-size so the ring centre-line sits at 'radius'
         Vector3 feet = Feet;
         disc.position = new Vector3(feet.x, feet.y + HeightOffset, feet.z);
-        disc.rotation = Quaternion.identity;
+        bool boss = player is TF2Boss;
+        disc.rotation = boss ? Quaternion.Euler(0f, Time.time * BossSpinSpeed, 0f) : Quaternion.identity;   // the boss's dashes turn slowly
         var ps = transform.lossyScale;
         disc.localScale = new Vector3(2f * half / Mathf.Max(ps.x, 1e-4f), 1f / Mathf.Max(ps.y, 1e-4f), 2f * half / Mathf.Max(ps.z, 1e-4f));
 
@@ -208,20 +214,21 @@ public class FootRing : MonoBehaviour
             uber = Ubercharged;
             if (uber || IsHealed(player)) glowTarget = 1f;
         }
+        if (boss) { c = BossColor; c.a = Alpha * visible; dashed = true; glowTarget = 1f; }
         glow = Mathf.MoveTowards(glow, glowTarget, Time.deltaTime * 4f);
         float pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * (uber ? 9f : 5f));
 
         mpb.SetColor(ColorId, c);
         mpb.SetFloat(FillId, FillAlpha);
         mpb.SetFloat(RingRId, RingUv);
-        mpb.SetFloat(WidthId, Width / half);
+        mpb.SetFloat(WidthId, Width * (boss ? BossWidthScale : 1f) / half);
         mpb.SetFloat(DashedId, dashed ? 1f : 0f);
-        mpb.SetFloat(DashCountId, DashCount);
+        mpb.SetFloat(DashCountId, boss ? BossDashCount : DashCount);
         mpb.SetFloat(ProgressId, progress);
         var rc = ReloadColor; rc.a *= visible;
         mpb.SetColor(ArcColorId, rc);
         mpb.SetFloat(GlowId, glow * pulse * visible);
-        mpb.SetColor(GlowColorId, uber ? UberGlowColor : HealGlowColor);
+        mpb.SetColor(GlowColorId, boss ? BossGlowColor : uber ? UberGlowColor : HealGlowColor);
         rend.SetPropertyBlock(mpb);
     }
 

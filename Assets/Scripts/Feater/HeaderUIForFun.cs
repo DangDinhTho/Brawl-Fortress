@@ -39,6 +39,7 @@ public class HeaderUIForFun : MonoBehaviour
         image.gameObject.SetActive(false);
         BuildBar();
         if (ownerPlayer is TF2Zombie && txtName != null) txtName.gameObject.SetActive(false); // zombies: health bar only
+        if (ownerPlayer is TF2Boss) CreateBossIcon();
         hpMax = ownerPlayer.healthManager.maxHealth > 0 ? (int)ownerPlayer.healthManager.maxHealth : 0;
         hp = (int)ownerPlayer.healthManager.currentHealth;
         UpdateHpText();
@@ -230,9 +231,32 @@ public class HeaderUIForFun : MonoBehaviour
         image.gameObject.SetActive(false);
     }
 
+    // ---- boss: the Boss Battle tab icon above the head, bobbing
+    RectTransform bossIcon; Vector2 bossIconPos;
+
+    void CreateBossIcon()
+    {
+        var sprite = Resources.Load<Sprite>("UI/boss_mode_icon");
+        var parent = image != null ? image.rectTransform.parent : null;
+        if (sprite == null || parent == null) return;
+        var go = new GameObject("BossIcon", typeof(RectTransform), typeof(Image));
+        go.layer = parent.gameObject.layer;
+        bossIcon = (RectTransform)go.transform; bossIcon.SetParent(parent, false);
+        bossIcon.anchorMin = bossIcon.anchorMax = image.rectTransform.anchorMin;
+        bossIconPos = image.rectTransform.anchoredPosition;
+        float h = Mathf.Max(image.rectTransform.rect.height, 100f) * 1.6f;
+        bossIcon.sizeDelta = new Vector2(h * sprite.rect.width / sprite.rect.height, h);
+        bossIconPos += Vector2.up * h * 1.05f;   // above the head: the medic-call slot sits at head height and the icon covered the hat
+        bossIcon.anchoredPosition = bossIconPos;
+        var img = go.GetComponent<Image>(); img.sprite = sprite; img.preserveAspect = true; img.raycastTarget = false;
+        var sh = go.AddComponent<Shadow>(); sh.effectColor = new Color(0f, 0f, 0f, 0.5f); sh.effectDistance = new Vector2(0f, -h * 0.05f);
+        bossIcon.SetAsLastSibling();
+    }
+
     void LateUpdate()
     {
         guiTransform.LookAt(guiTransform.position + mainCamera.forward);
+        if (bossIcon != null) bossIcon.anchoredPosition = bossIconPos + Vector2.up * (Mathf.Sin(Time.time * 2.5f) * bossIcon.sizeDelta.y * 0.08f);
 
         if (fill == null) return;
         float dt = Time.deltaTime;
