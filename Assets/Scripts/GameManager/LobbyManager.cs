@@ -27,6 +27,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         instance = this;
         PhotonNetwork.AutomaticallySyncScene = true;
+        PhotonNetwork.MinimalTimeScaleToDispatchInFixedUpdate = 0f;   // dispatch in LateUpdate while the time scale is 0
     }
 
     private void Start()
@@ -97,7 +98,19 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public override void OnConnectedToMaster()
     {
         reconnectAttempt = 0;
+        lastCause = DisconnectCause.None;
         RefreshRoomListButton();
+        // remember the best region found by the ping (unless the player chose one): later connects skip the ping
+        string cloud = PhotonNetwork.CloudRegion;
+        if (!string.IsNullOrEmpty(cloud) && string.IsNullOrEmpty(PlayerPrefs.GetString(RegionPrefKey, "")))
+            PlayerPrefs.SetString(RegionPrefKey, cloud.Split('/')[0]);
+        // connected while the "not connected" popup is up: close it and go to the room list
+        if (notConnectedPopup != null && notConnectedPopup.gameObject.activeInHierarchy && retryRoutine == null)
+        {
+            notConnectedPopup.Dismiss();
+            notConnectedPopup = null;
+            OnRoomListButtonClicked();
+        }
         LobbyPanel.OnConnectedToMaster();
         if (LobbyPanel.isOpen && !PhotonNetwork.InLobby)
         {
@@ -114,6 +127,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             return;
         }
         Debug.LogWarning("Photon disconnected: " + cause);
+        if (cause != DisconnectCause.DisconnectByClientLogic) lastCause = cause;
         // lost without asking for it (not: going offline for a solo match, region switch): try again
         if (cause != DisconnectCause.DisconnectByClientLogic && !PhotonNetwork.OfflineMode) ScheduleReconnect();
     }
@@ -175,9 +189,25 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     /// <summary>Not connected: a popup with Retry (waiting screen, up to RetryTimeout s to connect, then the room list or this
     /// popup again) and Close.</summary>
+    PopupConfirm notConnectedPopup;
+    static DisconnectCause lastCause = DisconnectCause.None;
+    static float stateSince;
+    static ClientState lastState;
+    /// <summary>A connection frozen in one state this long (s) is restarted by Retry; one that moves is left alone.</summary>
+    public const float StuckAfter = 10f;
+
+    void Update()
+    {
+        var st = PhotonNetwork.NetworkClientState;
+        if (st != lastState) { lastState = st; stateSince = Time.realtimeSinceStartup; }
+    }
+
     void ShowNotConnected()
     {
-        GUIManager.instan.CreatePopup<PopupConfirm>(LocalizationManager.Localize("online_not_connected"), (System.Action)RetryConnect, null, null,
+        string msg = LocalizationManager.Localize("online_not_connected");
+        // small diagnostic line (no device log on iOS): why Photon dropped and where it is now
+        msg += "\n(" + (lastCause != DisconnectCause.None ? lastCause.ToString() : "-") + " / " + PhotonNetwork.NetworkClientState + ")";   // legacy Text: no size tag
+        notConnectedPopup = GUIManager.instan.CreatePopup<PopupConfirm>(msg, (System.Action)RetryConnect, null, null,
             LocalizationManager.Localize("retry_connect_btn"), LocalizationManager.Localize("close_btn"));
     }
 
@@ -192,29 +222,36 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     System.Collections.IEnumerator RetryConnectRoutine()
     {
-        var loading = GUIManager.instan.CreatePopup<PopupLoading>(LocalizationManager.Localize("connecting"));
+        var loading = GUIManager.instan.CreatePopup<PopupWaitingFocus>();   // the spinning waiting screen (same as an IAP purchase)
         float t = 0f;
         if (PhotonNetwork.OfflineMode && !PhotonNetwork.InRoom) PhotonNetwork.OfflineMode = false;
         reconnectAttempt = 0;
         if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
-        if (PhotonNetwork.IsConnected && !PhotonNetwork.IsConnectedAndReady)
+        // A connection in progress is left alone (the first one pings every region and can take several seconds on a
+        // phone: killing it on each Retry meant never connecting). Only one frozen in the same state is restarted.
+        if (PhotonNetwork.IsConnected && !IsOnline && Time.realtimeSinceStartup - stateSince > StuckAfter)
         {
-            // stuck half way from an earlier attempt: start a clean one
             PhotonNetwork.Disconnect();
-            while (PhotonNetwork.IsConnected && t < 1.5f) { t += Time.unscaledDeltaTime; yield return null; }
+            while (PhotonNetwork.IsConnected && t < 2f) { t += Time.unscaledDeltaTime; yield return null; }
             if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
         }
         if (!PhotonNetwork.IsConnected) Connect();
+        t = 0f;
         while (t < RetryTimeout && !IsOnline) { t += Time.unscaledDeltaTime; yield return null; }
         if (loading != null) loading.Dismiss();
         retryRoutine = null;
         if (IsOnline) OnRoomListButtonClicked();
-        else ShowNotConnected();
+        else ShowNotConnected();   // the connection keeps going: when it succeeds the popup closes and the room list opens
     }
 
     public void OnRoomListButtonClicked()
     {
-        if (!IsOnline) { ShowNotConnected(); return; }
+        if (!IsOnline)
+        {
+            // still connecting (not failed): show the waiting screen for it; truly offline: offer to reconnect
+            if (PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode) RetryConnect(); else ShowNotConnected();
+            return;
+        }
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
         {
             PhotonNetwork.JoinLobby();

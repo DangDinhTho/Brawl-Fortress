@@ -192,10 +192,7 @@ interAdsCallBack = callBack;
         rewardAdsCount++;
         rewardAdsCallBack?.Invoke();
         rewardAdsCallBack = null;
-        if (!PhotonNetwork.IsConnected)
-        {
-            PhotonNetwork.ConnectUsingSettings();
-        }
+        if (!PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode) LobbyManager.Connect();   // the lobby's connect (keeps the region)
     }
 
 
