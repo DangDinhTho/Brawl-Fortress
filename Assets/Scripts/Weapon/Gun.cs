@@ -545,8 +545,29 @@ public class Gun : Weapon
     protected virtual bool FlatAim => true;
 
     /// <summary>Aim direction: the player's facing (= aim joystick, flat) for humans, the barrel for bots / lobbed projectiles.</summary>
+    /// <summary>Spread kept for sniper bots (share of the aim cone). All bots aim at the body of the target they see,
+    /// not along the barrel, which the animations swing and which lags behind a turning bot.</summary>
+    public static float BotSniperSpread = 0.25f;
+    /// <summary>Spread kept for the other bots' single-bullet guns (shotgun patterns are left as they are).</summary>
+    public static float BotSpread = 0.7f;
+    bool IsBot => playerOwner != null && playerOwner.isBot;
+    bool BotSniper => playerOwner != null && playerOwner.isBot && weaponConfig != null && weaponConfig.weaponId.ToString().Contains("Sniper");
+
     protected Vector3 AimForward(Transform shotPoint)
     {
+        // bots aim at the body of the target they see (not along the barrel); lobbed weapons keep the barrel's angle
+        if (IsBot && FlatAim)
+        {
+            var fov = playerOwner.GetComponent<FieldOfView>();
+            if (fov != null && fov.canSeePlayer && fov.targetInField != null)
+            {
+                var hb = fov.targetInField.GetComponent<HealthBase>();
+                Vector3 aimAt = hb != null && hb.centerBody != null ? hb.centerBody.position : fov.targetInField.position + Vector3.up;
+                Vector3 d = aimAt - shotPoint.position;
+                if (FlatAim) d.y = 0f;
+                if (d.sqrMagnitude > 1e-6f) return d.normalized;
+            }
+        }
         if (!FlatAim || playerOwner == null || playerOwner.isBot) return shotPoint.forward;
         Vector3 f = playerOwner.transform.forward; f.y = 0f;
         return f.sqrMagnitude > 1e-6f ? f.normalized : shotPoint.forward;
@@ -557,6 +578,7 @@ public class Gun : Weapon
     {
         int n = Mathf.Max(1, weaponConfig.pellets);
         float half = Mathf.Max(0f, weaponConfig.aimAngle) * 0.5f;
+        if (n == 1 && IsBot) half *= BotSniper ? BotSniperSpread : BotSpread;   // bots: tighter cone (sniper most)
         if (rollDamage)
             damageObject.damage = UnityEngine.Random.Range(weaponConfig.weaponStats.minDamage, weaponConfig.weaponStats.maxDamage) / n;
         // The indicator fan starts at the player's feet. Flat shots therefore start on the fan's axis
