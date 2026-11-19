@@ -69,6 +69,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     public void Awake()
     {
+        AudioListener.volume = 1f;   // muted at the end of the previous match
         Instance = this;
         if (PhotonNetwork.CurrentRoom.PlayerCount > 1)
         {
@@ -121,14 +122,8 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         LoadMap();
         TimerManager.instance.OnCountDownFinish += OnCountDownFinish;
 
-        if(ConfigManager.battleTimes != null && ConfigManager.battleTimes.TryGetValue(map, out var time))
-        {
-
-        }
-        else
-        {
-            time = ConfigManager.defaultBattleTime; // map not listed in battle_map_times (was 300)
-        }
+        // Title Data battle_map_times, else the per-map / per-mode defaults (Payload 3.5-4 min, MvM 6 min)
+        int time = ConfigManager.BattleTimeOf(map, gameMode);
         gameStateTime.Add(GameState.BattleCountTime, time);
         GameManager.instan.played = true;
         GameManager.instan.OnStartMatch();
@@ -171,6 +166,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
 
     public override void OnDisable()
     {
+        AudioListener.volume = 1f;   // leaving the match: sound back on
         base.OnDisable();
 
         // TimerManager.OnCountdownTimerHasExpired -= OnCountdownTimerIsExpired;
@@ -602,24 +598,57 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         timerManager.enabled = false;
         this.teamScores[Team.red] = redScore;
         this.teamScores[Team.blue] = blueScore;
+        FreezeMatch();
         StartCoroutine(WaitShowScoreBoard());
         OnGameFinish?.Invoke();
     }
 
+    /// <summary>Pause on the frozen, silent battlefield before the results (s); modes may wait longer.</summary>
+    public const float EndGamePause = 1.5f;
+
+    /// <summary>The match is over: everyone stops (weapons, AI and its helpers, movement), sentries stop firing, nobody
+    /// respawns (HealthManager), and the game sound is muted until the next match / Home. Bots used to keep fighting:
+    /// dead ones respawned and the bot helpers (medic, engineer, spy, zombie motion) and sentries kept going.</summary>
+    void FreezeMatch()
+    {
+        // sound is muted a little later, once the Victory / You failed voice is over (WaitShowScoreBoard)
+        foreach (var p in FindObjectsByType<TF2Player>(FindObjectsSortMode.None))
+        {
+            if (p == null) continue;
+            var w = p.remotePlayer != null ? p.remotePlayer.weapon : null;
+            if (w != null && w.fire) w.FinishFire();
+            var bc = p.GetComponent<BotController>();
+            if (bc != null) { if (bc.currWeapon != null && bc.currWeapon.fire) bc.FinishFire(); bc.enabled = false; }
+            var bt = p.GetComponent("BehaviorTree") as Behaviour; if (bt != null) bt.enabled = false;
+            foreach (var mb in p.GetComponents<MonoBehaviour>())
+                if (mb is BotMedic || mb is BotEngineer || mb is BotSpy || mb is ZombieMotion) mb.enabled = false;
+            var agent = p.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null && agent.enabled && agent.isOnNavMesh) { agent.isStopped = true; agent.velocity = Vector3.zero; }
+        }
+        foreach (var s in FindObjectsByType<SentryController>(FindObjectsSortMode.None)) if (s != null) s.enabled = false;
+    }
+
+    /// <summary>Mutes the game sound once the end-of-match voice has been heard.</summary>
+    IEnumerator MuteAfter(float delay)
+    {
+        if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
+        AudioListener.volume = 0f;
+    }
+
     IEnumerator WaitShowScoreBoard()
     {
-        yield return new WaitForSeconds(delayShowScoreBoardEndGame + 0.2f);
+        yield return new WaitForSeconds(Mathf.Max(EndGamePause, delayShowScoreBoardEndGame + 0.2f));
+        AudioClip voice = null;
         if((teamScores[Team.red] > teamScores[Team.blue] && mainPlayer.team == Team.red) || (teamScores[Team.red] < teamScores[Team.blue] && mainPlayer.team == Team.blue))
-            {
-                audioSource.PlayOneShot(victoryVoice);
-            }
+            voice = victoryVoice;
         else if ((teamScores[Team.red] > teamScores[Team.blue] && mainPlayer.team == Team.blue) || (teamScores[Team.red] < teamScores[Team.blue] && mainPlayer.team == Team.red))
-        {
-            audioSource.PlayOneShot(loseVoice);
-        }
+            voice = loseVoice;
+        if (voice != null) audioSource.PlayOneShot(voice);
         popupScoreBoard = GUIManager.instan.CreatePopup<PopupScoreBoard>(true);
+        StartCoroutine(MuteAfter(voice != null ? voice.length + 0.2f : 0f));
         yield return new WaitForSeconds(2);
-        ShowAdsEndGame();
+        // results and rewards right away; the end-of-match ad now shows when the player goes Home (PopupScoreBoard.GoHome)
+        OnShowAdsEndGameDone();
     }
 
     public int CaculatePlayerScore()

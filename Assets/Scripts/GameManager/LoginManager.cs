@@ -667,6 +667,8 @@ public class LoginManager : MonoBehaviour
 
         ReadInt(data, "price_per_crate", ref ConfigManager.pricePerCrate);
         ReadInt(data, "default_battle_time", ref ConfigManager.defaultBattleTime);
+        ReadInt(data, "base_death_time", ref ConfigManager.baseDeathTime);
+        ReadInt(data, "max_death_time", ref ConfigManager.maxDeathTime);
         ReadBool(data, "can_get_ticket_by_ads", ref ConfigManager.canGetTicketByAds);
         ReadBool(data, "show_banner", ref ConfigManager.showBanner);
         ReadBool(data, "multiplay", ref ConfigManager.multiplay);

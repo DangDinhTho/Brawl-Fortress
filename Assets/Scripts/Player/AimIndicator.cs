@@ -6,6 +6,7 @@ using UnityEngine;
 /// Shows a flat shape on the ground pointing along the aim joystick while aiming:
 ///  a hollow fan (annular sector) starting just outside the player's body.
 /// Length = weaponConfig.range, width = weaponConfig.aimAngle, i.e. exactly where the shots can go.
+/// Flamethrower: from its nozzle to nozzle + range (the flame does not reach the area next to the body).
 /// Turns red when the clip is empty.
 /// </summary>
 public class AimIndicator : MonoBehaviour
@@ -22,7 +23,7 @@ public class AimIndicator : MonoBehaviour
     GameObject go;
     Mesh mesh;
     Material mat;
-    float builtRange = -1f, builtAngle = -1f;
+    float builtRange = -1f, builtAngle = -1f, builtInner = -1f;
     Vector3 lastDir = Vector3.forward;
 
     void Start()
@@ -62,11 +63,21 @@ public class AimIndicator : MonoBehaviour
         if (!show) { if (go.activeSelf) go.SetActive(false); return; }
 
         var cfg = weapon.weaponConfig;
-        if (!Mathf.Approximately(cfg.range, builtRange) || !Mathf.Approximately(cfg.aimAngle, builtAngle))
-            Build(cfg.range, cfg.aimAngle);
-
         Vector3 dir = ctrl.AimWorldDirection; dir.y = 0f;
         if (dir.sqrMagnitude > 1e-4f) lastDir = dir.normalized;
+
+        float inner = Mathf.Min(InnerRadius, cfg.range * 0.5f), outer = cfg.range;
+        // Flamethrower: the flame (and its damage) starts at the nozzle, far in front of the body, and is 'range' long.
+        // The fan covers exactly that: from the nozzle to the end of the flame (it used to start at the body).
+        if (weapon is Flamethrower ft && ft.shotPoints != null && ft.shotPoints.Length > 0 && ft.shotPoints[0] != null)
+        {
+            Vector3 rel = ft.shotPoints[0].position - ctrl.transform.position; rel.y = 0f;
+            float ahead = Mathf.Round(Mathf.Max(0f, Vector3.Dot(rel, lastDir)) * 20f) / 20f;   // 5 cm steps: no rebuild every frame
+            inner = Mathf.Max(inner, ahead);
+            outer = ahead + cfg.range;
+        }
+        if (!Mathf.Approximately(outer, builtRange) || !Mathf.Approximately(cfg.aimAngle, builtAngle) || !Mathf.Approximately(inner, builtInner))
+            Build(inner, outer, cfg.aimAngle);
         Vector3 pos = ctrl.transform.position; pos.y += 0.06f;
         go.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(lastDir));
 
@@ -87,12 +98,12 @@ public class AimIndicator : MonoBehaviour
     readonly List<Color> c = new List<Color>();
     readonly List<int> t = new List<int>();
 
-    void Build(float range, float angle)
+    void Build(float inner, float range, float angle)
     {
-        builtRange = range; builtAngle = angle;
+        builtRange = range; builtAngle = angle; builtInner = inner;
         v.Clear(); c.Clear(); t.Clear();
         float half = Mathf.Clamp(angle, 1f, 359f) * 0.5f;
-        BuildSector(Mathf.Min(InnerRadius, range * 0.5f), range, half);
+        BuildSector(inner, range, half);
         mesh.Clear();
         mesh.SetVertices(v);
         mesh.SetColors(c);

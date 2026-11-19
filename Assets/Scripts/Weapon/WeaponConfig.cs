@@ -40,6 +40,8 @@ public class WeaponConfig: ScriptableObject
     public int pellets = 1;
     [Tooltip("Tap = one shot when the aim joystick is released. Hold = fires while the aim joystick is pulled to the edge.")]
     public FireMode fireMode = FireMode.Tap;
+    [Tooltip("Bullet speed = the bullet prefab's speed x this (bullets are shared between weapons)")]
+    public float bulletSpeedScale = 1f;
 
     public void LoadStats()
     {

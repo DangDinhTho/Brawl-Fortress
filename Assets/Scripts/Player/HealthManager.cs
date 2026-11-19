@@ -161,6 +161,7 @@ public class HealthManager : HealthBase
             yield return new WaitForSeconds(1);
         }
 
+        if (ArenaManager.Instance != null && ArenaManager.Instance.endGameSign) yield break;   // match over: no respawn
         if (photonView.IsMine)
             Respawn();
     }

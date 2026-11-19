@@ -32,6 +32,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        AudioListener.volume = 1f;   // muted when leaving a match from its results screen
         RefreshRoomListButton();
         // back from a solo match (offline mode): go online again for multiplayer rooms. The medal screen returns here
         // without leaving the offline room, so offline mode was kept ("in a room"); and while offline Photon reports

@@ -7,6 +7,9 @@ public class BulletNormal : PoolingEntry
     public float timeAlive;
     public int direcDamage = 100;
     public float speed = 10;
+    float baseSpeed = -1f;
+    /// <summary>The prefab's speed (weapons scale 'speed' from it on each shot).</summary>
+    public float BaseSpeed { get { if (baseSpeed < 0f) baseSpeed = speed; return baseSpeed; } }
     protected DamageObject damageObject;
     private Vector3 direction;
     private float maxDistance;   // > 0: finish after travelling exactly this far (weaponConfig.range)

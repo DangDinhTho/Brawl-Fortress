@@ -97,6 +97,24 @@ public class Attack : Action
             agent.stoppingDistance = distanceStop * 0.85f;
             return;
         }
+        // The per-slot distance (7.5 m for every gun) is too far for short guns: the bot fires up to 1.2 x the stop distance,
+        // so a scattergun / shotgun / flamethrower bot stood out of range shooting at nothing. Stop inside this weapon's reach.
+        var w = botController.currWeapon;
+        var cfg = w != null ? w.weaponConfig : null;
+        if (cfg != null && cfg.range > 0f)
+        {
+            float reach = cfg.range, nozzle = 0f;
+            // flamethrower: the flame starts at the nozzle, well in front of the body, and is 'range' long
+            if (w is Flamethrower ft && ft.shotPoints != null && ft.shotPoints.Length > 0 && ft.shotPoints[0] != null)
+            {
+                Vector3 rel = ft.shotPoints[0].position - transform.position; rel.y = 0f;
+                nozzle = rel.magnitude;
+                reach += nozzle;
+            }
+            if (cfg.bulletId == BulletId.None) distanceStop = reach * 0.6f;                                    // melee: swing at ~0.72 x reach
+            else if (nozzle > 0f) distanceStop = Mathf.Clamp(reach * 0.7f, nozzle + 0.4f, reach * 0.8f);  // target inside the flame
+            else distanceStop = Mathf.Min(distanceStop, reach * 0.8f);                                     // guns: fire within 0.96 x range
+        }
         agent.stoppingDistance = distanceStop;
     }
 }

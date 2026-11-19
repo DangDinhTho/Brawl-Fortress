@@ -11,8 +11,10 @@ public class ConfigManager
     public static int ver = 1;
     public static int maxPlayerPerRoom = 10;
     public static int timeToSwitchCamOnDeath = 6;
+    /// <summary>Respawn wait (s): base_death_time at the start of a match, growing to max_death_time at the end, never
+    /// above it (Title Data keys "base_death_time" / "max_death_time", whole seconds).</summary>
     public static int baseDeathTime = 8;
-    public static int maxDeathTime = 30;
+    public static int maxDeathTime = 12;
     public static int timeFlagBackHome = 30;
     public static int pricePerCrate = 5;
 
@@ -67,6 +69,32 @@ public class ConfigManager
     public static Dictionary<Map, int> battleTimes;
     /// <summary>Match length (s) for a map missing from Title Data "battle_map_times"; Title Data "default_battle_time" overrides it.</summary>
     public static int defaultBattleTime = 180;
+
+    /// <summary>Match length (s) of maps not listed in Title Data battle_map_times. Payload: 3.5 min, 4 min on the
+    /// long-track original map; Mann vs Machine: 6 min; other modes: default_battle_time.</summary>
+    public static readonly Dictionary<Map, int> defaultMapBattleTimes = new Dictionary<Map, int>
+    {
+        { Map.Map_Brawl_Payload, 240 },          // ~106 m of track
+        { Map.Map_Brawl_MineExpress, 210 },      // ~34 m
+        { Map.Map_Brawl_MoonRail, 210 },
+        { Map.Map_Brawl_BambooLine, 210 },
+        { Map.Map_Brawl_DynamiteTrail, 210 },
+        { Map.Map_Brawl_FrontierConvoy, 210 },
+    };
+    public static readonly Dictionary<GameMode, int> defaultModeBattleTimes = new Dictionary<GameMode, int>
+    {
+        { GameMode.Payload, 210 },
+        { GameMode.MannVsMachine, 360 },
+    };
+
+    /// <summary>Match length for a map: Title Data battle_map_times first, then the defaults above.</summary>
+    public static int BattleTimeOf(Map map, GameMode mode)
+    {
+        if (battleTimes != null && battleTimes.TryGetValue(map, out var t) && t > 0) return t;
+        if (defaultMapBattleTimes.TryGetValue(map, out t)) return t;
+        if (defaultModeBattleTimes.TryGetValue(mode, out t)) return t;
+        return defaultBattleTime;
+    }
     public static Dictionary<Map, MapConfig> mapConfigs = new Dictionary<Map, MapConfig>();
     public static List<DailyReward> dailyRewards;
     public static List<TF2Class> robotCanHoldBomb = new List<TF2Class>() { TF2Class.demoman, TF2Class.heavy, TF2Class.pyro, TF2Class.scout, TF2Class.sniper, TF2Class.soldier };

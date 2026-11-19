@@ -481,6 +481,7 @@ public class Gun : Weapon
 
     protected float reloadStartTime, reloadDuration;
     public bool IsReloading => weaponState == WeaponState.Reloading;
+    public override bool ReadyToFire => base.ReadyToFire && !IsReloading && bulletInClip > 0;
     /// <summary>Reload progress 0..1 (time-based, used by FootRing), -1 when not reloading.</summary>
     public float ReloadProgress => !IsReloading ? -1f : reloadDuration <= 0f ? 1f : Mathf.Clamp01((Time.time - reloadStartTime) / reloadDuration);
 
@@ -595,7 +596,9 @@ public class Gun : Weapon
         {
             float yaw = n == 1 ? UnityEngine.Random.Range(-half, half) : Mathf.Lerp(-half, half, i / (float)(n - 1));
             Vector3 dir = (Quaternion.AngleAxis(yaw, Vector3.up) * forward).normalized;
-            ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), spawn, Quaternion.LookRotation(dir), dir, damageObject, dist);
+            var shot = ObjectPooling.Instance.Instantiate(weaponConfig.bulletId.ToString(), spawn, Quaternion.LookRotation(dir), dir, damageObject, dist);
+            // per-weapon bullet speed: pooled bullets are shared (ShotgunBullet: shotgun, revolver, pistol, sniper)
+            if (shot is BulletNormal bn) bn.speed = bn.BaseSpeed * Mathf.Max(0.01f, weaponConfig.bulletSpeedScale);
         }
     }
 

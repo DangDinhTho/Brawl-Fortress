@@ -25,9 +25,15 @@ public class Weapon : MonoBehaviour
     [HideInInspector] public int shotsFired;
 
     /// <summary>Tap fire: exactly one shot / swing, respecting reload, cooldown (interval) and delayFire.</summary>
+    /// <summary>Ready for a shot / swing right now (cooldown over; guns: not reloading, ammo in the clip).</summary>
+    public virtual bool ReadyToFire => !blockFire && Time.time >= timeNextShot;
+
     public virtual void FireOnce()
     {
         if (blockFire || playerOwner == null || playerOwner.healthManager == null || playerOwner.healthManager.death) return;
+        // not ready (cooldown, reloading...): the tap is dropped. It used to wait and fire once ready, out of step with
+        // the animation and with what the player meant.
+        if (!ReadyToFire) return;
         if (!gameObject.activeInHierarchy) return;
         StartCoroutine(FireOnceRoutine());
     }

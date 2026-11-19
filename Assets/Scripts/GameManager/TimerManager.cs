@@ -138,9 +138,11 @@ public class TimerManager : MonoBehaviourPunCallbacks
 
     public int GetDeathTime()
     {
+        int max = Mathf.Max(1, ConfigManager.maxDeathTime);
+        int min = Mathf.Clamp(ConfigManager.baseDeathTime, 1, max);
         float timer = (PhotonNetwork.ServerTimestamp - this.timeStart) / 1000f;
-        float dt = ConfigManager.baseDeathTime + (ConfigManager.maxDeathTime - ConfigManager.baseDeathTime) * (timer / this.countDownTime);
-        return (int)dt;
+        float t = this.countDownTime > 0 ? Mathf.Clamp01(timer / this.countDownTime) : 1f;   // overtime does not go past the max
+        return Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(min, max, t)), min, max);
     }
 
     private void CountDownFinish()
