@@ -60,6 +60,7 @@ public class DispenserHealFx : MonoBehaviour
     {
         if (fx == null) return;
         foreach (var ps in fx.GetComponentsInChildren<ParticleSystem>()) ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        fx.transform.SetParent(null, true);   // not tied to the player any more (death / respawn re-enables his model)
         Destroy(fx, 2f); // let the rising plus signs finish
     }
 

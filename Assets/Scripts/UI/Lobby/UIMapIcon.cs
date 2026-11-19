@@ -50,6 +50,39 @@ public class UIMapIcon : MonoBehaviour
     {
         RefreshLock();
         RefreshTicket();
+        RefreshBoss();
+    }
+
+    [Header("Boss badge (Boss Battle maps)")]
+    [Tooltip("Optional: created at runtime in the card's top-left corner when empty")] public Image bossBadge;
+    static Sprite haleIcon, yetiIcon;
+
+    /// <summary>Boss Battle maps show which boss they are played against (Hale or Yeti), Resources/UI/boss_hale|boss_yeti.</summary>
+    public void RefreshBoss()
+    {
+        bool boss = gameMode == GameMode.JungleBoss;
+        if (!boss) { if (bossBadge) bossBadge.gameObject.SetActive(false); return; }
+        if (haleIcon == null) haleIcon = Resources.Load<Sprite>("UI/boss_hale");
+        if (yetiIcon == null) yetiIcon = Resources.Load<Sprite>("UI/boss_yeti");
+        var icon = ConfigManager.BossOfMap(map) == TF2Class.yeti ? yetiIcon : haleIcon;
+        if (icon == null) return;
+        if (bossBadge == null) bossBadge = CreateBossBadge();
+        bossBadge.sprite = icon;
+        bossBadge.gameObject.SetActive(true);
+    }
+
+    /// <summary>Round boss badge (its own ring and background are in the picture), top-left of the map picture just below the
+    /// mode label, opposite the ticket badge; under the lock overlay, so a locked mode dims it too.</summary>
+    Image CreateBossBadge()
+    {
+        RectTransform host = mapIcon != null ? mapIcon.rectTransform : (RectTransform)transform;
+        var go = new GameObject("BossBadge", typeof(RectTransform), typeof(Image));
+        go.layer = gameObject.layer;
+        var r = (RectTransform)go.transform; r.SetParent(host, false);
+        r.anchorMin = r.anchorMax = new Vector2(0f, 1f); r.pivot = new Vector2(0f, 1f);
+        r.sizeDelta = new Vector2(96f, 96f); r.anchoredPosition = new Vector2(6f, -40f);
+        var img = go.GetComponent<Image>(); img.preserveAspect = true; img.raycastTarget = false;
+        return img;
     }
 
     public void RefreshLock()

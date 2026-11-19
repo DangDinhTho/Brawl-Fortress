@@ -146,4 +146,8 @@ public enum Map: byte
     Map_Brawl_CryptTunnels,
     Map_Brawl_DeadCrater,
     Map_Brawl_LastLight,
+    Map_Brawl_YetiHollow,      // JungleBoss, Yeti
+    Map_Brawl_BigfootGulch,    // JungleBoss, Yeti
+    Map_Brawl_MoonlitDen,      // JungleBoss, Yeti
+    Map_Brawl_StompingGrounds, // JungleBoss, Yeti
 }

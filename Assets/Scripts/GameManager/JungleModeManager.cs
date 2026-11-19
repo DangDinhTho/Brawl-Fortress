@@ -20,6 +20,8 @@ public class JungleModeManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // the boss of this map (ConfigManager.bossOfMap): set before the HUD reads it for the boss name
+        if (MapManager.instan != null) bossType = ConfigManager.BossOfMap(MapManager.instan.map);
         ArenaManager.Instance.OnInitDone += InitBoss;
         ArenaManager.Instance.OnGameStarted += OnGameStarted;
         ArenaManager.Instance.OnGameFinish += OnGameFinish;
@@ -72,8 +74,11 @@ public class JungleModeManager : MonoBehaviour
         Transform teamPos = MapManager.instan.teamPos[1];
         Transform spawnPos = teamPos.GetChild(Random.Range(0, teamPos.childCount));
 
-        var playerName = "Hale";
+        // Hale or Yeti depending on the map (was always Hale)
+        bool yeti = bossType == TF2Class.yeti;
+        var playerName = yeti ? "Yeti" : "Hale";
         object[] info = { bossType, Team.blue, playerName };
+        // one network boss prefab for every boss: TF2Boss loads the model Characters/Boss/Boss_{bossType}
         GameObject bot = PhotonNetwork.Instantiate("Boss_Hale", spawnPos.position, spawnPos.rotation, 0, info);
         return bot;
     }

@@ -65,6 +65,8 @@ public class MedigunBeam : MonoBehaviour
         else if (fx != null)
         {
             foreach (var ps in fx.GetComponentsInChildren<ParticleSystem>()) if (ps.isEmitting) ps.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+            // detach from the last patient: left on him, the effect came back when his respawn re-enabled the model
+            if (fxOn != null) fx.transform.SetParent(null, true);
             fxOn = null;
         }
     }

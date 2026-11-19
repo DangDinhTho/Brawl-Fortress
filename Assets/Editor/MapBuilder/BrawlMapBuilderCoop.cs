@@ -1,6 +1,6 @@
 using UnityEditor;
 
-/// <summary>Test maps for the modes ported from TF2_AI (Tho prefers brown desert maps; zombies on dark maps): JungleBoss (team vs the Hale boss) and Zombie (survive the horde).
+/// <summary>Test maps for the modes ported from TF2_AI (Tho prefers brown desert maps; zombies on dark maps): JungleBoss (team vs the boss of the map: Hale or Yeti, see ConfigManager.bossOfMap) and Zombie (survive the horde).
 /// Menu: Tools/Maps/Build Boss & Zombie Maps. Same 21x13 half-layout rules as the other Brawl maps.</summary>
 public static partial class BrawlMapBuilder
 {
@@ -249,5 +249,94 @@ public static partial class BrawlMapBuilder
             },
             center = "....x...........x....",
         },
+        new Def {
+            mapEnum = "Map_Brawl_YetiHollow", displayName = "Yeti's Hollow", icon = "map_yetihollow", mode = GameMode.JungleBoss, theme = Theme.Cave, seed = 5161,
+            names = new[] { "Yeti's Hollow", "Логово Йети", "โพรงเยติ", "Hondonada del Yeti", "Hang Ổ Của Yeti" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..bbb...........bbb..",
+                "..###....bbb....###..",
+                "..##.............##..",
+                ".##.bb.........bb.##.",
+                "........#...#........",
+                ".bb.....#...#.....bb.",
+                "....##.........##....",
+                ".bb..t.........t..bb.",
+                "..bb.............bb..",
+                ".....................",
+            },
+            center = ".......#.....#.......",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_BigfootGulch", displayName = "Bigfoot Gulch", icon = "map_bigfootgulch", mode = GameMode.JungleBoss, theme = Theme.Western, seed = 5171,
+            names = new[] { "Bigfoot Gulch", "Ущелье Бигфута", "หุบเขาบิ๊กฟุต", "Barranco de Pie Grande", "Khe Núi Chân To" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..bb.............bb..",
+                "..bb...##...##...bb..",
+                ".#.................#.",
+                ".x.......bbb.......x.",
+                "....##...bbb...##....",
+                "..t...............t..",
+                ".........###.........",
+                ".bb......###......bb.",
+                ".........bbb.........",
+                ".....................",
+            },
+            center = ".........bbb.........",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_MoonlitDen", displayName = "Moonlit Den", icon = "map_moonlitden", mode = GameMode.JungleBoss, theme = Theme.Moon, seed = 5181,
+            names = new[] { "Moonlit Den", "Лунное логово", "ถ้ำใต้แสงจันทร์", "Guarida Lunar", "Hang Ổ Ánh Trăng" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                ".bbb.............bbb.",
+                ".##.bb.........bb.##.",
+                "....##.........##....",
+                ".bbb.....x.x.....bbb.",
+                ".##...............##.",
+                "........#...#........",
+                "..t......b.b......t..",
+                "..###....bbb....###..",
+                ".....................",
+                ".....................",
+            },
+            center = "....x...........x....",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_StompingGrounds", displayName = "Stomping Grounds", icon = "map_stompinggrounds", mode = GameMode.JungleBoss, theme = Theme.Western, seed = 5191,
+            names = new[] { "Stomping Grounds", "Топтальное поле", "ลานกระทืบ", "Campo de Pisotones", "Bãi Giẫm Đạp" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                ".bbb.....x.x.....bbb.",
+                ".bbb.............bbb.",
+                "....##...bbb...##....",
+                ".x.......bbb.......x.",
+                "..##.............##..",
+                "........#...#........",
+                ".bb..t.........t..bb.",
+                ".bb......###......bb.",
+                "....##.........##....",
+                "..bb.............bb..",
+            },
+            center = "....x...........x....",
+        },
     };
+
+    /// <summary>Only the four Yeti boss maps added later (5 Hale + 5 Yeti Boss Battle maps in all).</summary>
+    [MenuItem("Tools/Maps/Build Yeti Boss Maps")]
+    public static void BuildYetiMapsMenu()
+    {
+        foreach (var d in BossZombie)
+            if (d.mapEnum == "Map_Brawl_YetiHollow" || d.mapEnum == "Map_Brawl_BigfootGulch" || d.mapEnum == "Map_Brawl_MoonlitDen" || d.mapEnum == "Map_Brawl_StompingGrounds")
+                UnityEngine.Debug.Log(Build(d));
+    }
 }

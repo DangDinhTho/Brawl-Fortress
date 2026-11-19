@@ -33,7 +33,12 @@ public class BurnFx : MonoBehaviour
         if (target == null || target.death) return;
         var b = target.GetComponent<BurnFx>();
         if (b == null) b = target.gameObject.AddComponent<BurnFx>();
-        b.health = target;
+        if (b.health != target)
+        {
+            b.health = target;
+            var hm = target as HealthManager;
+            if (hm != null) { hm.OnRespawn -= b.OnRespawned; hm.OnRespawn += b.OnRespawned; }
+        }
         b.lastHit = Time.time;
         if (source != null && source.isOwner)
         {
@@ -65,8 +70,20 @@ public class BurnFx : MonoBehaviour
         }
     }
 
+    /// <summary>Puts the fire out at once and removes the effect (death / respawn): it was only told to stop emitting and
+    /// stayed on the model; its looping systems started again when the respawn re-enabled the model (a harmless but
+    /// visible fire after respawning).</summary>
+    void Extinguish()
+    {
+        if (fx != null) Destroy(fx);
+        fx = null; systems = null; emitting = false; afterburn = null; burnUntil = 0f;
+    }
+
+    void OnRespawned() { Extinguish(); }
+
     void Update()
     {
+        if (fx != null && health != null && health.death) { Extinguish(); return; }
         if (!emitting) return;
         // afterburn: out of the flame, still on fire -> keeps losing health until the fire is out
         if (afterburn != null && health != null && !health.death && Time.time - lastHit > InFlameWindow && Time.time >= nextTick && Time.time < burnUntil)
@@ -83,9 +100,11 @@ public class BurnFx : MonoBehaviour
         }
     }
 
-    void OnDisable()
+    void OnDisable() { Extinguish(); }
+
+    void OnDestroy()
     {
-        if (fx != null) Destroy(fx);
-        fx = null; emitting = false;
+        var hm = health as HealthManager;
+        if (hm != null) hm.OnRespawn -= OnRespawned;
     }
 }

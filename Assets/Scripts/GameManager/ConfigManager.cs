@@ -308,7 +308,28 @@ public class ConfigManager
         (GameMode.Zombie, Map.Map_Brawl_CryptTunnels, 3),
         (GameMode.Zombie, Map.Map_Brawl_DeadCrater, 4),
         (GameMode.Zombie, Map.Map_Brawl_LastLight, 5),
+        (GameMode.JungleBoss, Map.Map_Brawl_YetiHollow, 6),
+        (GameMode.JungleBoss, Map.Map_Brawl_BigfootGulch, 7),
+        (GameMode.JungleBoss, Map.Map_Brawl_MoonlitDen, 8),
+        (GameMode.JungleBoss, Map.Map_Brawl_StompingGrounds, 9),
     };
+
+    /// <summary>The boss each Boss Battle (JungleBoss) map is played against: 5 Hale maps, 5 Yeti maps.</summary>
+    public static readonly Dictionary<Map, TF2Class> bossOfMap = new Dictionary<Map, TF2Class>
+    {
+        { Map.Map_Brawl_HaleJungle, TF2Class.hale },
+        { Map.Map_Brawl_HaleMesa, TF2Class.hale },
+        { Map.Map_Brawl_DustDevil, TF2Class.hale },
+        { Map.Map_Brawl_RedRockPit, TF2Class.hale },
+        { Map.Map_Brawl_FrontierOutpost, TF2Class.hale },
+        { Map.Map_Brawl_LunarColossus, TF2Class.yeti },
+        { Map.Map_Brawl_YetiHollow, TF2Class.yeti },
+        { Map.Map_Brawl_BigfootGulch, TF2Class.yeti },
+        { Map.Map_Brawl_MoonlitDen, TF2Class.yeti },
+        { Map.Map_Brawl_StompingGrounds, TF2Class.yeti },
+    };
+
+    public static TF2Class BossOfMap(Map map) => bossOfMap.TryGetValue(map, out var b) ? b : TF2Class.hale;
 
     /// <summary>Adds the default ticket config for every map mapConfigs does not have yet (called after Title Data is read).</summary>
     public static void ApplyMapTicketDefaults()

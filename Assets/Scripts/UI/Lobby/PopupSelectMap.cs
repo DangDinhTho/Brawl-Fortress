@@ -204,9 +204,24 @@ public class PopupSelectMap : PopupBase
         singlePlayer = true;
     }
 
+    private void OnEnable()
+    {
+        GameManager.OnInventoryUpdated += OnInventoryUpdated;
+    }
+
     private void OnDisable()
     {
+        GameManager.OnInventoryUpdated -= OnInventoryUpdated;
         foreach (var card in cards)
             if (card != null) DOTween.Kill(card);
+    }
+
+    /// <summary>Tickets bought in the store (or won from an ad / gift) while this popup is open: refresh the ticket counts
+    /// and the map cards' ticket price colours (red when not affordable).</summary>
+    void OnInventoryUpdated()
+    {
+        SetTicket();
+        foreach (var card in cards)
+            if (card != null) card.RefreshTicket();
     }
 }

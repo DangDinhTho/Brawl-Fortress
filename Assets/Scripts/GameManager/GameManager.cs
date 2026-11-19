@@ -122,6 +122,10 @@ public class GameManager : MonoBehaviour
         }, error => RetryLater(attempt, () => GetUserInventory(callBack, onError, attempt + 1), error, onError));
     }
 
+    /// <summary>Raised after the inventory / currencies were reloaded (login, store purchase, ad reward, gift...):
+    /// open screens that show item counts (tickets...) refresh themselves.</summary>
+    public static event Action OnInventoryUpdated;
+
     /// <summary>Also used with the combined login payload.</summary>
     public void ApplyInventory(List<ItemInstance> itemInstances, Dictionary<string, int> virtualCurrency)
     {
@@ -141,6 +145,7 @@ public class GameManager : MonoBehaviour
         {
             HomeManager.instance.SetNoAdsBtn();
         }
+        OnInventoryUpdated?.Invoke();
     }
     #endregion
 
