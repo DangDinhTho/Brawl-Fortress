@@ -56,9 +56,48 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         else PhotonNetwork.ConnectUsingSettings();
     }
 
+    /// <summary>"Find a game" shows when multiplayer is on (Title Data "multiplay") and Photon is connected (not offline).
+    /// Called when Photon connects / disconnects and when Title Data arrives, whichever comes last.</summary>
+    public static void RefreshRoomListButton()
+    {
+        var lm = instance;
+        if (lm == null || lm.roomListBtn == null) return;
+        lm.roomListBtn.SetActive(ConfigManager.multiplay && PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.OfflineMode);
+    }
+
+    // ---- reconnect: on a phone the connection drops while an ad is shown / the app is in the background or the network
+    // blinks; nothing connected again, so "Find a game" stayed hidden until the game was restarted
+    int reconnectAttempt;
+    Coroutine reconnecting;
+
+    void ScheduleReconnect()
+    {
+        if (reconnecting != null) return;
+        float delay = Mathf.Min(30f, 2f * Mathf.Pow(2f, reconnectAttempt));
+        reconnectAttempt++;
+        reconnecting = StartCoroutine(ReconnectAfter(delay));
+    }
+
+    System.Collections.IEnumerator ReconnectAfter(float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        reconnecting = null;
+        if (!PhotonNetwork.IsConnected && !PhotonNetwork.OfflineMode) Connect();
+    }
+
+    void OnApplicationPause(bool paused)
+    {
+        // back from an ad / the home screen: reconnect at once if the connection was lost meanwhile
+        if (paused || PhotonNetwork.IsConnected || PhotonNetwork.OfflineMode) return;
+        reconnectAttempt = 0;
+        if (reconnecting != null) { StopCoroutine(reconnecting); reconnecting = null; }
+        Connect();
+    }
+
     public override void OnConnectedToMaster()
     {
-        roomListBtn.SetActive(ConfigManager.multiplay);
+        reconnectAttempt = 0;
+        RefreshRoomListButton();
         LobbyPanel.OnConnectedToMaster();
         if (LobbyPanel.isOpen && !PhotonNetwork.InLobby)
         {
@@ -76,6 +115,8 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         }
         roomListBtn.SetActive(false);
         Debug.LogWarning("Photon disconnected: " + cause);
+        // lost without asking for it (not: going offline for a solo match, region switch): try again
+        if (cause != DisconnectCause.DisconnectByClientLogic && !PhotonNetwork.OfflineMode) ScheduleReconnect();
     }
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)

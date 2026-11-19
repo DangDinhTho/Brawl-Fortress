@@ -687,6 +687,8 @@ public class LoginManager : MonoBehaviour
         var weaponStats = ParseEnumDict<WeaponId, WeaponStats>(data, "weapon_stats");
         if (weaponStats != null) ConfigManager.weaponStats = weaponStats;
 
+        LobbyManager.RefreshRoomListButton();   // Title Data may arrive after Photon connected
+
 #if Admob
         // ad unit ids by platform; only the ad types listed change (see AdmobManager.ApplyServerIds)
         var adIds = ParseJson<Dictionary<string, Dictionary<string, string>>>(data, AdmobManager.ServerIdsKey);
