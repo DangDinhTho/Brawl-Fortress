@@ -149,6 +149,8 @@ public class PopupSelectClass : PopupBase
             singleStarting = true;
             LobbyManager.instance.singlePlayer = true;
             popupLoading = GUIManager.instan.CreatePopup<PopupLoading>(LocalizationManager.Localize("matching"));
+            // MREC while "matching" (bottom centre, below the text); hidden before the match loads or on failure
+            if (ConfigManager.showMrecMatching) AdsManager.instan.ShowNavtiveAds(AdCorner.Bottom);
             CharacterSave.SaveLastCharacter(HomeManager.instance.characterPref.tF2Class);
             StartCoroutine(StartSingleOffline());
         }
@@ -195,6 +197,7 @@ public class PopupSelectClass : PopupBase
             if(timeOut > 10)
             {
                 popupLoading.Dismiss();
+                AdsManager.instan.HideNavtiveAds();
                 singleStarting = false;
                 LobbyManager.instance.singlePlayer = false;
                 GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("disconected"));
@@ -204,6 +207,7 @@ public class PopupSelectClass : PopupBase
         }
 
         yield return new WaitForSeconds(Random.Range(5f, 10f));
+        AdsManager.instan.HideNavtiveAds();
         SceneManager.LoadScene("Arena");
     }
 }

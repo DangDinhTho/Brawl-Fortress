@@ -89,6 +89,91 @@ public class AdmobManager : MonoBehaviour
         lastFullScreenAdClosedUtc = DateTime.UtcNow;
     }
 
+    #region Ad unit ids from PlayFab
+    /// <summary>PlayFab Title Data key with ad unit ids, by platform; only the types listed change, e.g.
+    /// {"android":{"inter":"ca-app-pub-x/y","rewarded":"ca-app-pub-x/z"},"ios":{"inter":"ca-app-pub-x/w"}}.
+    /// Types: inter, rewarded, app_open, mrec, banner. Each type loads with, in order: an id from PlayFab received before
+    /// that type first loads this launch; else the id saved by an earlier launch (PlayerPrefs); else the default in code.
+    /// Loading never waits for PlayFab: an id arriving after its type already loaded is saved for the next launch.</summary>
+    public const string ServerIdsKey = "admob_ids";
+    static readonly string[] AdTypes = { "inter", "rewarded", "app_open", "mrec", "banner" };
+    bool usedInter, usedReward, usedAppOpen, usedMrec, usedBanner;
+
+#if UNITY_IOS
+    public const string AdPlatform = "ios";
+#else
+    public const string AdPlatform = "android";
+#endif
+    static string PrefKey(string type) => "AdUnitId_" + AdPlatform + "_" + type;
+
+    static string CanonType(string k)
+    {
+        if (string.IsNullOrEmpty(k)) return null;
+        switch (k.Trim().ToLowerInvariant().Replace("-", "_").Replace(" ", "_"))
+        {
+            case "inter": case "interstitial": return "inter";
+            case "rewarded": case "reward": case "rewarded_video": case "video": return "rewarded";
+            case "app_open": case "appopen": case "open": return "app_open";
+            case "mrec": case "native": case "navtive": case "medium_rectangle": return "mrec";
+            case "banner": return "banner";
+        }
+        return null;
+    }
+
+    void SetAdId(string type, string id)
+    {
+        switch (type)
+        {
+            case "inter": _interAdUnitId = id; break;
+            case "rewarded": _rewardAdUnitId = id; break;
+            case "app_open": _appOpenAdUnitId = id; break;
+            case "mrec": _naviveAdUnitId = id; break;
+            case "banner": _bannerAdUnitId = id; break;
+        }
+    }
+
+    bool AdTypeUsed(string type)
+    {
+        switch (type)
+        {
+            case "inter": return usedInter;
+            case "rewarded": return usedReward;
+            case "app_open": return usedAppOpen;
+            case "mrec": return usedMrec;
+            case "banner": return usedBanner;
+        }
+        return true;
+    }
+
+    /// <summary>Ids saved by an earlier launch replace the defaults (types never set on PlayFab keep the default).</summary>
+    void ApplySavedAdIds()
+    {
+        foreach (var t in AdTypes)
+        {
+            string id = PlayerPrefs.GetString(PrefKey(t), "");
+            if (!string.IsNullOrEmpty(id)) SetAdId(t, id);
+        }
+    }
+
+    /// <summary>Ids for this platform from PlayFab (type -> unit id). Each one is saved for the next launches; a type that
+    /// has not loaded yet this launch also uses it right away. Empty or malformed ids are ignored.</summary>
+    public static void ApplyServerIds(System.Collections.Generic.Dictionary<string, string> ids)
+    {
+        if (ids == null) return;
+        bool saved = false;
+        foreach (var kv in ids)
+        {
+            string type = CanonType(kv.Key);
+            string id = kv.Value != null ? kv.Value.Trim() : null;
+            if (type == null || string.IsNullOrEmpty(id) || !id.StartsWith("ca-app-pub-")) { Debug.LogWarning("admob_ids: entry '" + kv.Key + "' ignored"); continue; }
+            if (PlayerPrefs.GetString(PrefKey(type), "") != id) { PlayerPrefs.SetString(PrefKey(type), id); saved = true; }
+            var m = insan;
+            if (m != null && !m.isTest && !m.AdTypeUsed(type)) m.SetAdId(type, id);   // not loaded yet: use it now
+        }
+        if (saved) PlayerPrefs.Save();
+    }
+    #endregion
+
     public void InitAds()
     {
         if (initStarted) return;
@@ -119,6 +204,7 @@ public class AdmobManager : MonoBehaviour
             _naviveAdUnitId = _naviveAdUnitId_iOS;
             _appOpenAdUnitId = _appOpenAdUnitId_iOS;
 #endif
+            ApplySavedAdIds();   // ids from PlayFab saved by an earlier launch
         }
 
         // Gather UMP consent first (every launch), then start the SDK.
@@ -172,6 +258,7 @@ public class AdmobManager : MonoBehaviour
         Debug.Log("Loading the interstitial ad.");
         var adRequest = new AdRequest();
 
+        usedInter = true;
         InterstitialAd.Load(_interAdUnitId, adRequest, (InterstitialAd ad, LoadAdError error) => OnMainThread(() =>
         {
             if (error != null || ad == null)
@@ -248,6 +335,7 @@ public class AdmobManager : MonoBehaviour
         rewardedLoading = true;
         var adRequest = new AdRequest();
 
+        usedReward = true;
         RewardedAd.Load(_rewardAdUnitId, adRequest, (RewardedAd ad, LoadAdError error) => OnMainThread(() =>
         {
             rewardedLoading = false;
@@ -366,6 +454,7 @@ public class AdmobManager : MonoBehaviour
         }
 
         appOpenLoading = true;
+        usedAppOpen = true;
         AppOpenAd.Load(_appOpenAdUnitId, new AdRequest(), (AppOpenAd ad, LoadAdError error) => OnMainThread(() =>
         {
             appOpenLoading = false;
@@ -480,6 +569,7 @@ public class AdmobManager : MonoBehaviour
             DestroyNaviveView();
         }
 
+        usedMrec = true;
         _naviveView = new BannerView(_naviveAdUnitId, AdSize.MediumRectangle, ToAdPosition(_navivePosition));
         var view = _naviveView;
         if (!_naviveWanted) view.Hide(); // hidden before anything is loaded into it
@@ -575,6 +665,7 @@ public class AdmobManager : MonoBehaviour
             DestroyBannerView();
         }
 
+        usedBanner = true;
         _bannerView = new BannerView(_bannerAdUnitId, AdSize.Banner, AdPosition.TopLeft);
         var view = _bannerView;
         if (!_bannerWanted) view.Hide();

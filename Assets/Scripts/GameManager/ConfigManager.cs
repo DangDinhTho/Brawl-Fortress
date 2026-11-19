@@ -34,6 +34,7 @@ public class ConfigManager
     public static bool showMrecScoreboard = false; // off unless Title Data show_mrec_scoreboard = true
     public static bool showMrecMedal = false;      // off unless Title Data show_mrec_medal = true
     public static bool showMrecDie = true;
+    public static bool showMrecMatching = true; // MREC on the "matching" wait before a solo match (Title Data show_mrec_matching)
 
     public static bool multiplay = false;
 
