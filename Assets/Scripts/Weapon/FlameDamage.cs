@@ -16,7 +16,7 @@ public class FlameDamage : MonoBehaviour
         var target = other.transform.root.GetComponent<HealthBase>();
         if (target == null || target.death) return;
         if (flameOwner != null ? target.team == flameOwner.team : target.team == damageObject.team) return;
-        BurnFx.Ignite(target);
+        BurnFx.Ignite(target, damageObject);   // the shooter's client also deals the afterburn
     }
 
     // standing in the flame keeps the target burning (checked a few times a second)

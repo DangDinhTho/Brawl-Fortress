@@ -549,7 +549,7 @@ public class Gun : Weapon
     /// not along the barrel, which the animations swing and which lags behind a turning bot.</summary>
     public static float BotSniperSpread = 0.25f;
     /// <summary>Spread kept for the other bots' single-bullet guns (shotgun patterns are left as they are).</summary>
-    public static float BotSpread = 0.7f;
+    public static float BotSpread = 1f;   // bots aim at the target now: the full aim cone keeps them beatable
     bool IsBot => playerOwner != null && playerOwner.isBot;
     bool BotSniper => playerOwner != null && playerOwner.isBot && weaponConfig != null && weaponConfig.weaponId.ToString().Contains("Sniper");
 

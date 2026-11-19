@@ -9,22 +9,38 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class BurnFx : MonoBehaviour
 {
-    public static float BurnTime = 1.5f;
+    public static float BurnTime = 2f;
+    /// <summary>Afterburn: damage every AfterburnInterval s while the fire lingers after the last flame hit.</summary>
+    public static float AfterburnDamage = 3f;
+    public static float AfterburnInterval = 0.5f;
+    /// <summary>Still in the flame (hit within this time): only the flame's own damage applies, no afterburn on top.</summary>
+    const float InFlameWindow = 0.3f;
 
     HealthBase health;
     GameObject fx;
     ParticleSystem[] systems;
     float burnUntil;
     bool emitting;
+    // afterburn is dealt by the shooter's client only (like the flame damage): it knows who set the fire
+    DamageObject afterburn;
+    float lastHit, nextTick;
     static GameObject prefab;
 
-    /// <summary>Sets the target on fire (or keeps it burning).</summary>
-    public static void Ignite(HealthBase target)
+    /// <summary>Sets the target on fire (or keeps it burning). 'source' = the flame's damage object: on the shooter's
+    /// client (isOwner) the fire keeps hurting the target until it goes out.</summary>
+    public static void Ignite(HealthBase target, DamageObject source = null)
     {
         if (target == null || target.death) return;
         var b = target.GetComponent<BurnFx>();
         if (b == null) b = target.gameObject.AddComponent<BurnFx>();
         b.health = target;
+        b.lastHit = Time.time;
+        if (source != null && source.isOwner)
+        {
+            if (b.afterburn == null) b.afterburn = new DamageObject();
+            b.afterburn.team = source.team; b.afterburn.ownerId = source.ownerId; b.afterburn.owner = source.owner; b.afterburn.isOwner = true;
+            if (!b.emitting) b.nextTick = Time.time + AfterburnInterval;
+        }
         b.Keep();
     }
 
@@ -52,10 +68,18 @@ public class BurnFx : MonoBehaviour
     void Update()
     {
         if (!emitting) return;
+        // afterburn: out of the flame, still on fire -> keeps losing health until the fire is out
+        if (afterburn != null && health != null && !health.death && Time.time - lastHit > InFlameWindow && Time.time >= nextTick && Time.time < burnUntil)
+        {
+            nextTick = Time.time + AfterburnInterval;
+            afterburn.damage = AfterburnDamage;
+            health.TakeDamage(afterburn, Vector3.up * 0.1f);
+        }
         if (Time.time >= burnUntil || (health != null && health.death))
         {
             foreach (var ps in systems) if (ps != null) ps.Stop(false, ParticleSystemStopBehavior.StopEmitting);  // flames die out
             emitting = false;
+            afterburn = null;   // fire out: no more damage
         }
     }
 
