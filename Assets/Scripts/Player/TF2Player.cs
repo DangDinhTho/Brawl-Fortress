@@ -198,28 +198,17 @@ public class TF2Player : MonoBehaviour
                 meshDynamicColors[i].SetTeamColor(_team);
             }
         }
+        // fade back in from the cloak (SpyCloakFx keeps these team / disguise materials as the ones to return to)
+        var cloakFx = GetComponent<SpyCloakFx>();
+        if (cloakFx != null) cloakFx.SetCloaked(false);
     }
 
+    /// <summary>Spy cloak: every renderer (body, weapons, cosmetics) fades out for enemies and to a see-through ghost for
+    /// team mates and the Spy himself (SpyCloakFx). Was: a material swap on the body only, weapons stayed visible.</summary>
     public void SetMeshInvsibility()
     {
         MeshInvisible = true;
-        Material[] materials = new Material[1];
-        if (team == ArenaManager.Instance.mainPlayer.team)
-        {
-            materials[0] = Resources.Load<Material>("Materials/InvisibilityMat_mate");
-        }
-        else
-        {
-            materials[0] = Resources.Load<Material>("Materials/InvisibilityMat");
-        }
-        MeshDynamicColor[] meshDynamicColors = GetComponentsInChildren<MeshDynamicColor>(true);
-        if (meshDynamicColors != null)
-        {
-            for (int i = 0; i < meshDynamicColors.Length; i++)
-            {
-                meshDynamicColors[i].SetInvisibility(materials);
-            }
-        }
+        SpyCloakFx.Of(this).SetCloaked(true);
     }
 
     public virtual void OnGameFinish()

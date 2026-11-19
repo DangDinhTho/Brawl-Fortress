@@ -17,6 +17,8 @@ public class InvisWatch : MonoBehaviour
     public Action OnInvisibility;
     public Action OnShowAvailble;
     public Action<float> OnEXPUpdate;
+    /// <summary>Cloak charge left (0..maxEXP).</summary>
+    public float Charge => currentEXP;
 
     //public Image expProcess;
 
@@ -56,11 +58,9 @@ public class InvisWatch : MonoBehaviour
         StartCoroutine(CountDown());
        
         OnInvisibility?.Invoke();
-        StartCoroutine(WaitAction(() =>
-        {
-            spyController.player.SetMeshInvsibility();
-            spyController.player.playerNetwork.SyncInvisibility(true);
-        }));
+        // at once: SpyCloakFx fades the look (was applied 0.75 s later, all at once)
+        spyController.player.SetMeshInvsibility();
+        spyController.player.playerNetwork.SyncInvisibility(true);
 
         return true;
     }
@@ -106,11 +106,8 @@ public class InvisWatch : MonoBehaviour
         }
         else
         {
-            StartCoroutine(WaitAction(() =>
-            {
-                spyController.player.SetMeshTeam();
-                spyController.player.playerNetwork.SyncInvisibility(false);
-            }));
+            spyController.player.SetMeshTeam();   // SpyCloakFx fades back in
+            spyController.player.playerNetwork.SyncInvisibility(false);
         }
         return true;
     }

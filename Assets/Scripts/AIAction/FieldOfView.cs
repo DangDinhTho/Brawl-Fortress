@@ -60,6 +60,9 @@ public class FieldOfView : MonoBehaviour
                 Transform target = rangeChecks[i].transform;
                 HealthBase health = target.root.GetComponent<HealthBase>();
                 if (health == null || health.death || health.team == team) continue;
+                // a cloaked Spy is not seen (only bumping into him gives him away)
+                var cloakedSpy = health.GetComponent<TF2Player>();
+                if (cloakedSpy != null && cloakedSpy.MeshInvisible && Vector3.Distance(transform.position, target.position) > 1.5f) continue;
                 float distanceToTarget = Vector3.Distance(transform.position, target.position);
                 if (distanceToTarget >= bestDist) continue;
                 Vector3 directionToTarget = (target.position + Vector3.up - transform.position).normalized;

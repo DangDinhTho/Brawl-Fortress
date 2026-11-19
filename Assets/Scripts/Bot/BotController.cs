@@ -34,6 +34,13 @@ public class BotController : MonoBehaviour
     public void Init()
     {
         //behaviorTree = GetComponent<BehaviorTree>();
+        // spy bots cloak now and then (see BotSpy)
+        if (bot != null && bot.tF2Class == TF2Class.spy && !(bot is TF2Zombie))
+        {
+            var spyBot = GetComponent<BotSpy>();
+            if (spyBot == null) spyBot = gameObject.AddComponent<BotSpy>();
+            spyBot.Init(this);
+        }
         // engineer bots build a Sentry, then a Dispenser, when no enemy is around (see BotEngineer)
         if (bot != null && bot.tF2Class == TF2Class.engineer && !(bot is TF2Zombie))
         {
