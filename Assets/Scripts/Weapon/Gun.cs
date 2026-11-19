@@ -545,29 +545,16 @@ public class Gun : Weapon
     protected virtual bool FlatAim => true;
 
     /// <summary>Aim direction: the player's facing (= aim joystick, flat) for humans, the barrel for bots / lobbed projectiles.</summary>
-    /// <summary>Spread kept for sniper bots (share of the aim cone). All bots aim at the body of the target they see,
-    /// not along the barrel, which the animations swing and which lags behind a turning bot.</summary>
+    /// <summary>Spread kept for sniper bots (share of the aim cone). Bots fire along the barrel (aiming at the target
+    /// instead made the bullets leave away from the barrel).</summary>
     public static float BotSniperSpread = 0.25f;
     /// <summary>Spread kept for the other bots' single-bullet guns (shotgun patterns are left as they are).</summary>
-    public static float BotSpread = 1f;   // bots aim at the target now: the full aim cone keeps them beatable
+    public static float BotSpread = 1f;
     bool IsBot => playerOwner != null && playerOwner.isBot;
     bool BotSniper => playerOwner != null && playerOwner.isBot && weaponConfig != null && weaponConfig.weaponId.ToString().Contains("Sniper");
 
     protected Vector3 AimForward(Transform shotPoint)
     {
-        // bots aim at the body of the target they see (not along the barrel); lobbed weapons keep the barrel's angle
-        if (IsBot && FlatAim)
-        {
-            var fov = playerOwner.GetComponent<FieldOfView>();
-            if (fov != null && fov.canSeePlayer && fov.targetInField != null)
-            {
-                var hb = fov.targetInField.GetComponent<HealthBase>();
-                Vector3 aimAt = hb != null && hb.centerBody != null ? hb.centerBody.position : fov.targetInField.position + Vector3.up;
-                Vector3 d = aimAt - shotPoint.position;
-                if (FlatAim) d.y = 0f;
-                if (d.sqrMagnitude > 1e-6f) return d.normalized;
-            }
-        }
         if (!FlatAim || playerOwner == null || playerOwner.isBot) return shotPoint.forward;
         Vector3 f = playerOwner.transform.forward; f.y = 0f;
         return f.sqrMagnitude > 1e-6f ? f.normalized : shotPoint.forward;
