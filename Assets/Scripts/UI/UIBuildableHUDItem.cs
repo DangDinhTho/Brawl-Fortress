@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class UIBuildableHUDItem : MonoBehaviour
 {
@@ -16,12 +17,29 @@ public class UIBuildableHUDItem : MonoBehaviour
     public Image buildingProcessUI;
     private int level;
     public Image entryAvatar;
+
+    [Header("Width")]
+    [Tooltip("Width while nothing is built (just the avatar)")] public float collapsedWidth = 80f;
+    [Tooltip("Width while building / built (avatar + bar + health)")] public float expandedWidth = 230f;
+    public float resizeTime = 0.2f;
+    RectTransform rt;
+
+    /// <summary>Short when empty (avatar only), long when the building / health bar is shown. Left edge stays put (pivot on the left).</summary>
+    void Resize(bool expanded, bool animate)
+    {
+        if (rt == null) rt = (RectTransform)transform;
+        var size = new Vector2(expanded ? expandedWidth : collapsedWidth, rt.sizeDelta.y);
+        rt.DOKill();
+        if (animate && gameObject.activeInHierarchy) rt.DOSizeDelta(size, resizeTime).SetEase(Ease.OutCubic).SetUpdate(true);
+        else rt.sizeDelta = size;
+    }
     
     private void Start()
     {
         buildingProcessUI.transform.parent.gameObject.SetActive(false);
         entryHealthUI.transform.parent.gameObject.SetActive(false);
         txtEntryHealth.gameObject.SetActive(false);
+        Resize(buildableEntry != null, false);
     }
 
     public void SetBuildable(BuildableEntry entry)
@@ -36,7 +54,9 @@ public class UIBuildableHUDItem : MonoBehaviour
         {
             StartCoroutine(Building(buildableEntry.timeBuildingRemain));
         }
+        else entryHealthUI.transform.parent.gameObject.SetActive(true); // already built (moved / re-attached): was left hidden
         txtEntryHealth.gameObject.SetActive(true);
+        Resize(true, true);
     }
 
 
@@ -72,6 +92,7 @@ public class UIBuildableHUDItem : MonoBehaviour
         buildingProcessUI.transform.parent.gameObject.SetActive(false);
         entryHealthUI.transform.parent.gameObject.SetActive(false);
         txtEntryHealth.gameObject.SetActive(false);
+        Resize(false, true);
     }
 
     /// <summary>Sliced (rounded) bars shrink by width so their rounded ends keep their shape; Filled images use fillAmount.</summary>
@@ -90,6 +111,7 @@ public class UIBuildableHUDItem : MonoBehaviour
         entryHealthUI.transform.parent.gameObject.SetActive(false);
         float _timeRun = 0;
         buildingProcessUI.transform.parent.gameObject.SetActive(true);
+        Resize(true, true);
         while (_timeRun < time)
         {
             SetFill(buildingProcessUI, _timeRun / time);

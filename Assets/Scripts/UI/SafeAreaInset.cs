@@ -23,8 +23,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class SafeAreaInset : MonoBehaviour
 {
-    struct Original { public Vector2 min, max; }
-    enum Kind { Decor, Container, Bar, Shift }
+    struct Original { public Vector2 min, max; public Vector2 pos, dMin, dMax; }
+    enum Kind { Decor, Container, Bar, Shift, Skip }
 
     /// <summary>Editor only: pretend the screen has a notch (iPhone 14 landscape: 5.6% left / right, 5.4% bottom) to check
     /// layouts without a device. Menu Tools/UI/Simulate Notch (Editor).</summary>
@@ -55,7 +55,13 @@ public class SafeAreaInset : MonoBehaviour
     int framesAlive;
     float nextPrune;
     float left, right, bottom, top;
-    static float nextCanvasScan;
+    static float nextCanvasScan, scanUntil;
+    int lastHierarchyCount = -1;
+    bool dirty;
+    static readonly List<SafeAreaInset> instances = new List<SafeAreaInset>();
+
+    /// <summary>For scripts that move UI after it was created (custom HUD layouts...): fit again at the end of this frame.</summary>
+    public static void RequestFit() { for (int i = 0; i < instances.Count; i++) instances[i].dirty = true; }
 
     static Rect SafeArea
     {
@@ -74,8 +80,9 @@ public class SafeAreaInset : MonoBehaviour
 #if UNITY_EDITOR
         SimulateNotch = UnityEditor.EditorPrefs.GetBool(SimulatePref, false);
 #endif
-        SceneManager.sceneLoaded += (s, m) => AttachToCanvases();
+        SceneManager.sceneLoaded += (s, m) => { AttachToCanvases(); scanUntil = Time.unscaledTime + 3f; };
         AttachToCanvases();
+        scanUntil = Time.unscaledTime + 3f;
     }
 
     static void AttachToCanvases()
@@ -95,13 +102,17 @@ public class SafeAreaInset : MonoBehaviour
     }
 
     void Awake() { root = (RectTransform)transform; }
-    void OnEnable() { framesAlive = 0; }
+    void OnEnable() { framesAlive = 0; lastHierarchyCount = -1; if (!instances.Contains(this)) instances.Add(this); }
+    void OnDisable() { instances.Remove(this); }
 
+    /// <summary>Event driven (device screens do not change): fits the canvas once after it is created, then again only
+    /// when something new appears under it (popup, HUD, list items: the hierarchy count changes; O(1) to read), when a
+    /// script asks (RequestFit) or when the safe area / resolution changes. A fit pass only touches new or changed
+    /// elements; the rest is cached. Popups are fitted in the frame they open, before they are drawn.</summary>
     void LateUpdate()
     {
-        // canvases created at runtime (one instance does the scan)
-        if (Time.unscaledTime >= nextCanvasScan) { nextCanvasScan = Time.unscaledTime + 1f; AttachToCanvases(); }
-        if (Time.unscaledTime >= nextPrune) { nextPrune = Time.unscaledTime + 5f; Prune(); }
+        // canvases created a little after a scene load (one instance does the scan, only for 3 s after the load)
+        if (Time.unscaledTime < scanUntil && Time.unscaledTime >= nextCanvasScan) { nextCanvasScan = Time.unscaledTime + 0.5f; AttachToCanvases(); }
 
         // wait for the canvas to be laid out and for the scene's Start() code to run (first frame after load)
         if (framesAlive < 1) { framesAlive++; return; }
@@ -110,6 +121,9 @@ public class SafeAreaInset : MonoBehaviour
 
         Rect s = SafeArea;
         bool changed = s != lastSafeArea || lastScreen.x != Screen.width || lastScreen.y != Screen.height || (size - lastRootSize).sqrMagnitude > 0.25f;
+        int count = transform.hierarchyCount;
+        if (!changed && !dirty && count == lastHierarchyCount) return;   // nothing new: no work this frame
+        lastHierarchyCount = count; dirty = false;
         if (changed)
         {
             lastSafeArea = s; lastScreen = new Vector2Int(Screen.width, Screen.height); lastRootSize = size;
@@ -119,7 +133,7 @@ public class SafeAreaInset : MonoBehaviour
             bottom = RespectVerticalInsets ? s.yMin / Screen.height * size.y : 0f;
             top = RespectVerticalInsets ? (Screen.height - s.yMax) / Screen.height * size.y : 0f;
         }
-        // every frame: popups opened this frame are fitted before they are drawn (cheap: classifications are cached)
+        if (Time.unscaledTime >= nextPrune) { nextPrune = Time.unscaledTime + 5f; Prune(); }
         Visit(root, changed, 0);
     }
 
@@ -184,11 +198,17 @@ public class SafeAreaInset : MonoBehaviour
 
     void Visit(RectTransform parent, bool reapplyAll, int depth)
     {
-        foreach (Transform t in parent)
+        for (int ci = 0; ci < parent.childCount; ci++)   // for, not foreach: a Transform enumerator allocates
         {
-            var c = t as RectTransform;
-            if (c == null || c.GetComponent<SafeAreaIgnore>() != null || c.GetComponent<SafeAreaBleed>() != null) continue;
-            if (!kinds.TryGetValue(c, out var kind)) { kind = Classify(c); kinds[c] = kind; Overscan(c, kind); }
+            var c = parent.GetChild(ci) as RectTransform;
+            if (c == null) continue;
+            if (!kinds.TryGetValue(c, out var kind))
+            {
+                // ignored / bleed copies: decided once and cached (no GetComponent on later passes)
+                if (c.GetComponent<SafeAreaIgnore>() != null || c.GetComponent<SafeAreaBleed>() != null) { kinds[c] = Kind.Skip; continue; }
+                kind = Classify(c); kinds[c] = kind; Overscan(c, kind);
+            }
+            if (kind == Kind.Skip) continue;
             // a container that was empty when first seen (PopupContainer before any popup opened) holds things now
             else if (kind == Kind.Decor && c.childCount > 0 && IsFullScreen(c)) { kind = Classify(c); kinds[c] = kind; }
             if (kind == Kind.Decor) continue;
@@ -203,8 +223,15 @@ public class SafeAreaInset : MonoBehaviour
             if (!known) { o = new Original { min = c.offsetMin, max = c.offsetMax }; originals[c] = o; force = true; }
             else if (applied.TryGetValue(c, out var a) && ((c.offsetMin - a.min).sqrMagnitude > 0.25f || (c.offsetMax - a.max).sqrMagnitude > 0.25f))
             {
-                // another script moved it (saved HUD layout, late layout code): that is the new design position
-                o = new Original { min = c.offsetMin, max = c.offsetMax }; originals[c] = o; force = true;
+                if ((c.anchoredPosition - a.pos).sqrMagnitude <= 0.25f)
+                    // only resized in place (a HUD panel growing / shrinking): keep the design position, take the new size.
+                    // Taking the shifted offsets as the design here added the inset again on every frame of a resize
+                    // tween, so the panel drifted toward the middle of the screen.
+                    o = new Original { min = c.offsetMin - a.dMin, max = c.offsetMax - a.dMax };
+                else
+                    // another script moved it (saved HUD layout, late layout code): that is the new design position
+                    o = new Original { min = c.offsetMin, max = c.offsetMax };
+                originals[c] = o; force = true;
             }
             if (!force) continue;
 
@@ -214,7 +241,7 @@ public class SafeAreaInset : MonoBehaviour
             var dMax = new Vector2(xMax, yMax);
             c.offsetMin = o.min + dMin;
             c.offsetMax = o.max + dMax;
-            applied[c] = new Original { min = c.offsetMin, max = c.offsetMax };
+            applied[c] = new Original { min = c.offsetMin, max = c.offsetMax, pos = c.anchoredPosition, dMin = dMin, dMax = dMax };
 
             // bars, and any full-width thing with its own picture (a scroll list with a background...): the content
             // stays inside the safe area, the picture grows back out to the screen edges

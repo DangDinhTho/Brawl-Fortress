@@ -21,6 +21,9 @@ public class BuildableMarker : MonoBehaviour
         WidthId = Shader.PropertyToID("_Width"), DashedId = Shader.PropertyToID("_Dashed"), DashCountId = Shader.PropertyToID("_DashCount"),
         ProgressId = Shader.PropertyToID("_Progress"), GlowId = Shader.PropertyToID("_Glow");
 
+    // sentry range ring (faint dashed circle at the shooting radius)
+    Transform rangeDisc; MeshRenderer rangeRend; FieldOfView sentryFov;
+
     // bar
     Transform canvasT; RectTransform fill, trail; Image fillImg; TMP_Text txtHp, txtLevel;
     float target = 1f, shown = 1f, trailShown = 1f, trailWait, top = 1.4f;
@@ -32,6 +35,7 @@ public class BuildableMarker : MonoBehaviour
         health = entry != null ? entry.health : GetComponent<HealthBase>();
         Measure();
         BuildRing();
+        BuildRangeRing();
         BuildBar();
         if (health != null) health.OnHealthChanged += OnHealthChanged;
         if (health != null && health.maxHealth > 0) { target = shown = trailShown = Mathf.Clamp01(health.currentHealth / (float)health.maxHealth); UpdateTexts(); }
@@ -41,6 +45,7 @@ public class BuildableMarker : MonoBehaviour
     {
         if (health != null) health.OnHealthChanged -= OnHealthChanged;
         if (disc != null) Destroy(disc.gameObject);
+        if (rangeDisc != null) Destroy(rangeDisc.gameObject);
     }
 
     /// <summary>Footprint radius and top of the model from its renderers.</summary>
@@ -91,6 +96,21 @@ public class BuildableMarker : MonoBehaviour
         if (mine) return style != null ? style.mine : FootRing.SelfColor;
         if (viewer == null || team == viewer.team) return style != null ? style.ally : FootRing.AllyColor;
         return style != null ? style.enemy : FootRing.EnemyColor;
+    }
+
+    void BuildRangeRing()
+    {
+        if (entry == null || entry.buildableType != BuildableType.Sentry || ringMat == null || quad == null) return;
+        sentryFov = GetComponent<FieldOfView>();
+        if (sentryFov == null) return;
+        var go = new GameObject("SentryRangeRing");
+        go.layer = gameObject.layer;
+        rangeDisc = go.transform;
+        go.AddComponent<MeshFilter>().sharedMesh = quad;
+        rangeRend = go.AddComponent<MeshRenderer>();
+        rangeRend.sharedMaterial = ringMat;
+        rangeRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        rangeRend.receiveShadows = false;
     }
 
     // ---------------------------------------------------------------- bar
@@ -202,6 +222,29 @@ public class BuildableMarker : MonoBehaviour
                 mpb.SetFloat(ProgressId, -1f);
                 mpb.SetFloat(GlowId, 0f);
                 ringRend.SetPropertyBlock(mpb);
+            }
+        }
+
+        if (rangeDisc != null)
+        {
+            bool show = !dead && sentryFov != null && entry.state == BuildableState.Idle;
+            rangeDisc.gameObject.SetActive(show);
+            if (show)
+            {
+                float half = sentryFov.radius / RingUv;
+                Vector3 p = transform.position;
+                rangeDisc.SetPositionAndRotation(new Vector3(p.x, p.y + 0.03f, p.z), Quaternion.identity);
+                rangeDisc.localScale = new Vector3(2f * half, 1f, 2f * half);
+                Color rc = c; rc.a = 0.35f;                 // faint: a hint of the danger zone, not a wall of colour
+                mpb.SetColor(ColorId, rc);
+                mpb.SetFloat(FillId, 0.05f);
+                mpb.SetFloat(RingRId, RingUv);
+                mpb.SetFloat(WidthId, 0.07f / half);
+                mpb.SetFloat(DashedId, 1f);
+                mpb.SetFloat(DashCountId, 56f);
+                mpb.SetFloat(ProgressId, -1f);
+                mpb.SetFloat(GlowId, 0f);
+                rangeRend.SetPropertyBlock(mpb);
             }
         }
 

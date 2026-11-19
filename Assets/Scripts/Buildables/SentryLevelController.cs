@@ -10,8 +10,9 @@ public class SentryLevelController : MonoBehaviour
     public Transform[] shotPoints;
     private bool firing;
     private DamageObject damageObject = new DamageObject();
-    private float minDamage = 30;
-    private float maxDamage = 40;
+    // per bullet (minigun 8-12 in Title Data weapon_stats; originally 30-40)
+    private float minDamage = 8;
+    private float maxDamage = 10;
     private SentryController sentryController;
     private BulletId _bulletId = BulletId.MinigunBullet;
     private int currentShotpoint = 0;

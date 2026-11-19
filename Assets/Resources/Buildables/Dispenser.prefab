@@ -51,8 +51,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.79, y: 1.3649094, z: 0.6}
-  m_Center: {x: 0, y: 0.65524936, z: 0}
+  m_Size: {x: 0.79, y: 1.98, z: 0.6}
+  m_Center: {x: 0, y: 1.01, z: 0}
 --- !u!1 &7706336158995366496
 GameObject:
   m_ObjectHideFlags: 0
@@ -68,6 +68,7 @@ GameObject:
   - component: {fileID: 1639996212}
   - component: {fileID: 1639996213}
   - component: {fileID: 2441503595246067176}
+  - component: {fileID: 942105313853271144}
   m_Layer: 14
   m_Name: Dispenser
   m_TagString: Buildable
@@ -307,6 +308,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &942105313853271144
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7706336158995366496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b48aa148630eca44281586260bac078b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DispenserHealFx
+  healFxPrefab: {fileID: 126688348745394039, guid: db09a15ab3616314eaad5ff17da36f29, type: 3}
+  checkInterval: 0.25
 --- !u!1001 &7706336158696370834
 PrefabInstance:
   m_ObjectHideFlags: 0

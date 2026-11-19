@@ -69,12 +69,12 @@ public class TeleportController : BuildableEntry
             arrowObjs[i].SetActive(false);
         }
         StartCoroutine(WaitUpgrade(_level));
-        OnStartBuild?.Invoke(upgradeTime);
+        OnStartBuild?.Invoke(upgradeTime / BuildableLevel.BuildSpeed);
     }
 
     IEnumerator WaitUpgrade(int _level)
     {
-        yield return new WaitForSeconds(upgradeTime);
+        yield return new WaitForSeconds(upgradeTime / BuildableLevel.BuildSpeed);
         level++;
         animator.speed = speedUpgrades[_level - 1];
         state = BuildableState.Idle;
@@ -99,7 +99,8 @@ public class TeleportController : BuildableEntry
     TF2Player FindRider()
     {
         Vector3 c = transform.position + Vector3.up * 0.7f;
-        int n = Physics.OverlapBoxNonAlloc(c, new Vector3(0.5f, 0.7f, 0.5f), padHits, transform.rotation, checkMark, QueryTriggerInteraction.Collide);
+        // the pad (1 m) plus ~25 cm all round: touching its edge is enough
+        int n = Physics.OverlapBoxNonAlloc(c, new Vector3(0.75f, 0.7f, 0.75f), padHits, transform.rotation, checkMark, QueryTriggerInteraction.Collide);
         for (int i = 0; i < n; i++)
         {
             var p = padHits[i] != null ? padHits[i].transform.root.GetComponent<TF2Player>() : null;

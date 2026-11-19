@@ -14,6 +14,9 @@ public class BuildableLevel : MonoBehaviour
     public GameObject[] activeOnBuildCompleted;
     public SentryLookAt sentryLookAt;
     private float[] speedUpgrades = new float[] { 3f, 2.25f, 2f };
+    /// <summary>Global build speed: build / upgrade times are divided by it and the build animation runs that much
+    /// faster, so it still ends when the building is done.</summary>
+    public const float BuildSpeed = 2f;
     [HideInInspector]
     public float _buildTime;
     public Collider[] hitBoxs;
@@ -21,12 +24,9 @@ public class BuildableLevel : MonoBehaviour
     public float StartBuild()
     {
         //animator.SetTrigger("Build");
-        _buildTime = buildTime;
-        if(level <= controller.level)
-        {
-            animator.speed = speedUpgrades[level - 1];
-            _buildTime = buildTime / speedUpgrades[level - 1];
-        }
+        float speed = level <= controller.level ? speedUpgrades[level - 1] : (animator != null ? animator.speed : 1f);
+        if (animator != null) animator.speed = speed * BuildSpeed;
+        _buildTime = buildTime / speed / BuildSpeed;
 
         if (sentryLookAt != null)
             sentryLookAt.enabled = false;
@@ -88,7 +88,7 @@ public class BuildableLevel : MonoBehaviour
         if (hitBoxs == null) return;
         for(int i = 0; i < hitBoxs.Length; i++)
         {
-            hitBoxs[i].enabled = enabled;
+            hitBoxs[i].enabled = enabled; // NOTE: 'enabled' is the component's own flag, so hit boxes stay on while building (buildings can be shot while being built). Use 'enable' to make them unhittable during the build.
         }
     }
 }
