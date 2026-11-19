@@ -75,6 +75,7 @@ public class UICharacterInputController : MonoBehaviour
     {
         yield return new WaitForSeconds(0.2f);
         List<Dropdown.OptionData> optionDatas = new List<Dropdown.OptionData>();
+        weaponSelector.Clear();
         for (int i = 0; i < mainPlayer.FPSPlayer.weaponSlots.Count; i++)
         {
             WeaponType weaponSlot = mainPlayer.FPSPlayer.weaponSlots.ElementAt(i).Key;
@@ -88,6 +89,11 @@ public class UICharacterInputController : MonoBehaviour
         }
         weaponDropdown.ClearOptions();
         weaponDropdown.AddOptions(optionDatas);
+        // show the weapon actually held: the player switched to its default weapon (Medic: the medigun) before this list
+        // existed, so the dropdown stayed on its first entry (the primary)
+        SetWeaponTypeWithoutNotify(mainPlayer.FPSPlayer.weaponType);
+        weaponDropdown.RefreshShownValue();
+        weaponDropdown.onValueChanged.RemoveListener(OnWeaponChange);
         weaponDropdown.onValueChanged.AddListener(OnWeaponChange);
         mainPlayer.healthManager.OnDeathReason += OnPlayerDeath;
         mainPlayer.healthManager.OnRespawn += OnPlayerRespawn;
