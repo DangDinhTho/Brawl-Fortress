@@ -85,6 +85,24 @@ public class PopupSelectMap : PopupBase
         foreach (var t in tabs)
             if (t != null) t.SetSelected(t == tab, animateTabs);
         ShowCards();
+        if (animateTabs) SelectFirstMapOf(tab); // the player switched mode: pick its first map
+    }
+
+    /// <summary>A mode tab was clicked: when the selected map belongs to another mode, select the first map of this
+    /// mode (only if the mode is unlocked; a locked mode keeps the previous choice). The 'All' tab changes nothing.</summary>
+    private void SelectFirstMapOf(MapModeTab tab)
+    {
+        if (tab == null || tab.isAll) return;
+        UIMapIcon first = null;
+        foreach (var c in cards)
+        {
+            if (c == null || !tab.Matches(c)) continue;
+            if (c.map == mapSelected && c.gameMode == gameModeSelected) return; // already one of this mode's maps
+            if (first == null) first = c;
+        }
+        if (first == null || first.IsLocked) return;
+        SelectedMap(first.gameMode, first.map, first);
+        first.SetSelect();
     }
 
     private void ShowCards()
