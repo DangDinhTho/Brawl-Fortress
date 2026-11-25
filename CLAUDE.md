@@ -111,12 +111,48 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   `SandCliffA/B/C` (layered sandstone, B with a carved temple front in a recess) replace the desert cliffs; they stand on
   the ground and are stretched to the old cliff's top (the old cliffs are sunk 0.3-3 m, which buried the temple front);
   collider = rock body only (not the rubble in front). `TempleGate` at z +-22.5 closes the gap behind each spawn where
-  the base scene's Gate arch stood (Western keeps that Gate; the gap is walled by the invisible VitualWall). Western lighting.
+  the base scene's Gate arch stood (Western keeps that Gate; the gap is walled by the invisible VitualWall).
+  **Lighting** (Tho: sunny, NOT yellow): Western scene lighting + `EgyptLook` (the Western ambient is dark grey and FlatKit adds it:
+  bright near-neutral trilight ambient, light haze, sun) + `EgyptSun` after the mode objects: IceProps / SandGround swapped
+  for `IcePropsDesert` / `SandGroundDesert` (`_Color` ~1.05, a light neutral `_ColorDim` instead of the blue-grey one).
   Ice and Xmas close that gap the same way (`BrawlMapBuilder.PlaceGates`): `IceGate` (glacier arch, natural ice) and
   `XmasGate` (timber arch, pine garland, C9 bulbs, wreath, lanterns), both in Tools/IceArt/props10.py. Maps: SunTemple, ScarabVault, ObeliskHill, NileExpress, DuneFoundry, PharaohsCourt (Hale), MummyValley.
 - Unity keeps a scene / texture file memory-mapped after it was open or imported (IOException "user-mapped section",
   Win32 1224). `Build` falls back to saving the base scene over the map through Unity; a locked map icon is kept
-  (`WriteMapped`, warning in the build log): restart Unity and rebuild that map to refresh it.
+  (`WriteMapped`, warning in the build log; `AssetDatabase.ReleaseCachedFileHandles` does not free it): restart Unity
+  and rebuild that map, or run `Tools/Maps/Refresh Recent Map Icons` (icons only: Payload, Egypt, Factory, Circus).
+- **Rail track** (Payload, `PlaceRails` in BrawlMapBuilderObjective.cs): one procedural mesh on the shared palette
+  material (IceProps; Xmas night: IcePropsNight; Egypt: swapped to the desert one): rails with a head / web / foot
+  profile (dark worn head, rust below), uneven rough-sawn sleepers (length, width, a few degrees askew, chamfered; 85%
+  wood_dark, 15% wood, no light planks: Tho found the contrast too strong),
+  tie plates and spikes, fishplates every 9 sleepers, a lumpy neutral grey (`metal`) ballast bed with ragged edges
+  (basalt on the volcano).
+  Palette cells are hard-coded (`PWood` etc. = index in `PALETTE` of common.py). Quads: clockwise = front in Unity.
+  Write meshes into an existing asset with the Mesh API (`Clear` + `Set*`): `EditorUtility.CopySerialized` left the
+  editor drawing the old vertex data (no UVs: the track rendered flat green).
+- **Circus theme** (`Theme.Circus`, BrawlMapBuilderCircus.cs, props in Tools/IceArt/props14.py, floor `circus_tex.py`
+  -> FairGround.png): a 1960s-70s travelling circus and funfair on a summer field. `#` one family per wall: show wagons
+  CircusWagonA (red/gold) / B (blue/yellow) along the wall, TrunkStack, HayStack; `x` StarTubs / PopcornCart /
+  CircusCannon, `f` RopeBarrier, `t` HighStriker / TicketBooth / CarnivalLamp / BalloonPost, `b` FairGrass (papyrus
+  ramp), decor HayPile / JugglingPins / PopcornSpill, floor `FairFloor`. Border CircusWallA/B/C (striped canvas sidewall
+  of the big top with poles, pennants, C9 bulb string; B with sideshow banners, C with a wagon; grounded, not stretched),
+  `CircusGate` (striped towers, arched board with glowing bulbs, star); backdrop BigTop, FerrisWheel, Carousel.
+  Lighting = Egypt's. Test map: `Map_Brawl_CircusRing` (Comp, new layout). Tho asked for one map per theme for
+  Factory; Circus has its test map only so far.
+  Blender previews draw back faces, Unity culls them: a flat sheet facing away showed fine in the preview and was
+  invisible in the game (the striped sidewall). Check winding / give thin sheets their own back faces.
+- **Factory theme** (`Theme.Factory`, BrawlMapBuilderFactory.cs, props in Tools/IceArt/props13.py, floor `factory_tex.py`
+  -> YardGround.png, same folder/palette): a 1960s-70s engineering works / building site. `#` one family per wall
+  (`PrepareVolcanoWalls`): BrickWallA/B (0.6 m thick, stretched 2.1 x in depth, long face along the wall), CrateStack,
+  GirderStack (red-oxide), PipeStack (concrete); `x` OilDrums / CableReel / CementMixer / BrickPallet, `f` IronFence
+  (corrugated iron), `t` GirderColumn / Scaffold / FactoryLamp / Boiler, `b` YardGrass (papyrus ramp), decor
+  BrickRubble / ScrapPile / Cogwheel / PlankBundle / Wheelbarrow, floor `YardFloor` (packed earth, cart ruts, broken
+  patches of granite setts; the first try, clean concrete slabs, read as modern paving: Tho rejected it). Border FactoryWallA/B/C (brick
+  workshop with windows / corrugated shed / brick wall with pipes and a tank; grounded and stretched like SandCliff),
+  `FactoryGate` (brick piers, riveted girder, open iron gates); backdrop TowerCrane, Chimney (no smoke), WaterTower,
+  FactoryShed. Lighting = Egypt's (`EgyptLook` + `EgyptSun` desert materials). Test map: `Map_Brawl_SteelYard` (Comp,
+  new layout). Brick and large single-colour surfaces must not bake a dark "back" colour (`brick()`: same red on every
+  side): pieces get turned any way and the dark side showed as a brown block.
 - **Volcano theme** (`Theme.Volcano`, BrawlMapBuilderVolcano.cs, props in Tools/IceArt/props11.py + props12.py,
   textures `volcano_tex.py` -> BasaltGround.png / LavaFlow.png, same folder/palette): a 1960s lava island.
   `#` one rock family per wall (`PrepareVolcanoWalls`: touching '#' tiles share it, mirrored walls too): basalt columns

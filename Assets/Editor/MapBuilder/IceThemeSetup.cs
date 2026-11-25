@@ -19,6 +19,10 @@ public static class IceThemeSetup
     public const string GlowMat = Root + "/XmasGlow.mat";
     public const string SnowGroundMat = Root + "/SnowGround.mat";
     public const string SandGroundMat = Root + "/SandGround.mat";   // Egypt floor
+    public const string PropsDesertMat = Root + "/IcePropsDesert.mat";   // Egypt: warm, bright (swapped in by the builder)
+    public const string SandDesertMat = Root + "/SandGroundDesert.mat";
+    public const string YardGroundMat = Root + "/YardGround.mat";   // Factory floor (concrete yard)
+    public const string FairGroundMat = Root + "/FairGround.mat";   // Circus floor (trampled field)
     // Xmas night: FlatKit ignores the light (_LightContribution 0), so night is done with darker material colours, a warm
     // palette for the glowing slot (bulbs, lamp glass, star) and additive warm light pools on the snow
     public const string PropsNightMat = Root + "/IcePropsNight.mat";
@@ -53,7 +57,7 @@ public static class IceThemeSetup
             ti.SaveAndReimport();
         }
         // ice ground: a tiling texture (cracks, frost, snow patches)
-        foreach (var groundTex in new[] { Root + "/IceGround.png", Root + "/SnowGround.png", Root + "/SandGround.png" })   // (Volcano textures: VolcanoThemeSetup)   // Xmas: snow floor
+        foreach (var groundTex in new[] { Root + "/IceGround.png", Root + "/SnowGround.png", Root + "/SandGround.png", Root + "/YardGround.png", Root + "/FairGround.png" })   // (Volcano textures: VolcanoThemeSetup)   // Xmas: snow floor
         if (AssetImporter.GetAtPath(groundTex) is TextureImporter gi)
         {
             gi.textureType = TextureImporterType.Default; gi.wrapMode = TextureWrapMode.Repeat; gi.mipmapEnabled = true;
@@ -124,6 +128,24 @@ public static class IceThemeSetup
         MakeNightAssets(props, snowMat, tex, glow);
         var sandTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/SandGround.png");
         if (sandTex != null && MakeFloor(MakeMat(SandGroundMat, reference, sandTex, Color.white), "SandFloor")) made++;
+        // Egypt: the desert sun (the builder swaps these in): brighter, neutral sunlit colours, a light shade instead of the blue-grey one
+        DesertTint(Save(PropsDesertMat, new Material(props)), new Color(1.05f, 1.04f, 1.0f), new Color(0.72f, 0.69f, 0.66f));
+        var sandMat = AssetDatabase.LoadAssetAtPath<Material>(SandGroundMat);
+        if (sandMat != null) DesertTint(Save(SandDesertMat, new Material(sandMat)), new Color(1.06f, 1.05f, 1.0f), new Color(0.78f, 0.74f, 0.68f));
+        var yardTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/YardGround.png");
+        if (yardTex != null)
+        {   // Factory: the concrete yard, in the same bright neutral daylight as the desert materials
+            var yardMat = MakeMat(YardGroundMat, reference, yardTex, Color.white);
+            DesertTint(yardMat, new Color(1.04f, 1.03f, 1.0f), new Color(0.76f, 0.74f, 0.72f));
+            if (MakeFloor(yardMat, "YardFloor")) made++;
+        }
+        var fairTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/FairGround.png");
+        if (fairTex != null)
+        {   // Circus: the trampled field, in the same bright neutral daylight
+            var fairMat = MakeMat(FairGroundMat, reference, fairTex, Color.white);
+            DesertTint(fairMat, new Color(1.04f, 1.03f, 1.0f), new Color(0.76f, 0.74f, 0.72f));
+            if (MakeFloor(fairMat, "FairFloor")) made++;
+        }
         made += VolcanoThemeSetup.Setup(reference);   // basalt floor, lava lake, eruption vent
         AssetDatabase.SaveAssets();
         return made + " prefabs in " + PrefabDir + " (material " + (reference ? reference.shader.name : "Standard") + ")";
@@ -144,6 +166,14 @@ public static class IceThemeSetup
         }
         Debug.LogWarning("[IceTheme] could not write " + path + " (locked): kept the old file");
         return false;
+    }
+
+    static void DesertTint(Material m, Color lit, Color shade)
+    {
+        if (m.HasProperty("_Color")) m.SetColor("_Color", lit);
+        if (m.HasProperty("_ColorDim")) m.SetColor("_ColorDim", shade);
+        if (m.HasProperty("_FlatRimColor")) m.SetColor("_FlatRimColor", new Color(0.62f, 0.60f, 0.56f));
+        EditorUtility.SetDirty(m);
     }
 
     static void NightTint(Material m)
@@ -241,7 +271,12 @@ public static class IceThemeSetup
             || name.StartsWith("SandBlock") || name == "DigCrates" || name == "Amphorae" || name == "Sarcophagus" || name == "RuinLow"
             || name.StartsWith("BasaltBlock") || name == "BasaltLow" || name == "LavaRock" || name == "ObsidianChunk" || name == "SurveyCrates"
             || name.StartsWith("BasaltBoulders") || name.StartsWith("BasaltSlabs") || name == "ObsidianWall" || name.StartsWith("TuffRock")
-            || name == "LavaBombs" || name == "MineCart")
+            || name == "LavaBombs" || name == "MineCart"
+            || name.StartsWith("BrickWall") || name == "CrateStack" || name == "GirderStack" || name == "PipeStack" || name == "OilDrums"
+            || name == "CableReel" || name == "CementMixer" || name == "BrickPallet" || name == "IronFence"
+            || name == "GirderColumn" || name == "Scaffold" || name == "FactoryLamp" || name == "Boiler"
+            || name.StartsWith("CircusWagon") || name == "TrunkStack" || name == "HayStack" || name == "StarTubs" || name == "PopcornCart"
+            || name == "CircusCannon" || name == "RopeBarrier" || name == "HighStriker" || name == "TicketBooth")
         {
             // snow drips hang over the edge: keep the collider inside its 1.5 m tile so it never blocks the next one
             var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, b.center.y, 0f);
@@ -252,13 +287,23 @@ public static class IceThemeSetup
         {
             case "FrostBush": case "SnowTuft": case "SnowMound": case "IceSlab": case "SnowDrift": case "IceShards": case "FrostGrass": case "MammothBones": case "RibCage": case "BeastSkull": case "BonePile": case "IceHole": case "PineGrass": case "BigBauble": case "PapyrusGrass": case "BrokenColumn": case "Pyramid": case "DigTent":
             case "LavaCrack": case "PumiceRocks": case "Volcano": case "LavaVent":
-            case "ScorchGrassA": case "ScorchGrassB": case "EmberTuft": case "CooledFlow": return;   // walk through / ground decor
+            case "ScorchGrassA": case "ScorchGrassB": case "EmberTuft": case "CooledFlow":
+            case "YardGrass": case "ScrapPile": case "Cogwheel": case "BrickRubble": case "Wheelbarrow": case "PlankBundle":
+            case "TowerCrane": case "Chimney": case "WaterTower": case "FactoryShed":
+            case "FairGrass": case "HayPile": case "JugglingPins": case "PopcornSpill": case "BigTop": case "FerrisWheel": case "Carousel": return;   // walk through / ground decor
             case "Igloo": case "SnowRock": case "IceBoulder":
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true)) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 return;
             case "IcePine": Capsule(go, 0.45f, 2.4f); return;
             case "IceSpire": Capsule(go, 0.55f, 3.4f); return;
             case "XmasTree": Capsule(go, 0.65f, 3.2f); return;
+            case "FactoryWallA": case "FactoryWallB": case "FactoryWallC":
+            case "CircusWallA": case "CircusWallB": case "CircusWallC":
+                {   // the building / canvas only, not the dirt in front; C keeps what stands in front of it (tank, wagon)
+                    float trim = name.EndsWith("C") ? 0.3f : 1.0f;
+                    var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(b.center.x, b.center.y, b.center.z - trim / 2f);
+                    bc.size = new Vector3(b.size.x, b.size.y, b.size.z - trim); return;
+                }
             case "SandCliffA": case "SandCliffB": case "SandCliffC":
                 {   // the rock body only: the rubble and sand in front (+Z, ~1.3 m) must not push the border into the arena
                     var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(b.center.x, b.center.y, b.center.z - 0.65f);
@@ -272,12 +317,14 @@ public static class IceThemeSetup
                     bc.center = new Vector3(b.center.x, h / 2f, b.center.z - 0.5f); bc.size = new Vector3(b.size.x, h, b.size.z - 1.0f); return;
                 }
             case "ObsidianSpire": Capsule(go, 0.50f, 3.4f); return;
+            case "CarnivalLamp": Capsule(go, 0.22f, 3.0f); return;
+            case "BalloonPost": Capsule(go, 0.20f, 1.9f); return;
             case "FireCrystal": Capsule(go, 0.55f, 2.5f); return;
             case "CharredTree": Capsule(go, 0.30f, 2.6f); return;
             case "MagmaPillar": Capsule(go, 0.55f, 2.7f); return;
             case "BurntPine": Capsule(go, 0.30f, 3.0f); return;
             case "IceGate": case "XmasGate":
-            case "TempleGate": case "VolcanoGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
+            case "TempleGate": case "VolcanoGate": case "FactoryGate": case "CircusGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
             case "PalmTree": Capsule(go, 0.25f, 3.2f); return;
             case "CatStatue": Capsule(go, 0.55f, 2.3f); return;
             case "LotusColumn": Capsule(go, 0.50f, 3.0f); return;

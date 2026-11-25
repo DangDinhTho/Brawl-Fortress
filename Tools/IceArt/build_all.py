@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -111,6 +111,59 @@ BUILDERS = {
     'ScorchGrassA': lambda: props12.build_scorchgrass('A'),
     'ScorchGrassB': lambda: props12.build_scorchgrass('B'),
     'EmberTuft': props12.build_embertuft,
+    # Factory / construction site theme
+    'BrickWallA': lambda: props13.build_brickwall('A', 1401, 'BrickWallA'),
+    'BrickWallB': lambda: props13.build_brickwall('B', 1402, 'BrickWallB'),
+    'CrateStack': props13.build_cratestack,
+    'GirderStack': props13.build_girderstack,
+    'PipeStack': props13.build_pipestack,
+    'OilDrums': props13.build_oildrums,
+    'CableReel': props13.build_cablereel,
+    'CementMixer': props13.build_cementmixer,
+    'BrickPallet': props13.build_brickpallet,
+    'IronFence': props13.build_ironfence,
+    'GirderColumn': props13.build_girdercolumn,
+    'Scaffold': props13.build_scaffold,
+    'FactoryLamp': props13.build_factorylamp,
+    'Boiler': props13.build_boiler,
+    'YardGrass': props13.build_yardgrass,
+    'ScrapPile': props13.build_scrappile,
+    'Cogwheel': props13.build_cogwheel,
+    'BrickRubble': props13.build_brickrubble,
+    'Wheelbarrow': props13.build_wheelbarrow,
+    'PlankBundle': props13.build_plankbundle,
+    'TowerCrane': props13.build_towercrane,
+    'Chimney': props13.build_chimney,
+    'WaterTower': props13.build_watertower,
+    'FactoryShed': props13.build_factoryshed,
+    'FactoryWallA': lambda: props13.build_factorywall('A', 1631, 'FactoryWallA'),
+    'FactoryWallB': lambda: props13.build_factorywall('B', 1632, 'FactoryWallB'),
+    'FactoryWallC': lambda: props13.build_factorywall('C', 1633, 'FactoryWallC'),
+    'FactoryGate': props13.build_factorygate,
+    # Circus / fairground theme
+    'CircusWagonA': lambda: props14.build_wagon('A', 1701, 'CircusWagonA'),
+    'CircusWagonB': lambda: props14.build_wagon('B', 1702, 'CircusWagonB'),
+    'TrunkStack': props14.build_trunkstack,
+    'HayStack': props14.build_haystack,
+    'StarTubs': props14.build_startubs,
+    'PopcornCart': props14.build_popcorncart,
+    'CircusCannon': props14.build_circuscannon,
+    'RopeBarrier': props14.build_ropebarrier,
+    'HighStriker': props14.build_highstriker,
+    'TicketBooth': props14.build_ticketbooth,
+    'CarnivalLamp': props14.build_carnivallamp,
+    'BalloonPost': props14.build_balloonpost,
+    'FairGrass': props14.build_fairgrass,
+    'HayPile': props14.build_haypile,
+    'JugglingPins': props14.build_jugglingpins,
+    'PopcornSpill': props14.build_popcornspill,
+    'CircusWallA': lambda: props14.build_circuswall('A', 1891, 'CircusWallA'),
+    'CircusWallB': lambda: props14.build_circuswall('B', 1892, 'CircusWallB'),
+    'CircusWallC': lambda: props14.build_circuswall('C', 1893, 'CircusWallC'),
+    'CircusGate': props14.build_circusgate,
+    'BigTop': props14.build_bigtop,
+    'FerrisWheel': props14.build_ferriswheel,
+    'Carousel': props14.build_carousel,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

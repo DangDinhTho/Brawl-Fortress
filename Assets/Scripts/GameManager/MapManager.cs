@@ -185,4 +185,12 @@ public enum Map: byte
     Map_Brawl_CinderWorks,     // MannVsMachine, Volcano
     Map_Brawl_EmberThrone,     // JungleBoss, Hale, Volcano
     Map_Brawl_AshenHollow,     // Zombie, Volcano
+    Map_Brawl_SteelYard,       // Competitive, Factory
+    Map_Brawl_CircusRing,      // Competitive, Circus
+    Map_Brawl_BigTopRaid,      // CaptureTheFlag, Circus
+    Map_Brawl_RingmasterHill,  // KingOfTheHill, Circus
+    Map_Brawl_CircusTrain,     // Payload, Circus
+    Map_Brawl_ClockworkFair,   // MannVsMachine, Circus
+    Map_Brawl_StrongmanArena,  // JungleBoss, Hale, Circus
+    Map_Brawl_HauntedFair,     // Zombie, Circus
 }

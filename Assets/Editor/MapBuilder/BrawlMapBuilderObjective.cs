@@ -419,7 +419,7 @@ public static partial class BrawlMapBuilder
             if (bomb) bomb.transform.position = new Vector3(pts[0].x + 2.5f, 0.3f, pts[0].z - 1.5f);
 
             // ground the vehicle-related objects on our map layer rules (keep their own layers)
-            if (d.mode == GameMode.Payload) PlaceRails(pts);
+            if (d.mode == GameMode.Payload) PlaceRails(pts, d.theme);
             EditorUtility.SetDirty(mgr);
             log += " path=" + pts.Count + "pts frags=" + frags.Count + " vehicle=" + vehicle.name + " pv=" + string.Join("/", clones.SelectMany(c => c.GetComponentsInChildren<Photon.Pun.PhotonView>(true)).Select(pv => new SerializedObject(pv).FindProperty("sceneViewId").intValue));
         }
@@ -427,12 +427,45 @@ public static partial class BrawlMapBuilder
     }
 
     // ------------------------------------------------------------------ rail track
-    // One continuous procedural mesh that follows the cart path exactly (same cubic Bezier as the fragments):
-    // two steel rails (extruded strips) + wooden sleepers every SleeperStep metres.
-    const float RailGauge = 0.95f, RailW = 0.11f, RailTop = 0.17f, RailBase = 0.07f;
-    const float SleeperLen = 1.45f, SleeperW = 0.28f, SleeperTop = 0.07f, SleeperStep = 0.62f;
+    // One continuous procedural mesh that follows the cart path exactly (same cubic Bezier as the fragments), drawn with
+    // the shared palette material (FlatKit, like the props): a hand-laid 1960s mine track. Two rails with a real profile
+    // (head, web, foot: dark worn iron on the head, rust below), rough-sawn sleepers of uneven length, width and tone, a
+    // little askew and chamfered, tie plates with spike heads, fishplates at the rail joints, all bedded in a lumpy
+    // ballast strip with ragged edges, coloured for the theme.
+    const float RailGauge = 0.95f, RailTop = 0.17f;
+    const float SleeperStep = 0.62f;
+    // palette cells (order of PALETTE in Tools/IceArt/common.py, 8 x 8 cells)
+    const int PWood = 10, PWoodDark = 11, PStone = 13, PStoneDark = 14, PBlack = 19, PMetal = 20, PBasaltDark = 58;
+    static Vector2 Cell(int i) => new Vector2((i % 8 + 0.5f) / 8f, 1f - (i / 8 + 0.5f) / 8f);
 
-    static void PlaceRails(List<Vector3> pts)
+    class TrackMesh
+    {
+        public readonly List<Vector3> v = new List<Vector3>(); public readonly List<Vector3> n = new List<Vector3>();
+        public readonly List<Vector2> uv = new List<Vector2>(); public readonly List<int> t = new List<int>();
+        /// <summary>a flat quad a-b-c-d, turned to face 'hint'</summary>
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, int cell, Vector3 hint)
+        {
+            var nr = Vector3.Cross(b - a, d - a).normalized;
+            if (Vector3.Dot(nr, hint) < 0) { var tmp = b; b = d; d = tmp; nr = -nr; }
+            int i = v.Count; var u = Cell(cell);
+            v.Add(a); v.Add(b); v.Add(c); v.Add(d);
+            for (int k = 0; k < 4; k++) { n.Add(nr); uv.Add(u); }
+            t.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });   // clockwise seen from the side the normal faces (Unity front)
+        }
+        /// <summary>box without a bottom: centre of its base, half extents along r / up / f</summary>
+        public void Box(Vector3 b, Vector3 r, Vector3 f, float hl, float hw, float h, int cell)
+        {
+            Vector3 up = Vector3.up * h, c = b + up * 0.5f;
+            Vector3 p(float x, float z, float y) => b + r * x + f * z + Vector3.up * y;
+            Quad(p(-hl, -hw, h), p(hl, -hw, h), p(hl, hw, h), p(-hl, hw, h), cell, Vector3.up);
+            Quad(p(hl, -hw, 0), p(hl, hw, 0), p(hl, hw, h), p(hl, -hw, h), cell, r);
+            Quad(p(-hl, -hw, 0), p(-hl, hw, 0), p(-hl, hw, h), p(-hl, -hw, h), cell, -r);
+            Quad(p(-hl, hw, 0), p(hl, hw, 0), p(hl, hw, h), p(-hl, hw, h), cell, f);
+            Quad(p(-hl, -hw, 0), p(hl, -hw, 0), p(hl, -hw, h), p(-hl, -hw, h), cell, -f);
+        }
+    }
+
+    static void PlaceRails(List<Vector3> pts, Theme theme)
     {
         // dense, evenly spaced samples of the full path (y = 0)
         var raw = new List<Vector3>();
@@ -456,90 +489,134 @@ public static partial class BrawlMapBuilder
         even.Insert(0, even[0] + d0 * 0.6f); even.Add(even[even.Count - 1] + d1 * 0.6f);
 
         int n = even.Count;
-        var tan = new Vector3[n]; var right = new Vector3[n];
+        var tan = new Vector3[n]; var right = new Vector3[n]; var arc = new float[n];
         for (int i = 0; i < n; i++)
         {
             var tv = even[Mathf.Min(i + 1, n - 1)] - even[Mathf.Max(i - 1, 0)]; tv.y = 0; tv.Normalize();
             tan[i] = tv; right[i] = Vector3.Cross(Vector3.up, tv).normalized;
+            if (i > 0) arc[i] = arc[i - 1] + (even[i] - even[i - 1]).magnitude;
+        }
+        var m = new TrackMesh();
+        var rnd = new System.Random(Mathf.RoundToInt(arc[n - 1] * 100f) + n);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+
+        // ballast: a lumpy gravel bed with ragged edges (the sleepers sit in it)
+        // grey stone everywhere (it must stand out from sand and snow alike), black basalt on the volcano
+        int ballast = theme == Theme.Volcano ? PBasaltDark : PMetal;   // neutral mid grey (stone_dark read as a heavy blue band on sand)
+        {
+            float[] lat = { -1.0f, -0.80f, -0.35f, 0.35f, 0.80f, 1.0f };
+            var rows = new Vector3[n][];
+            for (int i = 0; i < n; i++)
+            {
+                rows[i] = new Vector3[lat.Length];
+                for (int k = 0; k < lat.Length; k++)
+                {
+                    float l = lat[k], y = 0.05f;
+                    if (k == 0 || k == lat.Length - 1) { l += Mathf.Sign(l) * 0.16f * Mathf.PerlinNoise(arc[i] * 0.9f, k * 3.1f); y = 0.006f; }
+                    else y += 0.012f * (Mathf.PerlinNoise(arc[i] * 2.3f, k * 1.7f) - 0.5f) * 2f;
+                    rows[i][k] = even[i] + right[i] * l + Vector3.up * y;
+                }
+            }
+            for (int i = 0; i < n - 1; i++)
+                for (int k = 0; k < lat.Length - 1; k++)
+                    m.Quad(rows[i][k], rows[i + 1][k], rows[i + 1][k + 1], rows[i][k + 1], ballast, Vector3.up);
         }
 
-        var v = new List<Vector3>(); var nm = new List<Vector3>();
-        var triSteel = new List<int>(); var triWood = new List<int>();
+        // sleepers: rough-sawn, uneven, a little askew, chamfered top edges; tie plates and spikes under each rail
+        float acc = SleeperStep * 0.5f; int sleeperNo = 0;
+        for (int i = 0; i < n - 1; i++)
+        {
+            acc += (even[i + 1] - even[i]).magnitude;
+            if (acc < SleeperStep) continue;
+            acc -= SleeperStep; sleeperNo++;
+            float yaw = R(-5f, 5f);
+            var rt = Quaternion.Euler(0, yaw, 0) * right[i]; var f = Quaternion.Euler(0, yaw, 0) * tan[i];
+            var c = even[i] + right[i] * R(-0.04f, 0.04f);
+            float hl = R(0.66f, 0.78f), hw = R(0.12f, 0.16f), h = R(0.062f, 0.078f), ch = 0.022f;
+            double tone = rnd.NextDouble();
+            int wood = tone < 0.85 ? PWoodDark : PWood;   // weathered dark wood, a few a shade lighter (no light planks: too much contrast)
+            float y0 = 0.01f;
+            // uneven sawn ends: each corner a little longer or shorter
+            float l0 = hl + R(-0.05f, 0.05f), l1 = hl + R(-0.05f, 0.05f), l2 = hl + R(-0.05f, 0.05f), l3 = hl + R(-0.05f, 0.05f);
+            Vector3 P(float x, float z, float y) => c + rt * x + f * z + Vector3.up * (y0 + y);
+            Vector3[] bot = { P(-l0, -hw, 0), P(l1, -hw, 0), P(l2, hw, 0), P(-l3, hw, 0) };
+            Vector3[] mid = { P(-l0, -hw, h - ch), P(l1, -hw, h - ch), P(l2, hw, h - ch), P(-l3, hw, h - ch) };
+            Vector3[] top = { P(-l0 + ch, -hw + ch, h), P(l1 - ch, -hw + ch, h), P(l2 - ch, hw - ch, h), P(-l3 + ch, hw - ch, h) };
+            var cen = c + Vector3.up * (y0 + h * 0.5f);
+            m.Quad(top[0], top[1], top[2], top[3], wood, Vector3.up);
+            for (int s = 0; s < 4; s++)
+            {
+                int s2 = (s + 1) % 4;
+                var outw = ((bot[s] + bot[s2]) * 0.5f - cen); outw.y = 0;
+                m.Quad(bot[s], bot[s2], mid[s2], mid[s], wood, outw);
+                m.Quad(mid[s], mid[s2], top[s2], top[s], wood, outw + Vector3.up * 0.5f);
+            }
+            foreach (float side in new[] { -1f, 1f })
+            {
+                var rc = c + rt * (side * RailGauge * 0.5f) + Vector3.up * (y0 + h);
+                m.Box(rc, rt, f, 0.13f, 0.09f, 0.012f, PBlack);                                     // tie plate
+                foreach (float s in new[] { -0.10f, 0.10f })
+                    m.Box(rc + rt * s + f * (s * 0.4f), rt, f, 0.018f, 0.018f, 0.04f, PBlack);      // spike heads
+            }
+            if (sleeperNo % 9 == 0)   // a rail joint: fishplates either side of each rail's web
+                foreach (float side in new[] { -1f, 1f })
+                    foreach (float s in new[] { -1f, 1f })
+                    {
+                        var jc = even[i] + right[i] * (side * RailGauge * 0.5f + s * 0.032f) + Vector3.up * 0.10f;
+                        m.Box(jc, right[i], tan[i], 0.012f, 0.24f, 0.028f, PStoneDark);
+                    }
+        }
 
-        // rails: top + inner + outer side, continuous strip
+        // rails: head / web / foot profile, swept along the path (lat, y); worn dark iron on top, rust below
+        var prof = new (float x, float y)[] { (-0.075f, 0.080f), (-0.075f, 0.088f), (-0.022f, 0.098f), (-0.022f, 0.128f), (-0.058f, 0.134f), (-0.058f, 0.160f), (-0.046f, RailTop),
+                                              (0.046f, RailTop), (0.058f, 0.160f), (0.058f, 0.134f), (0.022f, 0.128f), (0.022f, 0.098f), (0.075f, 0.088f), (0.075f, 0.080f) };
+        int SegCell(int k)
+        {
+            float ya = prof[k].y, yb = prof[k + 1].y;
+            if (ya >= 0.159f && yb >= 0.159f) return PStone;           // the worn running surface and its bevels
+            if (Mathf.Min(ya, yb) >= 0.133f) return PStoneDark;        // head sides
+            return PWoodDark;                                          // rusty web and foot
+        }
         foreach (float side in new[] { -1f, 1f })
         {
             float off = side * RailGauge * 0.5f;
-            void Strip(System.Func<int, Vector3> pa, System.Func<int, Vector3> pb, System.Func<int, Vector3> normal)
+            for (int k = 0; k < prof.Length - 1; k++)
             {
-                int b0 = v.Count;
-                for (int i = 0; i < n; i++) { v.Add(pa(i)); v.Add(pb(i)); var q = normal(i); nm.Add(q); nm.Add(q); }
+                var pa = prof[k]; var pb = prof[k + 1];
+                var mid2 = new Vector2((pa.x + pb.x) * 0.5f, (pa.y + pb.y) * 0.5f) - new Vector2(0f, 0.12f);
+                int cell = SegCell(k);
                 for (int i = 0; i < n - 1; i++)
                 {
-                    int a = b0 + i * 2;
-                    // orient each quad so it faces its normal
-                    var fn = Vector3.Cross(v[a + 2] - v[a], v[a + 1] - v[a]);
-                    if (Vector3.Dot(fn, nm[a]) >= 0) triSteel.AddRange(new[] { a, a + 2, a + 1, a + 1, a + 2, a + 3 });
-                    else triSteel.AddRange(new[] { a, a + 1, a + 2, a + 1, a + 3, a + 2 });
+                    Vector3 Q(int j, (float x, float y) q) => even[j] + right[j] * (off + q.x) + Vector3.up * q.y;
+                    var hint = right[i] * mid2.x + Vector3.up * mid2.y;
+                    m.Quad(Q(i, pa), Q(i + 1, pa), Q(i + 1, pb), Q(i, pb), cell, hint);
                 }
             }
-            Vector3 P(int i, float lat, float y) => even[i] + right[i] * (off + lat) + Vector3.up * y;
-            Strip(i => P(i, -RailW / 2, RailTop), i => P(i, RailW / 2, RailTop), i => Vector3.up);
-            Strip(i => P(i, -RailW / 2, RailBase), i => P(i, -RailW / 2, RailTop), i => -right[i]);
-            Strip(i => P(i, RailW / 2, RailBase), i => P(i, RailW / 2, RailTop), i => right[i]);
         }
 
-        // sleepers: boxes every SleeperStep along the arc length
-        float acc = SleeperStep * 0.5f;
-        for (int i = 0; i < n - 1; i++)
-        {
-            float seg = (even[i + 1] - even[i]).magnitude;
-            acc += seg;
-            if (acc < SleeperStep) continue;
-            acc -= SleeperStep;
-            var c = even[i]; var f = tan[i]; var rt = right[i];
-            Box(v, nm, triWood, c + Vector3.up * (SleeperTop * 0.5f + 0.01f), rt * (SleeperLen * 0.5f), Vector3.up * (SleeperTop * 0.5f), f * (SleeperW * 0.5f));
-        }
-
-        var mesh = new Mesh { name = "RailTrack" };
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        mesh.SetVertices(v); mesh.SetNormals(nm);
-        mesh.subMeshCount = 2;
-        mesh.SetTriangles(triWood, 0); mesh.SetTriangles(triSteel, 1);
-        mesh.RecalculateBounds();
         string dir = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(scene.path), System.IO.Path.GetFileNameWithoutExtension(scene.path)).Replace('\\', '/');
         if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(dir).Replace('\\', '/'), System.IO.Path.GetFileName(dir));
         string meshPath = dir + "/RailTrack.asset";
+        // write straight into the existing asset with the Mesh API (CopySerialized left the editor drawing the old data)
         var existing = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
-        if (existing) { EditorUtility.CopySerialized(mesh, existing); existing.name = "RailTrack"; EditorUtility.SetDirty(existing); mesh = existing; }
-        else AssetDatabase.CreateAsset(mesh, meshPath);
+        var mesh = existing ? existing : new Mesh();
+        mesh.Clear(); mesh.name = "RailTrack";
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.SetVertices(m.v); mesh.SetNormals(m.n); mesh.SetUVs(0, m.uv); mesh.subMeshCount = 1; mesh.SetTriangles(m.t, 0);
+        mesh.RecalculateBounds();
+        if (existing) EditorUtility.SetDirty(mesh); else AssetDatabase.CreateAsset(mesh, meshPath);
 
         var go = new GameObject("RailTrack");
         SceneManager.MoveGameObjectToScene(go, scene);
         go.transform.SetParent(env, false);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterials = new[] { RailMat("RailSleeper", new Color(0.66f, 0.40f, 0.22f)), RailMat("RailSteel", new Color(0.58f, 0.63f, 0.74f)) };
+        // the shared palette material of the props (FlatKit); Xmas night: its night copy (XmasNight ran before the mode objects)
+        var pal = xmasNight ? AssetDatabase.LoadAssetAtPath<Material>(IceThemeSetup.PropsNightMat) : IceThemeSetup.Props;
+        mr.sharedMaterial = pal ? pal : RailMat("RailSleeper", new Color(0.55f, 0.36f, 0.22f));
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Finish(go);
         log += " rail=continuous(" + n + "pts)";
-    }
-
-    static void Box(List<Vector3> v, List<Vector3> nm, List<int> tri, Vector3 c, Vector3 ex, Vector3 ey, Vector3 ez)
-    {
-        // 5 faces (no bottom)
-        void Face(Vector3 fc, Vector3 u, Vector3 w)
-        {
-            var nrm = Vector3.Cross(u, w).normalized;
-            if (Vector3.Dot(nrm, fc - c) < 0) { var tmp = u; u = w; w = tmp; nrm = -nrm; }
-            int b = v.Count;
-            v.Add(fc - u - w); v.Add(fc + u - w); v.Add(fc + u + w); v.Add(fc - u + w);
-            for (int k = 0; k < 4; k++) nm.Add(nrm);
-            tri.AddRange(new[] { b, b + 1, b + 2, b, b + 2, b + 3 });
-        }
-        Face(c + ey, ex, ez);
-        Face(c + ex, ey, ez); Face(c - ex, ey, ez);
-        Face(c + ez, ex, ey); Face(c - ez, ex, ey);
     }
 
     static Material RailMat(string name, Color col)

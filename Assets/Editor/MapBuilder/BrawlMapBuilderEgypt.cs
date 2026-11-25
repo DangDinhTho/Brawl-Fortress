@@ -219,6 +219,38 @@ public static partial class BrawlMapBuilder
         }
     }
 
+    /// <summary>The desert sun: a bright, nearly neutral ambient and a light haze (Tho: sunny, not yellow) (the Western scene's ambient is dark grey and
+    /// FlatKit adds the ambient), a warm sun. The blue sky stays.</summary>
+    static void EgyptLook(Light light)
+    {
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.94f, 0.94f, 0.92f); RenderSettings.ambientEquatorColor = new Color(0.87f, 0.86f, 0.83f); RenderSettings.ambientGroundColor = new Color(0.70f, 0.68f, 0.64f);
+        RenderSettings.fogColor = new Color(0.86f, 0.88f, 0.90f);
+        if (light) light.color = new Color(1.0f, 0.98f, 0.94f);
+    }
+
+    /// <summary>After everything is placed (mode objects and the rail track included): props and sand take the desert
+    /// materials (warm, bright, golden shade; made by IceThemeSetup).</summary>
+    static void EgyptSun()
+    {
+        var swap = new System.Collections.Generic.Dictionary<Material, Material>();
+        void Map(string from, string to)
+        {
+            var a = AssetDatabase.LoadAssetAtPath<Material>(from); var b = AssetDatabase.LoadAssetAtPath<Material>(to);
+            if (a && b) swap[a] = b;
+        }
+        Map(IceThemeSetup.PropsMat, IceThemeSetup.PropsDesertMat);
+        Map(IceThemeSetup.SandGroundMat, IceThemeSetup.SandDesertMat);
+        int n = 0;
+        foreach (var r in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Renderer>(true)))
+        {
+            var mats = r.sharedMaterials; bool ch = false;
+            for (int i = 0; i < mats.Length; i++) if (mats[i] && swap.TryGetValue(mats[i], out var m)) { mats[i] = m; ch = true; }
+            if (ch) { r.sharedMaterials = mats; n++; }
+        }
+        log += " desertSun=" + n;
+    }
+
     /// <summary>Fallen column drums, small jars and bones on the open sand (no colliders), clear of walls and spawns.</summary>
     static void ScatterEgyptFloor(int seed)
     {
