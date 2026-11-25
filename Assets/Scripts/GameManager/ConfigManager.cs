@@ -309,6 +309,7 @@ public class ConfigManager
         (GameMode.Competitive, Map.Map_Brawl_DustyCanyon, 3),
         (GameMode.Competitive, Map.Map_Brawl_FrontierRuins, 4),
         (GameMode.Competitive, Map.Map_Brawl_MoonMaze, 5),
+        (GameMode.Competitive, Map.Map_Brawl_FrostPeak, 5),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_CTF, 0),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_GemHeist, 1),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_LunarVault, 2),

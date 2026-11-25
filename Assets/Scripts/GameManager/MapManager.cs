@@ -150,4 +150,5 @@ public enum Map: byte
     Map_Brawl_BigfootGulch,    // JungleBoss, Yeti
     Map_Brawl_MoonlitDen,      // JungleBoss, Yeti
     Map_Brawl_StompingGrounds, // JungleBoss, Yeti
+    Map_Brawl_FrostPeak,       // Competitive, Ice theme
 }

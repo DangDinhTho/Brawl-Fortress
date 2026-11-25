@@ -20,7 +20,7 @@ using Random = System.Random;
 /// </summary>
 public static partial class BrawlMapBuilder
 {
-    public enum Theme { Western, Bamboo, Cave, Moon, Mix }
+    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice }
 
     public class Def
     {
@@ -41,6 +41,39 @@ public static partial class BrawlMapBuilder
     const float T = 1.5f;
     const int COLS = 21, ROWS = 27;
     const int WallLayer = 11;
+
+    /// <summary>Ice (arctic) maps: props from Assets/Art/IceTheme (IceThemeSetup). Kept apart from the bulk rebuilds.</summary>
+    public static readonly Def[] IceMaps =
+    {
+        new Def {
+            mapEnum = "Map_Brawl_FrostPeak", displayName = "Frost Peak", icon = "map_frostpeak", mode = GameMode.Competitive, theme = Theme.Ice, seed = 901,
+            names = new[] { "Frost Peak", "Морозный пик", "ยอดเขาน้ำแข็ง", "Pico Helado", "Đỉnh Băng Giá" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                ".bb...x.......x...bb.",
+                ".bb...ff.....ff...bb.",
+                ".bb..##.......##..bb.",
+                ".bb.x...........x.bb.",
+                ".bb......###......bb.",
+                ".bbb.............bbb.",
+                "....##.........##....",
+                "..t...f..b.b..f...t..",
+                "........bbbbb........",
+                ".##...............##.",
+            },
+            center = ".......#.....#.......",
+        },
+    };
+
+    [MenuItem("Tools/Maps/Build Frost Peak (Ice)")]
+    static void BuildFrostPeakMenu()
+    {
+        Debug.Log("[IceTheme] " + IceThemeSetup.Setup());
+        if (!IceThemeSetup.Ready) { Debug.LogError("[IceTheme] assets missing: unzip IceTheme_Props.zip into " + IceThemeSetup.Root); return; }
+        Debug.Log(Build(IceMaps[0]));
+    }
 
     public static readonly Def[] Competitive =
     {
@@ -198,6 +231,7 @@ public static partial class BrawlMapBuilder
         PlaceGrid(d);
         GrassHeight.Raise(scene); // grass about as tall as the characters
         if (d.theme == Theme.Moon) PlaceMoonBackdrop(d.seed);
+        if (d.theme == Theme.Ice) { PlaceIceBackdrop(d.seed); ScatterIceFloor(d.seed); }
         var holder = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "_templates");
         if (holder) Object.DestroyImmediate(holder);
         Physics.SyncTransforms();
@@ -251,6 +285,9 @@ public static partial class BrawlMapBuilder
             var p = AssetDatabase.GUIDToAssetPath(g);
             prefabs[Path.GetFileNameWithoutExtension(p)] = p;
         }
+        if (AssetDatabase.IsValidFolder(IceThemeSetup.PrefabDir))
+            foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { IceThemeSetup.PrefabDir }))
+            { var p = AssetDatabase.GUIDToAssetPath(g); prefabs[Path.GetFileNameWithoutExtension(p)] = p; }
         world = AssetDatabase.LoadAssetAtPath<Material>(WorldMat);
         worldT = AssetDatabase.LoadAssetAtPath<Material>(WorldTMat);
     }
@@ -333,14 +370,22 @@ public static partial class BrawlMapBuilder
         go.transform.rotation = Quaternion.Euler(0, rotY, 0);
         go.transform.localScale = scale3 ?? Vector3.one * s;
         foreach (var c in go.GetComponentsInChildren<Collider>(true)) c.enabled = col;
-        var m = mat ? mat : world;
-        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.sharedMaterials = r.sharedMaterials.Select(_ => m).ToArray();
+        // ice props keep their own palette material; the others get the shared World atlas
+        if (mat != null || !p.StartsWith(IceThemeSetup.Root))
+        {
+            var m = mat ? mat : world;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.sharedMaterials = r.sharedMaterials.Select(_ => m).ToArray();
+        }
         Finish(go);
         return go;
     }
 
     static T Pick<T>(Random rnd, params T[] items) => items[rnd.Next(items.Length)];
     static float Rot90(Random rnd) => rnd.Next(4) * 90f;
+    // per-tile Randoms are seeded with consecutive numbers, so their draws are correlated (a pick from a list skips
+    // whole ranges of it). Mix() scrambles a draw (murmur3 finalizer) before it is used for a choice.
+    static int Mix(int h) { unchecked { uint x = (uint)h; x ^= x >> 16; x *= 0x85ebca6b; x ^= x >> 13; x *= 0xc2b2ae35; x ^= x >> 16; return (int)(x & 0x7fffffff); } }
+    static Random MixRnd(Random rnd) => new Random(Mix(rnd.Next()));
     static float Jit(Random rnd, float a) => (float)(rnd.NextDouble() * 2 - 1) * a;
 
     // ------------------------------------------------------------------ lighting / border / ground
@@ -349,6 +394,7 @@ public static partial class BrawlMapBuilder
         string refScene = theme switch
         {
             Theme.Western => "Assets/Scenes/BrawlScene.unity",
+            Theme.Ice => "Assets/Scenes/BrawlScene.unity",
             Theme.Bamboo => "Assets/Scenes/BrawlScene_2.unity",
             Theme.Cave => "Assets/Scenes/Map_Brawl_Payload.unity",
             Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
@@ -367,6 +413,16 @@ public static partial class BrawlMapBuilder
             light.color = li.lColor; light.intensity = li.lIntensity; light.shadows = li.lShadows;
             light.shadowStrength = li.lShadowStrength; light.transform.rotation = li.lRotation;
         }
+        if (theme == Theme.Ice) IceLook(light);
+    }
+
+    /// <summary>Western lighting, cooled down: blue-white ambient and fog, a slightly warm sun.</summary>
+    static void IceLook(Light light)
+    {
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.78f, 0.86f, 1.0f); RenderSettings.ambientEquatorColor = new Color(0.70f, 0.78f, 0.92f); RenderSettings.ambientGroundColor = new Color(0.58f, 0.64f, 0.78f);
+        RenderSettings.fogColor = new Color(0.82f, 0.90f, 1.0f);
+        if (light) { light.color = new Color(1.0f, 0.97f, 0.92f); }
     }
 
     static readonly string[] Desert = { "cliff01", "cliff02", "cliff03", "cliff04" };
@@ -383,6 +439,28 @@ public static partial class BrawlMapBuilder
             var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
             string n = src ? src.name : t.name;
             int ci = Array.IndexOf(Desert, n);
+            if (ci >= 0 && theme == Theme.Ice)
+            {
+                // ice border: one of the three ice cliffs, on the same spot, turn and scale as the old cliff
+                string gname = prefabs.ContainsKey("GlacierWallA") ? "GlacierWall" + "ABC"[idx % 3] : "IceCliff" + "ABC"[idx % 3];
+                var ng = Prefab(gname, t.position, 0, 1, true);
+                if (ng)
+                {
+                    ng.transform.rotation = t.rotation;
+                    // the glacier is ~10 m long against the old cliffs' 7.4 m
+                    ng.transform.localScale = t.localScale * (gname.StartsWith("Glacier") ? 0.74f : 1f);
+                    if (gname.StartsWith("Glacier"))
+                    {
+                        // its detailed face (columns and fallen ice; Blender -Y) imports as local +Z: turn it to the arena
+                        Vector3 front = ng.transform.forward; front.y = 0f;
+                        Vector3 toArena = -ng.transform.position; toArena.y = 0f;
+                        if (Vector3.Dot(front, toArena) < 0f) ng.transform.Rotate(0f, 180f, 0f, Space.World);
+                    }
+                }
+                idx++;
+                Object.DestroyImmediate(t.gameObject);
+                continue;
+            }
             if (ci >= 0)
             {
                 string[] set = theme switch
@@ -393,8 +471,8 @@ public static partial class BrawlMapBuilder
                     _ => Desert,
                 };
                 idx++;
-                Material m = theme == Theme.Moon ? sdCliffMat : world;
-                if (set[ci] != n || theme == Theme.Moon)
+                Material m = theme == Theme.Moon ? sdCliffMat : (theme == Theme.Ice && IceThemeSetup.Cliff ? IceThemeSetup.Cliff : world);
+                if (set[ci] != n || theme == Theme.Moon || theme == Theme.Ice)
                 {
                     var ng = Prefab(set[ci], t.position, 0, 1, true, m);
                     ng.transform.rotation = t.rotation; ng.transform.localScale = t.localScale;
@@ -418,6 +496,10 @@ public static partial class BrawlMapBuilder
             case Theme.Cave:
                 Prefab("Floor2", Vector3.zero, 0, 1, true, world, new Vector3(75, 1, 75));
                 break;
+            case Theme.Ice:
+                if (prefabs.ContainsKey("IceFloor")) Prefab("IceFloor", Vector3.zero, 0, 1, true);
+                else Prefab("Floor1", Vector3.zero, 0, 1, true, IceThemeSetup.Ground ? IceThemeSetup.Ground : worldT, new Vector3(50, 1, 50));
+                break;
             case Theme.Moon:
                 var plane = CloneMoon("Night_Plane", Vector3.zero, 0, Vector3.one * 0.6f, false);
                 plane.AddComponent<MeshCollider>();
@@ -426,6 +508,60 @@ public static partial class BrawlMapBuilder
                     plane.transform.position += Vector3.up * (-hit.point.y);
                 break;
         }
+    }
+
+    /// <summary>Arctic scenery outside the play border: pines, igloos, tents, bushes, rocks (no colliders).</summary>
+    static void PlaceIceBackdrop(int seed)
+    {
+        var rnd = new Random(seed);
+        for (int i = 0; i < 26; i++)
+        {
+            float a = i / 26f * Mathf.PI * 2f + Jit(rnd, 0.06f);
+            float rad = 33f + (float)rnd.NextDouble() * 7f;
+            var p = new Vector3(Mathf.Cos(a) * rad * 0.85f, 0f, Mathf.Sin(a) * rad);
+            // wild arctic beyond the border: more glacier, seracs, boulders (no man-made props)
+            var k = Pick(rnd, "GlacierWallA", "GlacierWallB", "GlacierWallC", "IceSpire", "IceSpire", "IceBoulder", "SnowRock", "IceCrystals", "IceShardCluster", "RibCage");
+            if (!prefabs.ContainsKey(k)) k = "IceSpire";
+            float sc = k.StartsWith("Glacier") ? 0.9f + (float)rnd.NextDouble() * 0.5f : k == "IceSpire" ? 1.3f + (float)rnd.NextDouble() * 0.7f : k == "IceBoulder" ? 1.5f + (float)rnd.NextDouble() * 0.8f : k == "SnowRock" ? 1.2f + (float)rnd.NextDouble() * 0.6f
+                     : k == "IceShardCluster" ? 1.4f + (float)rnd.NextDouble() * 0.5f : k == "RibCage" ? 1.3f : 1.3f;
+            // glacier front (local +Z) looks back at the arena centre
+            float yaw = k.StartsWith("Glacier") ? Mathf.Atan2(-p.x, -p.z) * Mathf.Rad2Deg + Jit(rnd, 15) : rnd.Next(360);
+            Prefab(k, p, yaw, sc, false);
+        }
+    }
+
+    /// <summary>Ice plates and shards scattered thinly over the open floor (no colliders), so the tiling floor texture
+    /// does not read as a pattern. Skips spots near walls, props and spawns.</summary>
+    static void ScatterIceFloor(int seed)
+    {
+        var rnd = new Random(seed + 17);
+        int placed = 0;
+        for (int i = 0; i < 140 && placed < 26; i++)
+        {
+            var p = new Vector3(Jit(rnd, 14f), 0f, Jit(rnd, 19f));
+            if (Physics.CheckSphere(p + Vector3.up * 1.3f, 1.0f, ~0, QueryTriggerInteraction.Ignore)   /* clear of the floor collider */) continue;
+            if (spawnPoints != null && spawnPoints.Any(sp => (sp - p).sqrMagnitude < 9f)) continue;
+            var k = Pick(rnd, "IceSlab", "IceHole", "IceShards", "IceSlab", "BonePile", "IceShards", "IceSlab");
+            if (!prefabs.ContainsKey(k)) k = "IceSlab";
+            Prefab(k, p, rnd.Next(360), k == "IceSlab" ? 0.8f + (float)rnd.NextDouble() * 0.6f : k == "IceHole" ? 0.75f : k == "BonePile" ? 0.95f : 0.8f, false);
+            placed++;
+        }
+        log += " iceScatter=" + placed;
+        // a few big remains (rib cage, beast skull) on open ground: clear of walls, spawns and bushes (they have no collider)
+        var grass = env.Cast<Transform>().Where(t => t.name.StartsWith("FrostGrass")).Select(t => t.position).ToList();
+        int big = 0;
+        for (int i = 0; i < 200 && big < 4; i++)
+        {
+            var p = new Vector3(Jit(rnd, 13f), 0f, Jit(rnd, 18f));
+            if (Physics.CheckSphere(p + Vector3.up * 1.6f, 1.4f, ~0, QueryTriggerInteraction.Ignore)) continue;   // bottom at 0.2 m: clear of the floor collider
+            if (spawnPoints != null && spawnPoints.Any(sp => (sp - p).sqrMagnitude < 16f)) continue;
+            if (grass.Any(g => (g - p).sqrMagnitude < 4f)) continue;
+            string k = big % 2 == 0 ? "RibCage" : "BeastSkull";
+            if (!prefabs.ContainsKey(k)) break;
+            Prefab(k, p, rnd.Next(360), k == "RibCage" ? 0.85f : 0.9f, false);
+            big++;
+        }
+        log += " bigBones=" + big;
     }
 
     static void PlaceMoonBackdrop(int seed)
@@ -491,7 +627,7 @@ public static partial class BrawlMapBuilder
                 if (ch == '.')
                 {
                     if (!free) continue;
-                    if (rnd.NextDouble() < 0.06) { Decor(d.theme, p, baseRot, rnd); decor++; }
+                    if (rnd.NextDouble() < (d.theme == Theme.Ice ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
                     continue;
                 }
                 if (!free) { skipped++; continue; }
@@ -553,6 +689,44 @@ public static partial class BrawlMapBuilder
                     }
                 }
                 break;
+            case Theme.Ice:
+                switch (ch)
+                {
+                    // ice age: natural pieces only (the man-made snow props are kept for the Xmas theme)
+                    case '#':
+                        {
+                            // four block shapes, turned and barely nudged: a wall reads as one tidy row, not a jumble
+                            string k = prefabs.ContainsKey("GlacierBlockA") ? Pick(rnd, "GlacierBlockA", "GlacierBlockB", "GlacierBlockC", "GlacierBlockD") : "GlacierBlock";
+                            float s = 0.97f + (float)rnd.NextDouble() * 0.03f, hy = 0.96f + (float)rnd.NextDouble() * 0.08f;
+                            Prefab(k, p + new Vector3(Jit(rnd, 0.03f), 0, Jit(rnd, 0.03f)), Rot90(rnd) + baseRot + Jit(rnd, 3), s, true, null, new Vector3(s, s * hy, s));
+                        }
+                        break;
+                    case 'x':
+                        {
+                            // small ice blocks (same style as the walls), a log frozen in ice, boulders
+                            double v = MixRnd(rnd).NextDouble();
+                            if (v < 0.25 && prefabs.ContainsKey("IceChunkA")) Prefab("IceChunkA", p, Rot90(rnd) + Jit(rnd, 4), 1f, true);
+                            else if (v < 0.50 && prefabs.ContainsKey("IceChunkB")) Prefab("IceChunkB", p, Rot90(rnd) + Jit(rnd, 4), 1f, true);
+                            else if (v < 0.75 && prefabs.ContainsKey("FrozenLog")) Prefab("FrozenLog", p, Rot90(rnd) + Jit(rnd, 4), 1f, true);
+                            else if (v < 0.92) Prefab("IceBoulder", p, rnd.Next(360), 0.92f, true);
+                            else Prefab("SnowRock", p, rnd.Next(360), 0.52f, true);
+                        }
+                        break;
+                    case 'f': Prefab("PressureRidge", p, fenceRot + Jit(rnd, 6), 0.72f, true); break;
+                    case 't':
+                        {
+                            double v = MixRnd(rnd).NextDouble();
+                            if (v < 0.4) Prefab("IceSpire", p, rnd.Next(360), 0.8f, true);
+                            else if (v < 0.75 && prefabs.ContainsKey("IceShardCluster")) Prefab("IceShardCluster", p, rnd.Next(360), 0.9f, true);
+                            else Prefab("IceCrystals", p, rnd.Next(360), 0.85f, true);
+                        }
+                        break;
+                    case 'b':   // Brawl-style frost grass to hide in (falls back to a snow drift without the model)
+                        if (prefabs.ContainsKey("FrostGrass")) Grass("FrostGrass", p, 1.3f, rnd);   // ~1.9 m after GrassHeight (its stretch is capped at x1.7), like the other maps' bushes
+                        else if (rnd.NextDouble() < 0.35) Prefab("SnowDrift", p, rnd.Next(360), 0.55f, false);
+                        break;
+                }
+                break;
             case Theme.Mix:
                 switch (ch)
                 {
@@ -605,6 +779,16 @@ public static partial class BrawlMapBuilder
                 }
                 break;
             case Theme.Mix: Prefab(Pick(rnd, "Flower02", "rock8", "Rock13", "Bone1", "Flower04", "Stone08"), o, rot, 0.7f, false); break;
+            case Theme.Ice:
+                {
+                    rnd = MixRnd(rnd);   // decorrelated from the neighbouring tiles' picks
+                    var k = Pick(rnd, "IceSlab", "BonePile", "SnowDrift", "IceHole", "IceShards", "MammothBones", "IceShards", "SnowRock", "BonePile", "IceCrystals");
+                    if (!prefabs.ContainsKey(k)) k = "IceSlab";
+                    float sc = k == "IceSlab" ? 0.9f + (float)rnd.NextDouble() * 0.4f : k == "SnowDrift" ? 0.6f : k == "IceShards" ? 1.0f : k == "SnowRock" ? 0.28f
+                             : k == "IceCrystals" ? 0.32f : k == "BonePile" ? 0.9f + (float)rnd.NextDouble() * 0.2f : k == "IceHole" ? 0.75f : 0.75f;
+                    Prefab(k, o, rot, sc, false);
+                }
+                break;
         }
     }
 
