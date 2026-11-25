@@ -20,7 +20,7 @@ using Random = System.Random;
 /// </summary>
 public static partial class BrawlMapBuilder
 {
-    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice }
+    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice, Xmas }
 
     public class Def
     {
@@ -32,6 +32,7 @@ public static partial class BrawlMapBuilder
         public string center;   // row 13, must be a palindrome
         public string[] names;  // en, ru, th, es, vi
         public Vector2[] pathHalf; // Payload / MvM: cart path from the blue side to the centre (x,z); mirrored to the red side
+        public bool night;         // Xmas: evening look (dark materials, warm lights)
     }
 
     const string BaseScene = "Assets/Scenes/Map_Brawl_Oasis.unity";
@@ -347,6 +348,7 @@ public static partial class BrawlMapBuilder
         AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
 
         LoadAssets();
+        xmasNight = d.theme == Theme.Xmas && d.night; nightLampKeys.Clear(); nightLampPos.Clear();
 
         scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
         SceneManager.SetActiveScene(scene);
@@ -362,6 +364,8 @@ public static partial class BrawlMapBuilder
         GrassHeight.Raise(scene); // grass about as tall as the characters
         if (d.theme == Theme.Moon) PlaceMoonBackdrop(d.seed);
         if (d.theme == Theme.Ice) { PlaceIceBackdrop(d.seed); ScatterIceFloor(d.seed); }
+        if (d.theme == Theme.Xmas) { PlaceXmasBackdrop(d.seed); ScatterXmasFloor(d.seed); }
+        if (d.theme == Theme.Xmas && d.night) XmasNight();
         var holder = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "_templates");
         if (holder) Object.DestroyImmediate(holder);
         Physics.SyncTransforms();
@@ -525,6 +529,7 @@ public static partial class BrawlMapBuilder
         {
             Theme.Western => "Assets/Scenes/BrawlScene.unity",
             Theme.Ice => "Assets/Scenes/BrawlScene.unity",
+            Theme.Xmas => "Assets/Scenes/BrawlScene.unity",
             Theme.Bamboo => "Assets/Scenes/BrawlScene_2.unity",
             Theme.Cave => "Assets/Scenes/Map_Brawl_Payload.unity",
             Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
@@ -543,7 +548,7 @@ public static partial class BrawlMapBuilder
             light.color = li.lColor; light.intensity = li.lIntensity; light.shadows = li.lShadows;
             light.shadowStrength = li.lShadowStrength; light.transform.rotation = li.lRotation;
         }
-        if (theme == Theme.Ice) IceLook(light);
+        if (theme == Theme.Ice || theme == Theme.Xmas) IceLook(light);
     }
 
     /// <summary>Western lighting, cooled down: blue-white ambient and fog, a slightly warm sun.</summary>
@@ -569,7 +574,7 @@ public static partial class BrawlMapBuilder
             var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
             string n = src ? src.name : t.name;
             int ci = Array.IndexOf(Desert, n);
-            if (ci >= 0 && theme == Theme.Ice)
+            if (ci >= 0 && (theme == Theme.Ice || theme == Theme.Xmas))   // Xmas keeps the glacier border
             {
                 // ice border: one of the three ice cliffs, on the same spot, turn and scale as the old cliff
                 string gname = prefabs.ContainsKey("GlacierWallA") ? "GlacierWall" + "ABC"[idx % 3] : "IceCliff" + "ABC"[idx % 3];
@@ -625,6 +630,10 @@ public static partial class BrawlMapBuilder
                 break;
             case Theme.Cave:
                 Prefab("Floor2", Vector3.zero, 0, 1, true, world, new Vector3(75, 1, 75));
+                break;
+            case Theme.Xmas:
+                if (prefabs.ContainsKey("SnowFloor")) Prefab("SnowFloor", Vector3.zero, 0, 1, true);
+                else if (prefabs.ContainsKey("IceFloor")) Prefab("IceFloor", Vector3.zero, 0, 1, true);
                 break;
             case Theme.Ice:
                 if (prefabs.ContainsKey("IceFloor")) Prefab("IceFloor", Vector3.zero, 0, 1, true);
@@ -757,7 +766,8 @@ public static partial class BrawlMapBuilder
                 if (ch == '.')
                 {
                     if (!free) continue;
-                    if (rnd.NextDouble() < (d.theme == Theme.Ice ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
+                    if (xmasNight && NightLamp(g, r, c, cr, cc, d.seed, p)) { placed++; continue; }   // Xmas night: extra lamps along the walls
+                    if (rnd.NextDouble() < (d.theme == Theme.Ice || d.theme == Theme.Xmas ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
                     continue;
                 }
                 if (!free) { skipped++; continue; }
@@ -819,6 +829,7 @@ public static partial class BrawlMapBuilder
                     }
                 }
                 break;
+            case Theme.Xmas: XmasTile(ch, p, baseRot, fenceRot, rnd); break;
             case Theme.Ice:
                 switch (ch)
                 {
@@ -909,6 +920,7 @@ public static partial class BrawlMapBuilder
                 }
                 break;
             case Theme.Mix: Prefab(Pick(rnd, "Flower02", "rock8", "Rock13", "Bone1", "Flower04", "Stone08"), o, rot, 0.7f, false); break;
+            case Theme.Xmas: XmasDecor(o, rot, rnd); break;
             case Theme.Ice:
                 {
                     rnd = MixRnd(rnd);   // decorrelated from the neighbouring tiles' picks

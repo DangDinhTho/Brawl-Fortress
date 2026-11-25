@@ -157,4 +157,18 @@ public enum Map: byte
     Map_Brawl_IcebreakerPass,  // MannVsMachine, Ice
     Map_Brawl_YetiGlacier,     // JungleBoss, Yeti, Ice
     Map_Brawl_FrostbiteHollow, // Zombie, Ice
+    Map_Brawl_JingleSquare,    // Competitive, Xmas
+    Map_Brawl_PresentHeist,    // CaptureTheFlag, Xmas
+    Map_Brawl_TreeTopHill,     // KingOfTheHill, Xmas
+    Map_Brawl_SleighRide,      // Payload, Xmas
+    Map_Brawl_ToyWorkshop,     // MannVsMachine, Xmas
+    Map_Brawl_SnowGlobe,       // JungleBoss, Yeti, Xmas
+    Map_Brawl_CandyCaneAlley,  // Zombie, Xmas
+    Map_Brawl_LanternEve,      // Competitive, Xmas night
+    Map_Brawl_MidnightGifts,   // CaptureTheFlag, Xmas night
+    Map_Brawl_StarlightHill,   // KingOfTheHill, Xmas night
+    Map_Brawl_NightExpress,    // Payload, Xmas night
+    Map_Brawl_CandleWorks,     // MannVsMachine, Xmas night
+    Map_Brawl_YetiEve,         // JungleBoss, Yeti, Xmas night
+    Map_Brawl_SilentNight,     // Zombie, Xmas night
 }

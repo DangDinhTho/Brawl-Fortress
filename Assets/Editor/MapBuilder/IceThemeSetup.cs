@@ -16,6 +16,16 @@ public static class IceThemeSetup
     public const string PropsMat = Root + "/IceProps.mat";
     public const string GroundMat = Root + "/IceGround.mat";
     public const string CliffMat = Root + "/IceCliff.mat";
+    public const string GlowMat = Root + "/XmasGlow.mat";
+    public const string SnowGroundMat = Root + "/SnowGround.mat";
+    // Xmas night: FlatKit ignores the light (_LightContribution 0), so night is done with darker material colours, a warm
+    // palette for the glowing slot (bulbs, lamp glass, star) and additive warm light pools on the snow
+    public const string PropsNightMat = Root + "/IcePropsNight.mat";
+    public const string SnowNightMat = Root + "/SnowGroundNight.mat";
+    public const string GlowNightMat = Root + "/XmasGlowNight.mat";
+    public const string WarmPalette = Root + "/IcePaletteWarm.png";
+    public const string PoolTex = Root + "/WarmPool.png";
+    public const string PoolMat = Root + "/WarmPool.mat";
 
     public static Material Props => AssetDatabase.LoadAssetAtPath<Material>(PropsMat);
     public static Material Ground => AssetDatabase.LoadAssetAtPath<Material>(GroundMat);
@@ -42,7 +52,7 @@ public static class IceThemeSetup
             ti.SaveAndReimport();
         }
         // ice ground: a tiling texture (cracks, frost, snow patches)
-        string groundTex = Root + "/IceGround.png";
+        foreach (var groundTex in new[] { Root + "/IceGround.png", Root + "/SnowGround.png" })   // Xmas: snow floor
         if (AssetImporter.GetAtPath(groundTex) is TextureImporter gi)
         {
             gi.textureType = TextureImporterType.Default; gi.wrapMode = TextureWrapMode.Repeat; gi.mipmapEnabled = true;
@@ -63,6 +73,12 @@ public static class IceThemeSetup
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(pal);
         var reference = FlatKitReference();
         var props = MakeMat(PropsMat, reference, tex, Color.white);
+        // Xmas: faces exported in a second material slot (C9 bulbs, lamp glass, the star) are drawn unlit = they glow
+        var glowShader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+        var glowMat = new Material(glowShader);
+        foreach (var p in new[] { "_BaseMap", "_MainTex" }) if (glowMat.HasProperty(p)) glowMat.SetTexture(p, tex);
+        if (glowMat.HasProperty("_BaseColor")) glowMat.SetColor("_BaseColor", Color.white);
+        var glow = Save(GlowMat, glowMat);
         var gtex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/IceGround.png");
         var groundMat = MakeMat(GroundMat, reference, gtex, gtex ? Color.white : new Color(0.88f, 0.93f, 1.0f));
         var world = AssetDatabase.LoadAssetAtPath<Material>("Assets/Battle Arena - Cartoon Assets/Materials/World.mat");
@@ -87,15 +103,81 @@ public static class IceThemeSetup
             var inst = Object.Instantiate(model);
             inst.name = prefabName;
             foreach (var t in inst.GetComponentsInChildren<Transform>(true)) if (bush && !t.name.ToLower().Contains("bush")) t.name += "Bush";
-            foreach (var r in inst.GetComponentsInChildren<Renderer>(true)) r.sharedMaterials = r.sharedMaterials.Select(_ => props).ToArray();
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                int subs = mf && mf.sharedMesh ? mf.sharedMesh.subMeshCount : r.sharedMaterials.Length;
+                r.sharedMaterials = Enumerable.Range(0, Mathf.Max(1, subs)).Select(i => i == 1 ? glow : props).ToArray();
+            }
             AddCollider(inst, name);
             PrefabUtility.SaveAsPrefabAsset(inst, PrefabDir + "/" + prefabName + ".prefab");
             Object.DestroyImmediate(inst);
             made++;
         }
-        if (MakeFloor(groundMat)) made++;
+        if (MakeFloor(groundMat, "IceFloor")) made++;
+        var stex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/SnowGround.png");
+        Material snowMat = null;
+        if (stex != null) { snowMat = MakeMat(SnowGroundMat, reference, stex, Color.white); if (MakeFloor(snowMat, "SnowFloor")) made++; }
+        MakeNightAssets(props, snowMat, tex, glow);
         AssetDatabase.SaveAssets();
         return made + " prefabs in " + PrefabDir + " (material " + (reference ? reference.shader.name : "Standard") + ")";
+    }
+
+    static void NightTint(Material m)
+    {
+        if (m.HasProperty("_Color")) m.SetColor("_Color", new Color(0.46f, 0.50f, 0.74f));
+        if (m.HasProperty("_ColorDim")) m.SetColor("_ColorDim", new Color(0.22f, 0.24f, 0.44f));
+        if (m.HasProperty("_FlatRimColor")) m.SetColor("_FlatRimColor", new Color(0.30f, 0.30f, 0.46f));
+        EditorUtility.SetDirty(m);
+    }
+
+    static void MakeNightAssets(Material props, Material snow, Texture2D pal, Material glow)
+    {
+        NightTint(Save(PropsNightMat, new Material(props)));
+        if (snow != null) NightTint(Save(SnowNightMat, new Material(snow)));
+        // warm palette: every colour pulled towards amber, so the glowing faces read as warm incandescent light
+        if (pal != null)
+        {
+            var src = new Texture2D(2, 2); src.LoadImage(File.ReadAllBytes(AssetDatabase.GetAssetPath(pal)));
+            var px = src.GetPixels();
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i]; float l = 0.3f * c.r + 0.59f * c.g + 0.11f * c.b;
+                var warm = new Color(1.0f, 0.80f, 0.42f) * (0.62f + 0.55f * l);
+                px[i] = Color.Lerp(c, new Color(Mathf.Min(1, warm.r), Mathf.Min(1, warm.g), Mathf.Min(1, warm.b)), 0.75f);
+            }
+            src.SetPixels(px); File.WriteAllBytes(WarmPalette, src.EncodeToPNG()); AssetDatabase.ImportAsset(WarmPalette);
+            if (AssetImporter.GetAtPath(WarmPalette) is TextureImporter wi)
+            {
+                wi.textureType = TextureImporterType.Default; wi.filterMode = FilterMode.Bilinear; wi.mipmapEnabled = false;
+                wi.wrapMode = TextureWrapMode.Clamp; wi.textureCompression = TextureImporterCompression.Uncompressed; wi.sRGBTexture = true; wi.SaveAndReimport();
+            }
+            var gn = new Material(glow.shader); gn.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(WarmPalette);
+            Save(GlowNightMat, gn);
+        }
+        // light pool: a soft round additive spot, warm
+        const int N = 128; var t = new Texture2D(N, N, TextureFormat.RGBA32, false);
+        for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+        {
+            float dx = (x + 0.5f) / N * 2 - 1, dy = (y + 0.5f) / N * 2 - 1, r = Mathf.Sqrt(dx * dx + dy * dy);
+            float a = Mathf.Clamp01(1 - r); a = a * a * (3 - 2 * a);
+            t.SetPixel(x, y, new Color(1, 1, 1, a));
+        }
+        File.WriteAllBytes(PoolTex, t.EncodeToPNG()); AssetDatabase.ImportAsset(PoolTex);
+        if (AssetImporter.GetAtPath(PoolTex) is TextureImporter pi) { pi.alphaIsTransparency = true; pi.wrapMode = TextureWrapMode.Clamp; pi.mipmapEnabled = true; pi.SaveAndReimport(); }
+        var pm = new Material(Shader.Find("Legacy Shaders/Particles/Additive"));
+        pm.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(PoolTex);
+        if (pm.HasProperty("_TintColor")) pm.SetColor("_TintColor", new Color(1.0f, 0.56f, 0.14f, 0.55f));
+        var poolMat = Save(PoolMat, pm);
+        var root = new GameObject("WarmPool");
+        var go = new GameObject("Spot");
+        go.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
+        var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = poolMat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+        go.transform.SetParent(root.transform, false);
+        go.transform.localRotation = Quaternion.Euler(90, 0, 0);
+        PrefabUtility.SaveAsPrefabAsset(root, PrefabDir + "/WarmPool.prefab");
+        Object.DestroyImmediate(root);
     }
 
     static Material FlatKitReference()
@@ -132,7 +214,7 @@ public static class IceThemeSetup
         var rends = go.GetComponentsInChildren<Renderer>(true);
         if (rends.Length == 0) return;
         Bounds b = rends[0].bounds; foreach (var r in rends) b.Encapsulate(r.bounds);
-        if (name.StartsWith("GlacierBlock") || name.StartsWith("IceChunk") || name == "FrozenLog")
+        if (name.StartsWith("GlacierBlock") || name.StartsWith("IceChunk") || name == "FrozenLog" || name.StartsWith("GiftStack") || name == "GiftBox" || name == "Sleigh")
         {
             // snow drips hang over the edge: keep the collider inside its 1.5 m tile so it never blocks the next one
             var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, b.center.y, 0f);
@@ -141,12 +223,16 @@ public static class IceThemeSetup
         }
         switch (name)
         {
-            case "FrostBush": case "SnowTuft": case "SnowMound": case "IceSlab": case "SnowDrift": case "IceShards": case "FrostGrass": case "MammothBones": case "RibCage": case "BeastSkull": case "BonePile": case "IceHole": return;   // walk through / ground decor
+            case "FrostBush": case "SnowTuft": case "SnowMound": case "IceSlab": case "SnowDrift": case "IceShards": case "FrostGrass": case "MammothBones": case "RibCage": case "BeastSkull": case "BonePile": case "IceHole": case "PineGrass": case "BigBauble": return;   // walk through / ground decor
             case "Igloo": case "SnowRock": case "IceBoulder":
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true)) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 return;
             case "IcePine": Capsule(go, 0.45f, 2.4f); return;
             case "IceSpire": Capsule(go, 0.55f, 3.4f); return;
+            case "XmasTree": Capsule(go, 0.65f, 3.2f); return;
+            case "XmasLamp": Capsule(go, 0.26f, 3.3f); return;
+            case "CandyCane": Capsule(go, 0.30f, 2.2f); return;
+            case "Snowman2": Capsule(go, 0.55f, 2.3f); return;
             case "Snowman": Capsule(go, 0.50f, 2.3f); return;
             case "LampPost": Capsule(go, 0.24f, 3.3f); return;
             case "Flag": Capsule(go, 0.16f, 3.3f); return;
@@ -157,10 +243,10 @@ public static class IceThemeSetup
     }
 
     /// <summary>The ice floor: a 100 x 100 m plane whose texture repeats every 10 m, with a collider (replaces Floor1).</summary>
-    static bool MakeFloor(Material mat)
+    static bool MakeFloor(Material mat, string name)
     {
         const float size = 100f, tile = 10f;
-        string meshPath = Root + "/IceFloorMesh.asset";
+        string meshPath = Root + "/IceFloorMesh.asset";   // one shared 100 x 100 m mesh
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
         if (mesh == null) { mesh = new Mesh { name = "IceFloor" }; AssetDatabase.CreateAsset(mesh, meshPath); }
         mesh.Clear();
@@ -178,11 +264,11 @@ public static class IceThemeSetup
         }
         mesh.vertices = v; mesh.uv = uv; mesh.normals = nr; mesh.triangles = tri; mesh.RecalculateBounds();
         EditorUtility.SetDirty(mesh);
-        var go = new GameObject("IceFloor");
+        var go = new GameObject(name);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         go.AddComponent<MeshCollider>().sharedMesh = mesh;
-        PrefabUtility.SaveAsPrefabAsset(go, PrefabDir + "/IceFloor.prefab");
+        PrefabUtility.SaveAsPrefabAsset(go, PrefabDir + "/" + name + ".prefab");
         Object.DestroyImmediate(go);
         return true;
     }

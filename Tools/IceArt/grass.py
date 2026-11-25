@@ -4,20 +4,20 @@ import common
 
 H = 1.5   # clump height: x1.3 in the map builder = ~1.95 m, so GrassHeight does not have to stretch it
 
-def build_frostgrass(seed=71):
+def build_frostgrass(seed=71, name='FrostGrass', grad='frost_grad', ws=1.0):
     """Brawl-style frost bush: a dense clump of almond-shaped leaves (soft point, convex sides) in two staggered rings
     around a solid core. Every leaf runs a smooth gradient from deep blue at its root through lavender to near white at
     its tip (the 'frost_grad' palette cell), so overlapping leaves separate by the dark root of the front leaf against
     the pale tip of the one behind. Dome normals keep the cel shading soft."""
     rnd = random.Random(seed)
-    bm = bmesh.new(); C = ['frost_grad', 'frost_deep']
+    bm = bmesh.new(); C = [grad, 'frost_deep']   # name/grad/ws: the Xmas PineGrass is the same bush, green and narrower
     gt = bm.verts.layers.float.new('gt')          # gradient position per vertex (0 root .. 1 tip)
     # (angle, base radius, height, outward lean at the top, half width)
     leaves = []
     for k in range(4):   # inner ring: tall, upright
-        leaves.append((k * math.pi / 2 + rnd.uniform(-0.2, 0.2), 0.10, H * rnd.uniform(0.95, 1.0), rnd.uniform(0.03, 0.06), rnd.uniform(0.22, 0.24)))
+        leaves.append((k * math.pi / 2 + rnd.uniform(-0.2, 0.2), 0.10, H * rnd.uniform(0.95, 1.0), rnd.uniform(0.03, 0.06), rnd.uniform(0.22, 0.24) * ws))
     for k in range(7):   # outer ring: shorter, leaning out, staggered against the inner ring
-        leaves.append((k * 2 * math.pi / 7 + 0.3 + rnd.uniform(-0.12, 0.12), 0.27, H * rnd.uniform(0.76, 0.88), rnd.uniform(0.08, 0.12), rnd.uniform(0.22, 0.25)))
+        leaves.append((k * 2 * math.pi / 7 + 0.3 + rnd.uniform(-0.12, 0.12), 0.27, H * rnd.uniform(0.76, 0.88), rnd.uniform(0.08, 0.12), rnd.uniform(0.22, 0.25) * ws))
     TS = (0.0, 0.22, 0.42, 0.58, 0.72, 0.84, 0.93)
     def width(t, w):
         if t <= 0.42: return w * (0.70 + 0.30 * math.sin(t / 0.42 * math.pi / 2))
@@ -46,11 +46,11 @@ def build_frostgrass(seed=71):
             for j in range(4): bm.faces.new((rings[-1][j], rings[-1][(j + 1) % 4], tip))
             bm.faces.new(list(reversed(rings[0])))
     part(bm, make, lambda f: 0)
-    ob = bm_to_obj(bm, 'FrostGrass', C)
+    ob = bm_to_obj(bm, name, C)
     me = ob.data
     # gradient uvs: each vertex samples the ramp at its own position along its leaf
     g = me.attributes['gt'].data; uv = me.uv_layers['UVMap'].data
-    for li, lp in enumerate(me.loops): uv[li].uv = grad_uv('frost_grad', g[lp.vertex_index].value)
+    for li, lp in enumerate(me.loops): uv[li].uv = grad_uv(grad, g[lp.vertex_index].value)
     me.attributes.remove(me.attributes['gt'])
     dome_normals(me, H)
     return ob

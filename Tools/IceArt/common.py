@@ -24,9 +24,16 @@ PALETTE = {
     'glacier':     (0.84, 0.93, 1.00), 'glacier_deep': (0.58, 0.78, 0.96), 'bone':      (0.94, 0.89, 0.76), 'bone_dark': (0.74, 0.66, 0.52),
     # gradient cells (appended): drawn as a vertical ramp, bottom -> top; sample them with grad_uv(name, t)
     'frost_grad':  (0.62, 0.68, 0.96), 'ice_grad':    (0.40, 0.72, 0.96),
+    # Xmas (appended): paper, ribbons, painted iron, glowing C9 bulbs, a pine gradient for the PineGrass bush
+    'xmas_red':    (0.86, 0.13, 0.15), 'xmas_red_dark': (0.56, 0.06, 0.10), 'xmas_green': (0.13, 0.52, 0.30), 'xmas_green_dark': (0.06, 0.30, 0.19),
+    'gold':        (1.00, 0.78, 0.26), 'gold_dark':   (0.76, 0.50, 0.12), 'cream':     (0.98, 0.95, 0.88),
+    'bulb_red':    (1.00, 0.28, 0.22), 'bulb_green':  (0.36, 1.00, 0.45), 'bulb_blue': (0.36, 0.62, 1.00), 'bulb_yellow': (1.00, 0.90, 0.36),
+    'bulb_orange': (1.00, 0.58, 0.18), 'lamp_warm':   (1.00, 0.92, 0.62),
+    'pine_grad':   (0.20, 0.50, 0.32),
 }
 GRADIENTS = {
     'frost_grad': [(0.0, (0.24, 0.30, 0.72)), (0.30, (0.47, 0.55, 0.93)), (0.66, (0.71, 0.76, 0.99)), (1.0, (0.93, 0.95, 1.00))],
+    'pine_grad':  [(0.0, (0.05, 0.24, 0.16)), (0.35, (0.10, 0.42, 0.26)), (0.72, (0.22, 0.60, 0.36)), (0.86, (0.70, 0.86, 0.80)), (1.0, (0.96, 0.98, 1.00))],   # snow on the tips
     'ice_grad':   [(0.0, (0.56, 0.86, 1.00)), (0.25, (0.46, 0.80, 0.99)), (0.65, (0.62, 0.89, 1.00)), (1.0, (0.84, 0.97, 1.00))],   # pale, lighter at the foot: reads as clear ice
 }
 
@@ -48,6 +55,31 @@ def grad_uv(name, t):
     i = NAMES.index(name); cx, cy = i % GRID, i // GRID
     t = min(1.0, max(0.0, t))
     return ((cx + 0.5) / GRID, (GRID - 1 - cy) / GRID + (0.5 + t * (CELL - 1)) / (CELL * GRID))
+
+_glow = None
+def glow_material():
+    """second material slot for faces that should read as lit (bulbs, lamp glass, the star): same palette, set up
+    unlit in Unity by IceThemeSetup (any renderer submesh 1 of a mesh with two submeshes)"""
+    global _glow
+    if _glow: return _glow
+    m = bpy.data.materials.new('XmasGlow'); m.use_nodes = True
+    nt = m.node_tree; bsdf = nt.nodes['Principled BSDF']
+    tex = nt.nodes.new('ShaderNodeTexImage'); tex.image = palette_material().node_tree.nodes['Image Texture'].image; tex.interpolation = 'Closest'
+    nt.links.new(tex.outputs['Color'], bsdf.inputs['Base Color']); nt.links.new(tex.outputs['Color'], bsdf.inputs['Emission Color'])
+    bsdf.inputs['Emission Strength'].default_value = 2.0
+    _glow = m; return m
+
+def apply_glow(ob, attr='glow'):
+    """faces flagged in the int face attribute go to material slot 1 (XmasGlow)"""
+    me = ob.data
+    if attr not in me.attributes: return ob
+    g = me.attributes[attr].data
+    if any(g[p.index].value for p in me.polygons):
+        me.materials.append(glow_material())
+        for p in me.polygons:
+            if g[p.index].value: p.material_index = 1
+    me.attributes.remove(me.attributes[attr])
+    return ob
 
 def write_palette(path):
     """the 128 px palette (8 x 8 cells), written with Blender's image API (no Pillow needed)"""
@@ -83,7 +115,7 @@ def palette_material():
 # ---------------------------------------------------------------- building helpers
 def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    global _mat; _mat = None
+    global _mat, _glow; _mat = None; _glow = None
 
 # faceted on purpose (crisp low-poly look); every other prop is smoothed by angle
 FACETED = ('IcePine', 'SnowRock', 'IceCrystals', 'IceShards', 'GlacierWallA', 'GlacierWallB', 'GlacierWallC', 'GlacierBlock', 'IceSpire', 'PressureRidge', 'IceBoulder')

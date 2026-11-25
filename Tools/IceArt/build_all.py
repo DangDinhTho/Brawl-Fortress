@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -43,6 +43,18 @@ BUILDERS = {
     'SnowDrift': props5.build_snowdrift,
     'IceShards': props5.build_iceshards,
     'FrostGrass': grass.build_frostgrass,
+    # Xmas theme
+    'XmasTree': props8.build_xmastree,
+    'GiftStackA': lambda: props8.build_giftstack('A', 801, 'GiftStackA'),
+    'GiftStackB': lambda: props8.build_giftstack('B', 802, 'GiftStackB'),
+    'GiftBox': props8.build_giftbox,
+    'LightFence': props8.build_lightfence,
+    'XmasLamp': props8.build_xmaslamp,
+    'CandyCane': props8.build_candycane,
+    'Snowman2': props8.build_snowman2,
+    'Sleigh': props8.build_sleigh,
+    'BigBauble': props8.build_bigbauble,
+    'PineGrass': props8.build_pinegrass,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),
