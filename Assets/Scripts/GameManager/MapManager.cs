@@ -151,4 +151,10 @@ public enum Map: byte
     Map_Brawl_MoonlitDen,      // JungleBoss, Yeti
     Map_Brawl_StompingGrounds, // JungleBoss, Yeti
     Map_Brawl_FrostPeak,       // Competitive, Ice theme
+    Map_Brawl_FrostVault,      // CaptureTheFlag, Ice
+    Map_Brawl_GlacierThrone,   // KingOfTheHill, Ice
+    Map_Brawl_FrozenRail,      // Payload, Ice
+    Map_Brawl_IcebreakerPass,  // MannVsMachine, Ice
+    Map_Brawl_YetiGlacier,     // JungleBoss, Yeti, Ice
+    Map_Brawl_FrostbiteHollow, // Zombie, Ice
 }

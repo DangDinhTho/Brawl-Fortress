@@ -65,6 +65,127 @@ public static partial class BrawlMapBuilder
             },
             center = ".......#.....#.......",
         },
+        // one Ice map per other game mode (paths of the Payload / MvM maps = PathE / PathB, inlined)
+        new Def {
+            mapEnum = "Map_Brawl_FrostVault", displayName = "Frost Vault", icon = "map_frostvault", mode = GameMode.CaptureTheFlag, theme = Theme.Ice, seed = 911,
+            names = new[] { "Frost Vault", "Ледяное хранилище", "ห้องนิรภัยน้ำแข็ง", "Bóveda Helada", "Kho Băng Giá" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                "...##...........##...",
+                "...#...x.....x...#...",
+                ".bb.....bbbbb.....bb.",
+                ".bb..f..bbbbb..f..bb.",
+                "......##.....##......",
+                "..t...............t..",
+                ".....x..##.##..x.....",
+                ".bbb.............bbb.",
+                ".bbb...bb...bb...bbb.",
+                "....##..bb.bb..##....",
+                "..x......#.#......x..",
+            },
+            center = ".....##.......##.....",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_GlacierThrone", displayName = "Glacier Throne", icon = "map_glacierthrone", mode = GameMode.KingOfTheHill, theme = Theme.Ice, seed = 921,
+            names = new[] { "Glacier Throne", "Ледниковый трон", "บัลลังก์ธารน้ำแข็ง", "Trono Glaciar", "Ngai Vàng Sông Băng" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..bbb...#...#...bbb..",
+                "..bbb...#...#...bbb..",
+                ".....x.........x.....",
+                ".##.....bbbbb.....##.",
+                ".#......bbbbb......#.",
+                "....t....f.f....t....",
+                "..bb....#...#....bb..",
+                "..bb.##.......##.bb..",
+                "........x...x........",
+                "...##...........##...",
+            },
+            center = ".....#.........#.....",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_FrozenRail", displayName = "Frozen Rail", icon = "map_frozenrail", mode = GameMode.Payload, theme = Theme.Ice, seed = 931, pathHalf = new[] { new Vector2(-4, 16.5f), new Vector2(-4, 6), new Vector2(4, 2) },
+            names = new[] { "Frozen Rail", "Ледяная колея", "รางน้ำแข็ง", "Riel Congelado", "Đường Ray Đóng Băng" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..##.............##..",
+                "..#..bb.......bb..#..",
+                ".....bb...x...bb.....",
+                ".bbb.............bbb.",
+                ".bbb..##.....##..bbb.",
+                "........t...t........",
+                "..x......bbb......x..",
+                ".##......bbb......##.",
+                ".....f.........f.....",
+                "...bb...#...#...bb...",
+            },
+            center = "...bb...........bb...",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_IcebreakerPass", displayName = "Icebreaker Pass", icon = "map_icebreakerpass", mode = GameMode.MannVsMachine, theme = Theme.Ice, seed = 941, pathHalf = new[] { new Vector2(6, 16.5f), new Vector2(6, 8), new Vector2(-6, 5), new Vector2(-6, 1) },
+            names = new[] { "Icebreaker Pass", "Перевал Ледокол", "ช่องเขาทลายน้ำแข็ง", "Paso Rompehielos", "Đèo Phá Băng" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                ".bb..x.........x..bb.",
+                ".bb.....##.##.....bb.",
+                ".bb...............bb.",
+                "....##..bbbbb..##....",
+                "........bbbbb........",
+                ".t.......f.f.......t.",
+                "...###.........###...",
+                ".bb......x.x......bb.",
+                ".bb...............bb.",
+                "....##...#.#...##....",
+            },
+            center = "..bb.....#.#.....bb..",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_YetiGlacier", displayName = "Yeti Glacier", icon = "map_yetiglacier", mode = GameMode.JungleBoss, theme = Theme.Ice, seed = 951,
+            names = new[] { "Yeti Glacier", "Ледник Йети", "ธารน้ำแข็งเยติ", "Glaciar del Yeti", "Sông Băng Yeti" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..bb.............bb..",
+                "..bb...##...##...bb..",
+                ".....................",
+                ".t.......bbb.......t.",
+                "....##.........##....",
+                "..x.....f...f.....x..",
+                ".......#.....#.......",
+                "..bbb...........bbb..",
+                "..bbb....x.x....bbb..",
+                ".....##.......##.....",
+            },
+            center = "..........t..........",
+        },
+        new Def {
+            mapEnum = "Map_Brawl_FrostbiteHollow", displayName = "Frostbite Hollow", icon = "map_frostbitehollow", mode = GameMode.Zombie, theme = Theme.Ice, seed = 961,
+            names = new[] { "Frostbite Hollow", "Обмороженная лощина", "หุบเหวหิมะกัด", "Hondonada Gélida", "Thung Lũng Tê Cóng" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                ".bbb.....x.x.....bbb.",
+                ".bbb..##.....##..bbb.",
+                ".....##.......##.....",
+                ".x.......bbb.......x.",
+                "..t......bbb......t..",
+                "...##..f.....f..##...",
+                ".bb.....#...#.....bb.",
+                ".bb..x.........x..bb.",
+                "....###.......###....",
+                "..bb......t......bb..",
+            },
+            center = "....x...........x....",
+        },
     };
 
     [MenuItem("Tools/Maps/Build Frost Peak (Ice)")]
@@ -73,6 +194,15 @@ public static partial class BrawlMapBuilder
         Debug.Log("[IceTheme] " + IceThemeSetup.Setup());
         if (!IceThemeSetup.Ready) { Debug.LogError("[IceTheme] assets missing: unzip IceTheme_Props.zip into " + IceThemeSetup.Root); return; }
         Debug.Log(Build(IceMaps[0]));
+    }
+
+    [MenuItem("Tools/Maps/Build All Ice Maps")]
+    static void BuildAllIceMapsMenu()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return;
+        Debug.Log("[IceTheme] " + IceThemeSetup.Setup());
+        if (!IceThemeSetup.Ready) { Debug.LogError("[IceTheme] assets missing in " + IceThemeSetup.Root); return; }
+        foreach (var d in IceMaps) Debug.Log(Build(d));
     }
 
     public static readonly Def[] Competitive =

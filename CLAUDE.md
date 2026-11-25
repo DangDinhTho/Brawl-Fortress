@@ -51,8 +51,12 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   lighting, bushes (Tools/Bush/Build Bush Areas logic), patrol points, NavMesh, map card, icon; it refuses to run with
   unsaved scenes open.
 - Bush detection: renderer/object names must contain **"grass" or "bush"**. `GrassHeight` stretches bushes to ~1.95 m.
-- **Ice theme = ice age / wild arctic** (natural pieces only). Defined in `BrawlMapBuilder.IceMaps`
-  (`Map_Brawl_FrostPeak`, Competitive, Cavern layout + ridges). Menu: `Tools/Maps/Build Frost Peak (Ice)`.
+- **Ice theme = ice age / wild arctic** (natural pieces only). Defined in `BrawlMapBuilder.IceMaps` (now in `AllDefs`):
+  `Map_Brawl_FrostPeak` (Competitive), `FrostVault` (CTF), `GlacierThrone` (KOTH), `FrozenRail` (Payload, PathE),
+  `IcebreakerPass` (MvM, PathB), `YetiGlacier` (Boss Battle, **Yeti** via `ConfigManager.bossOfMap`),
+  `FrostbiteHollow` (Zombie). Ticket costs in `DefaultTicketCosts`. Menus: `Tools/Maps/Build Frost Peak (Ice)`,
+  `Tools/Maps/Build All Ice Maps` (one map per call if driven over MCP: a 7-map run times out).
+  None of these ids may go into Title Data yet (see Live config).
   - border: `GlacierWallA/B/C` replace the old cliff pieces (scaled to their length, detailed face turned to the arena)
   - `#` GlacierBlockA-D (split / block / stack / icicles: rounded boxes with a pale `ice_grad` ramp (lighter at the foot =
     fake clear ice; real transparency was avoided: see-through walls, sorting, mobile cost), white zigzag cracks, thick rounded

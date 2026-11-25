@@ -350,6 +350,13 @@ public class ConfigManager
         (GameMode.JungleBoss, Map.Map_Brawl_BigfootGulch, 7),
         (GameMode.JungleBoss, Map.Map_Brawl_MoonlitDen, 8),
         (GameMode.JungleBoss, Map.Map_Brawl_StompingGrounds, 9),
+        // Ice theme, one per mode
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_FrostVault, 5),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_GlacierThrone, 5),
+        (GameMode.Payload, Map.Map_Brawl_FrozenRail, 5),
+        (GameMode.MannVsMachine, Map.Map_Brawl_IcebreakerPass, 5),
+        (GameMode.JungleBoss, Map.Map_Brawl_YetiGlacier, 9),
+        (GameMode.Zombie, Map.Map_Brawl_FrostbiteHollow, 5),
     };
 
     /// <summary>The boss each Boss Battle (JungleBoss) map is played against: 5 Hale maps, 5 Yeti maps.</summary>
@@ -365,6 +372,7 @@ public class ConfigManager
         { Map.Map_Brawl_BigfootGulch, TF2Class.yeti },
         { Map.Map_Brawl_MoonlitDen, TF2Class.yeti },
         { Map.Map_Brawl_StompingGrounds, TF2Class.yeti },
+        { Map.Map_Brawl_YetiGlacier, TF2Class.yeti },
     };
 
     public static TF2Class BossOfMap(Map map) => bossOfMap.TryGetValue(map, out var b) ? b : TF2Class.hale;
