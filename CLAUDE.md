@@ -44,6 +44,13 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   drops it in Home (never while a solo match is starting).
 - The Find a game button is always shown; when offline it offers Retry (PopupConfirm + PopupWaitingFocus spinner).
 
+## Map selection
+- One map per art theme per mode (37 cards). 19 older maps that repeated a theme are **retired**: listed in
+  `BrawlMapBuilder.Retired`, cards removed from `PopupSelectMap` (menu `Tools/Maps/Remove Retired Map Cards`; AddCard
+  never re-adds them). Their scenes stay in the build and their `Map` enum values stay: all clients share Photon
+  AppVersion 1.0, so an old client's room on a retired map must still load, and the enum is sent as a byte.
+- `DefaultTicketCosts` lists only the kept maps, priced in card order (first free, Competitive first 3 free, then 1, 2, ...).
+
 ## Map builder (Assets/Editor/MapBuilder)
 - `BrawlMapBuilder.cs`: maps defined as ASCII half-layouts (`Def`: half rows + center, mirrored for the other team).
   Tiles: `#` wall, `x` small obstacle, `f` fence, `t` tall prop, `b` bush (4 clumps per tile), `.` floor/decor.

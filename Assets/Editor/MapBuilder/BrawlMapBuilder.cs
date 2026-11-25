@@ -1087,9 +1087,39 @@ public static partial class BrawlMapBuilder
         EditorBuildSettings.scenes = list.ToArray();
     }
 
+    /// <summary>Maps taken out of the map selection (Nov 2026): in each mode one map per art theme is kept, the free
+    /// one when two share a theme. Their scenes stay in the build and their Map enum values stay (old clients share
+    /// rooms with new ones and the enum goes over the network as a byte); only the cards are gone, and AddCard never
+    /// puts them back.</summary>
+    public static readonly HashSet<string> Retired = new HashSet<string>
+    {
+        "Map_Brawl_Oasis", "Map_Brawl_DustyCanyon", "Map_Brawl_BambooTemple", "Map_Brawl_MoonMaze",          // Competitive
+        "Map_Brawl_LunarVault", "Map_Brawl_BambooShrine", "Map_Brawl_MineExpress", "Map_Brawl_RobotRidge",   // CTF, KOTH, Payload, MvM
+        "Map_Brawl_HaleMesa", "Map_Brawl_DustDevil", "Map_Brawl_FrontierOutpost", "Map_Brawl_BigfootGulch",  // Boss Battle
+        "Map_Brawl_StompingGrounds", "Map_Brawl_YetiHollow", "Map_Brawl_MoonlitDen",
+        "Map_Brawl_GhoulMine", "Map_Brawl_CryptTunnels", "Map_Brawl_LastLight", "Map_Brawl_DeadCrater",      // Zombie
+    };
+
+    [MenuItem("Tools/Maps/Remove Retired Map Cards")]
+    public static string RemoveRetiredCards()
+    {
+        const string pp = "Assets/Resources/Popups/PopupSelectMap.prefab";
+        var root = PrefabUtility.LoadPrefabContents(pp);
+        int n = 0;
+        try
+        {
+            foreach (var c in root.GetComponentsInChildren<UIMapIcon>(true).ToList())
+                if (Retired.Contains(c.map.ToString())) { Object.DestroyImmediate(c.gameObject); n++; }
+            if (n > 0) PrefabUtility.SaveAsPrefabAsset(root, pp);
+        }
+        finally { PrefabUtility.UnloadPrefabContents(root); }
+        return "removed " + n + " retired map cards";
+    }
+
     static void AddCard(Def d)
     {
         const string pp = "Assets/Resources/Popups/PopupSelectMap.prefab";
+        if (Retired.Contains(d.mapEnum)) { RemoveRetiredCards(); return; }   // rebuilt, but not selectable
         var root = PrefabUtility.LoadPrefabContents(pp);
         try
         {
