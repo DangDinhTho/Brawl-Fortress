@@ -18,6 +18,7 @@ public static class IceThemeSetup
     public const string CliffMat = Root + "/IceCliff.mat";
     public const string GlowMat = Root + "/XmasGlow.mat";
     public const string SnowGroundMat = Root + "/SnowGround.mat";
+    public const string SandGroundMat = Root + "/SandGround.mat";   // Egypt floor
     // Xmas night: FlatKit ignores the light (_LightContribution 0), so night is done with darker material colours, a warm
     // palette for the glowing slot (bulbs, lamp glass, star) and additive warm light pools on the snow
     public const string PropsNightMat = Root + "/IcePropsNight.mat";
@@ -52,7 +53,7 @@ public static class IceThemeSetup
             ti.SaveAndReimport();
         }
         // ice ground: a tiling texture (cracks, frost, snow patches)
-        foreach (var groundTex in new[] { Root + "/IceGround.png", Root + "/SnowGround.png" })   // Xmas: snow floor
+        foreach (var groundTex in new[] { Root + "/IceGround.png", Root + "/SnowGround.png", Root + "/SandGround.png" })   // Xmas: snow floor
         if (AssetImporter.GetAtPath(groundTex) is TextureImporter gi)
         {
             gi.textureType = TextureImporterType.Default; gi.wrapMode = TextureWrapMode.Repeat; gi.mipmapEnabled = true;
@@ -119,8 +120,27 @@ public static class IceThemeSetup
         Material snowMat = null;
         if (stex != null) { snowMat = MakeMat(SnowGroundMat, reference, stex, Color.white); if (MakeFloor(snowMat, "SnowFloor")) made++; }
         MakeNightAssets(props, snowMat, tex, glow);
+        var sandTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/SandGround.png");
+        if (sandTex != null && MakeFloor(MakeMat(SandGroundMat, reference, sandTex, Color.white), "SandFloor")) made++;
         AssetDatabase.SaveAssets();
         return made + " prefabs in " + PrefabDir + " (material " + (reference ? reference.shader.name : "Standard") + ")";
+    }
+
+    /// <summary>Writes only when the bytes differ (Unity keeps imported textures mapped: rewriting an unchanged file fails
+    /// with IO error 1224), retrying a few times; never throws.</summary>
+    static bool WriteIfChanged(string path, byte[] bytes)
+    {
+        if (File.Exists(path))
+        {
+            try { if (File.ReadAllBytes(path).SequenceEqual(bytes)) return false; } catch (IOException) { }
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            try { File.WriteAllBytes(path, bytes); return true; }
+            catch (IOException) { System.Threading.Thread.Sleep(300); }
+        }
+        Debug.LogWarning("[IceTheme] could not write " + path + " (locked): kept the old file");
+        return false;
     }
 
     static void NightTint(Material m)
@@ -146,7 +166,7 @@ public static class IceThemeSetup
                 var warm = new Color(1.0f, 0.80f, 0.42f) * (0.62f + 0.55f * l);
                 px[i] = Color.Lerp(c, new Color(Mathf.Min(1, warm.r), Mathf.Min(1, warm.g), Mathf.Min(1, warm.b)), 0.75f);
             }
-            src.SetPixels(px); File.WriteAllBytes(WarmPalette, src.EncodeToPNG()); AssetDatabase.ImportAsset(WarmPalette);
+            src.SetPixels(px); if (WriteIfChanged(WarmPalette, src.EncodeToPNG())) AssetDatabase.ImportAsset(WarmPalette);
             if (AssetImporter.GetAtPath(WarmPalette) is TextureImporter wi)
             {
                 wi.textureType = TextureImporterType.Default; wi.filterMode = FilterMode.Bilinear; wi.mipmapEnabled = false;
@@ -163,7 +183,7 @@ public static class IceThemeSetup
             float a = Mathf.Clamp01(1 - r); a = a * a * (3 - 2 * a);
             t.SetPixel(x, y, new Color(1, 1, 1, a));
         }
-        File.WriteAllBytes(PoolTex, t.EncodeToPNG()); AssetDatabase.ImportAsset(PoolTex);
+        if (WriteIfChanged(PoolTex, t.EncodeToPNG())) AssetDatabase.ImportAsset(PoolTex);
         if (AssetImporter.GetAtPath(PoolTex) is TextureImporter pi) { pi.alphaIsTransparency = true; pi.wrapMode = TextureWrapMode.Clamp; pi.mipmapEnabled = true; pi.SaveAndReimport(); }
         var pm = new Material(Shader.Find("Legacy Shaders/Particles/Additive"));
         pm.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(PoolTex);
@@ -214,7 +234,8 @@ public static class IceThemeSetup
         var rends = go.GetComponentsInChildren<Renderer>(true);
         if (rends.Length == 0) return;
         Bounds b = rends[0].bounds; foreach (var r in rends) b.Encapsulate(r.bounds);
-        if (name.StartsWith("GlacierBlock") || name.StartsWith("IceChunk") || name == "FrozenLog" || name.StartsWith("GiftStack") || name == "GiftBox" || name == "Sleigh")
+        if (name.StartsWith("GlacierBlock") || name.StartsWith("IceChunk") || name == "FrozenLog" || name.StartsWith("GiftStack") || name == "GiftBox" || name == "Sleigh"
+            || name.StartsWith("SandBlock") || name == "DigCrates" || name == "Amphorae" || name == "Sarcophagus" || name == "RuinLow")
         {
             // snow drips hang over the edge: keep the collider inside its 1.5 m tile so it never blocks the next one
             var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, b.center.y, 0f);
@@ -223,13 +244,24 @@ public static class IceThemeSetup
         }
         switch (name)
         {
-            case "FrostBush": case "SnowTuft": case "SnowMound": case "IceSlab": case "SnowDrift": case "IceShards": case "FrostGrass": case "MammothBones": case "RibCage": case "BeastSkull": case "BonePile": case "IceHole": case "PineGrass": case "BigBauble": return;   // walk through / ground decor
+            case "FrostBush": case "SnowTuft": case "SnowMound": case "IceSlab": case "SnowDrift": case "IceShards": case "FrostGrass": case "MammothBones": case "RibCage": case "BeastSkull": case "BonePile": case "IceHole": case "PineGrass": case "BigBauble": case "PapyrusGrass": case "BrokenColumn": case "Pyramid": case "DigTent": return;   // walk through / ground decor
             case "Igloo": case "SnowRock": case "IceBoulder":
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true)) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 return;
             case "IcePine": Capsule(go, 0.45f, 2.4f); return;
             case "IceSpire": Capsule(go, 0.55f, 3.4f); return;
             case "XmasTree": Capsule(go, 0.65f, 3.2f); return;
+            case "SandCliffA": case "SandCliffB": case "SandCliffC":
+                {   // the rock body only: the rubble and sand in front (+Z, ~1.3 m) must not push the border into the arena
+                    var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(b.center.x, b.center.y, b.center.z - 0.65f);
+                    bc.size = new Vector3(b.size.x, b.size.y, b.size.z - 1.3f); return;
+                }
+            case "Obelisk": Capsule(go, 0.50f, 3.5f); return;
+            case "IceGate": case "XmasGate":
+            case "TempleGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
+            case "PalmTree": Capsule(go, 0.25f, 3.2f); return;
+            case "CatStatue": Capsule(go, 0.55f, 2.3f); return;
+            case "LotusColumn": Capsule(go, 0.50f, 3.0f); return;
             case "XmasLamp": Capsule(go, 0.26f, 3.3f); return;
             case "CandyCane": Capsule(go, 0.30f, 2.2f); return;
             case "Snowman2": Capsule(go, 0.55f, 2.3f); return;

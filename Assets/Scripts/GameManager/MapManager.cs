@@ -171,4 +171,11 @@ public enum Map: byte
     Map_Brawl_CandleWorks,     // MannVsMachine, Xmas night
     Map_Brawl_YetiEve,         // JungleBoss, Yeti, Xmas night
     Map_Brawl_SilentNight,     // Zombie, Xmas night
+    Map_Brawl_SunTemple,       // Competitive, Egypt
+    Map_Brawl_ScarabVault,     // CaptureTheFlag, Egypt
+    Map_Brawl_ObeliskHill,     // KingOfTheHill, Egypt
+    Map_Brawl_NileExpress,     // Payload, Egypt
+    Map_Brawl_DuneFoundry,     // MannVsMachine, Egypt
+    Map_Brawl_PharaohsCourt,   // JungleBoss, Hale, Egypt
+    Map_Brawl_MummyValley,     // Zombie, Egypt
 }

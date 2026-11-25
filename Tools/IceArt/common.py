@@ -30,9 +30,15 @@ PALETTE = {
     'bulb_red':    (1.00, 0.28, 0.22), 'bulb_green':  (0.36, 1.00, 0.45), 'bulb_blue': (0.36, 0.62, 1.00), 'bulb_yellow': (1.00, 0.90, 0.36),
     'bulb_orange': (1.00, 0.58, 0.18), 'lamp_warm':   (1.00, 0.92, 0.62),
     'pine_grad':   (0.20, 0.50, 0.32),
+    # Egypt (appended): sandstone, painted lapis / turquoise / terracotta, palms, a papyrus gradient for the bush
+    'sandstone':   (0.90, 0.74, 0.48), 'sandstone_dark': (0.68, 0.50, 0.29), 'sand_grad': (0.86, 0.70, 0.45),
+    'lapis':       (0.14, 0.30, 0.72), 'turquoise':   (0.18, 0.68, 0.66), 'terracotta': (0.78, 0.40, 0.22),
+    'palm':        (0.32, 0.60, 0.22), 'palm_dark':   (0.17, 0.38, 0.14), 'papyrus_grad': (0.40, 0.60, 0.25),
 }
 GRADIENTS = {
     'frost_grad': [(0.0, (0.24, 0.30, 0.72)), (0.30, (0.47, 0.55, 0.93)), (0.66, (0.71, 0.76, 0.99)), (1.0, (0.93, 0.95, 1.00))],
+    'sand_grad':  [(0.0, (0.60, 0.42, 0.25)), (0.35, (0.80, 0.62, 0.38)), (0.80, (0.92, 0.78, 0.52)), (1.0, (0.97, 0.87, 0.63))],
+    'papyrus_grad': [(0.0, (0.12, 0.30, 0.10)), (0.45, (0.25, 0.52, 0.18)), (0.82, (0.50, 0.70, 0.26)), (1.0, (0.88, 0.78, 0.44))],   # tan tips
     'pine_grad':  [(0.0, (0.05, 0.24, 0.16)), (0.35, (0.10, 0.42, 0.26)), (0.72, (0.22, 0.60, 0.36)), (0.86, (0.70, 0.86, 0.80)), (1.0, (0.96, 0.98, 1.00))],   # snow on the tips
     'ice_grad':   [(0.0, (0.56, 0.86, 1.00)), (0.25, (0.46, 0.80, 0.99)), (0.65, (0.62, 0.89, 1.00)), (1.0, (0.84, 0.97, 1.00))],   # pale, lighter at the foot: reads as clear ice
 }
@@ -97,8 +103,16 @@ def write_palette(path):
     img = bpy.data.images.new('IcePalette_tmp', size, size, alpha=False)
     img.colorspace_settings.name = 'sRGB'
     img.pixels = px
-    img.filepath_raw = path; img.file_format = 'PNG'; img.save()
+    # write to a temp file, then replace the real one only if it changed (Unity locks it while importing): retry
+    import tempfile, shutil, time
+    tmp = os.path.join(tempfile.gettempdir(), 'IcePalette_build.png')
+    img.filepath_raw = tmp; img.file_format = 'PNG'; img.save()
     bpy.data.images.remove(img)
+    if os.path.exists(path) and open(path, 'rb').read() == open(tmp, 'rb').read(): return
+    for i in range(10):
+        try: shutil.copyfile(tmp, path); return
+        except OSError: time.sleep(1.0)
+    raise RuntimeError('could not write ' + path)
 
 _mat = None
 def palette_material():

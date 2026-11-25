@@ -20,7 +20,7 @@ using Random = System.Random;
 /// </summary>
 public static partial class BrawlMapBuilder
 {
-    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice, Xmas }
+    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice, Xmas, Egypt }
 
     public class Def
     {
@@ -343,7 +343,18 @@ public static partial class BrawlMapBuilder
         {
         PrefetchSources(d);
 
-        if (File.Exists(path)) File.Copy(BaseScene, path, true);
+        // Unity keeps a scene file memory-mapped for a while after it was open (IOException "user-mapped section
+        // open" on the copy): unloading unused assets releases it.
+        EditorUtility.UnloadUnusedAssetsImmediate(); System.GC.Collect(); System.GC.WaitForPendingFinalizers();
+        if (File.Exists(path))
+        {
+            try { File.Copy(BaseScene, path, true); }
+            catch (IOException)
+            {   // still mapped: let Unity write it (save the base scene over it; the .meta / GUID stay)
+                var b = EditorSceneManager.OpenScene(BaseScene, OpenSceneMode.Single);
+                if (!EditorSceneManager.SaveScene(b, path, false)) throw;
+            }
+        }
         else AssetDatabase.CopyAsset(BaseScene, path);
         AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
 
@@ -366,6 +377,7 @@ public static partial class BrawlMapBuilder
         if (d.theme == Theme.Ice) { PlaceIceBackdrop(d.seed); ScatterIceFloor(d.seed); }
         if (d.theme == Theme.Xmas) { PlaceXmasBackdrop(d.seed); ScatterXmasFloor(d.seed); }
         if (d.theme == Theme.Xmas && d.night) XmasNight();
+        if (d.theme == Theme.Egypt) { PlaceEgyptBackdrop(d.seed); ScatterEgyptFloor(d.seed); }
         var holder = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "_templates");
         if (holder) Object.DestroyImmediate(holder);
         Physics.SyncTransforms();
@@ -516,6 +528,15 @@ public static partial class BrawlMapBuilder
 
     static T Pick<T>(Random rnd, params T[] items) => items[rnd.Next(items.Length)];
     static float Rot90(Random rnd) => rnd.Next(4) * 90f;
+
+    /// <summary>The gate piece of a theme behind each team's spawn, where the base scene's gate arch stood (removed for
+    /// every theme but Western/Bamboo/Mix): without it the border shows a gap there (walled only by the invisible VitualWall).</summary>
+    static void PlaceGates(string prefab)
+    {
+        if (!prefabs.ContainsKey(prefab)) return;
+        Prefab(prefab, new Vector3(-0.3f, 0f, 22.5f), 180f, 0.98f, true);   // front (+Z) turned to the arena
+        Prefab(prefab, new Vector3(-0.3f, 0f, -22.5f), 0f, 0.98f, true);
+    }
     // per-tile Randoms are seeded with consecutive numbers, so their draws are correlated (a pick from a list skips
     // whole ranges of it). Mix() scrambles a draw (murmur3 finalizer) before it is used for a choice.
     static int Mix(int h) { unchecked { uint x = (uint)h; x ^= x >> 16; x *= 0x85ebca6b; x ^= x >> 13; x *= 0xc2b2ae35; x ^= x >> 16; return (int)(x & 0x7fffffff); } }
@@ -530,6 +551,7 @@ public static partial class BrawlMapBuilder
             Theme.Western => "Assets/Scenes/BrawlScene.unity",
             Theme.Ice => "Assets/Scenes/BrawlScene.unity",
             Theme.Xmas => "Assets/Scenes/BrawlScene.unity",
+            Theme.Egypt => "Assets/Scenes/BrawlScene.unity",
             Theme.Bamboo => "Assets/Scenes/BrawlScene_2.unity",
             Theme.Cave => "Assets/Scenes/Map_Brawl_Payload.unity",
             Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
@@ -574,22 +596,35 @@ public static partial class BrawlMapBuilder
             var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
             string n = src ? src.name : t.name;
             int ci = Array.IndexOf(Desert, n);
-            if (ci >= 0 && (theme == Theme.Ice || theme == Theme.Xmas))   // Xmas keeps the glacier border
+            if (ci >= 0 && (theme == Theme.Ice || theme == Theme.Xmas || theme == Theme.Egypt))   // Xmas keeps the glacier border
             {
-                // ice border: one of the three ice cliffs, on the same spot, turn and scale as the old cliff
-                string gname = prefabs.ContainsKey("GlacierWallA") ? "GlacierWall" + "ABC"[idx % 3] : "IceCliff" + "ABC"[idx % 3];
+                // themed border: one of three cliffs of the theme, on the same spot, turn and scale as the old cliff
+                // (Ice / Xmas: glacier walls; Egypt: layered sandstone cliffs, one with a carved temple front)
+                string gname = theme == Theme.Egypt && prefabs.ContainsKey("SandCliffA") ? "SandCliff" + "ABC"[idx % 3]
+                             : prefabs.ContainsKey("GlacierWallA") ? "GlacierWall" + "ABC"[idx % 3] : "IceCliff" + "ABC"[idx % 3];
                 var ng = Prefab(gname, t.position, 0, 1, true);
                 if (ng)
                 {
                     ng.transform.rotation = t.rotation;
-                    // the glacier is ~10 m long against the old cliffs' 7.4 m
+                    // the glacier is ~10 m long against the old cliffs' 7.4 m; the sandstone cliff is built at 7.6 m
                     ng.transform.localScale = t.localScale * (gname.StartsWith("Glacier") ? 0.74f : 1f);
-                    if (gname.StartsWith("Glacier"))
+                    if (gname.StartsWith("Glacier") || gname.StartsWith("SandCliff"))
                     {
                         // its detailed face (columns and fallen ice; Blender -Y) imports as local +Z: turn it to the arena
                         Vector3 front = ng.transform.forward; front.y = 0f;
                         Vector3 toArena = -ng.transform.position; toArena.y = 0f;
                         if (Vector3.Dot(front, toArena) < 0f) ng.transform.Rotate(0f, 180f, 0f, Space.World);
+                    }
+                    if (gname.StartsWith("SandCliff"))
+                    {
+                        // the old cliffs are sunk into the ground by different depths; this one stands on the ground
+                        // (its carved temple front must not end up buried) and is stretched to the old cliff's top
+                        var orb = t.GetComponentsInChildren<Renderer>(); float oldTop = orb.Length > 0 ? orb.Max(r => r.bounds.max.y) : 6f;
+                        var p = ng.transform.position; ng.transform.position = new Vector3(p.x, 0f, p.z);
+                        var sc = ng.transform.localScale; ng.transform.localScale = new Vector3(sc.x, 1f, sc.z);
+                        Physics.SyncTransforms();
+                        var nrb = ng.GetComponentsInChildren<Renderer>(); float h = nrb.Length > 0 ? nrb.Max(r => r.bounds.max.y) : 6f;
+                        ng.transform.localScale = new Vector3(sc.x, Mathf.Clamp(oldTop / Mathf.Max(h, 0.1f), 0.6f, 2.0f), sc.z);
                     }
                 }
                 idx++;
@@ -631,6 +666,10 @@ public static partial class BrawlMapBuilder
             case Theme.Cave:
                 Prefab("Floor2", Vector3.zero, 0, 1, true, world, new Vector3(75, 1, 75));
                 break;
+            case Theme.Egypt:
+                if (prefabs.ContainsKey("SandFloor")) Prefab("SandFloor", Vector3.zero, 0, 1, true);
+                else Prefab("Floor1", Vector3.zero, 0, 1, true, world, new Vector3(50, 1, 50));
+                break;
             case Theme.Xmas:
                 if (prefabs.ContainsKey("SnowFloor")) Prefab("SnowFloor", Vector3.zero, 0, 1, true);
                 else if (prefabs.ContainsKey("IceFloor")) Prefab("IceFloor", Vector3.zero, 0, 1, true);
@@ -652,6 +691,7 @@ public static partial class BrawlMapBuilder
     /// <summary>Arctic scenery outside the play border: pines, igloos, tents, bushes, rocks (no colliders).</summary>
     static void PlaceIceBackdrop(int seed)
     {
+        PlaceGates("IceGate");   // a natural glacier arch behind each spawn
         var rnd = new Random(seed);
         for (int i = 0; i < 26; i++)
         {
@@ -767,7 +807,7 @@ public static partial class BrawlMapBuilder
                 {
                     if (!free) continue;
                     if (xmasNight && NightLamp(g, r, c, cr, cc, d.seed, p)) { placed++; continue; }   // Xmas night: extra lamps along the walls
-                    if (rnd.NextDouble() < (d.theme == Theme.Ice || d.theme == Theme.Xmas ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
+                    if (rnd.NextDouble() < (d.theme == Theme.Ice || d.theme == Theme.Xmas || d.theme == Theme.Egypt ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
                     continue;
                 }
                 if (!free) { skipped++; continue; }
@@ -830,6 +870,7 @@ public static partial class BrawlMapBuilder
                 }
                 break;
             case Theme.Xmas: XmasTile(ch, p, baseRot, fenceRot, rnd); break;
+            case Theme.Egypt: EgyptTile(ch, p, baseRot, fenceRot, rnd); break;
             case Theme.Ice:
                 switch (ch)
                 {
@@ -921,6 +962,7 @@ public static partial class BrawlMapBuilder
                 break;
             case Theme.Mix: Prefab(Pick(rnd, "Flower02", "rock8", "Rock13", "Bone1", "Flower04", "Stone08"), o, rot, 0.7f, false); break;
             case Theme.Xmas: XmasDecor(o, rot, rnd); break;
+            case Theme.Egypt: EgyptDecor(o, rot, rnd); break;
             case Theme.Ice:
                 {
                     rnd = MixRnd(rnd);   // decorrelated from the neighbouring tiles' picks
@@ -1069,7 +1111,7 @@ public static partial class BrawlMapBuilder
         outTex.ReadPixels(new Rect(0, 0, 400, 400), 0, 0); outTex.Apply();
         RenderTexture.active = null; small.Release();
         string ip = "Assets/UI/Image/MapIcon/" + d.icon + ".png";
-        File.WriteAllBytes(ip, outTex.EncodeToPNG());
+        WriteMapped(ip, outTex.EncodeToPNG());
         AssetDatabase.ImportAsset(ip, ImportAssetOptions.ForceUpdate);
         var imp = (TextureImporter)AssetImporter.GetAtPath(ip);
         if (imp.textureType != TextureImporterType.Sprite)
@@ -1077,6 +1119,16 @@ public static partial class BrawlMapBuilder
             imp.textureType = TextureImporterType.Sprite; imp.spriteImportMode = SpriteImportMode.Single; imp.mipmapEnabled = false;
             imp.SaveAndReimport();
         }
+    }
+
+    // Unity keeps imported files memory-mapped (Win32 error 1224 on write): unload the asset and retry.
+    static void WriteMapped(string path, byte[] bytes)
+    {
+        try { File.WriteAllBytes(path, bytes); return; } catch (IOException) { }
+        foreach (var o in AssetDatabase.LoadAllAssetsAtPath(path)) if (o && !(o is GameObject) && !(o is Component)) Resources.UnloadAsset(o);
+        EditorUtility.UnloadUnusedAssetsImmediate(); GC.Collect(); GC.WaitForPendingFinalizers();
+        try { File.WriteAllBytes(path, bytes); }
+        catch (IOException e) { log += "\nWARNING: " + path + " is locked, old image kept (" + e.Message + ")"; Debug.LogWarning("[MapBuilder] " + path + " locked: " + e.Message); }
     }
 
     // ------------------------------------------------------------------ registration

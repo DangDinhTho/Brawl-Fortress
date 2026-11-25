@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -55,6 +55,28 @@ BUILDERS = {
     'Sleigh': props8.build_sleigh,
     'BigBauble': props8.build_bigbauble,
     'PineGrass': props8.build_pinegrass,
+    # Egypt theme
+    'SandBlockA': lambda: props9.build_sandblock('A', 901, 'SandBlockA'),
+    'SandBlockB': lambda: props9.build_sandblock('B', 902, 'SandBlockB'),
+    'SandBlockC': lambda: props9.build_sandblock('C', 903, 'SandBlockC'),
+    'RuinLow': props9.build_ruinlow,
+    'Obelisk': props9.build_obelisk,
+    'PalmTree': props9.build_palm,
+    'CatStatue': props9.build_catstatue,
+    'LotusColumn': props9.build_lotuscolumn,
+    'DigCrates': props9.build_digcrates,
+    'Amphorae': props9.build_amphorae,
+    'Sarcophagus': props9.build_sarcophagus,
+    'BrokenColumn': props9.build_brokencolumn,
+    'Pyramid': props9.build_pyramid,
+    'DigTent': props9.build_digtent,
+    'PapyrusGrass': props9.build_papyrus,
+    'SandCliffA': lambda: props9.build_sandcliff('A', 911, 'SandCliffA'),
+    'SandCliffB': lambda: props9.build_sandcliff('B', 912, 'SandCliffB'),
+    'SandCliffC': lambda: props9.build_sandcliff('C', 913, 'SandCliffC'),
+    'TempleGate': props9.build_templegate,
+    'IceGate': props10.build_icegate,
+    'XmasGate': props10.build_xmasgate,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

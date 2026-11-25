@@ -413,7 +413,7 @@ public static partial class BrawlMapBuilder
             {
                 var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
                 if (!src) continue;
-                float size = src.name == "XmasLamp" ? 5.0f : src.name == "XmasTree" ? 4.0f : src.name == "LightFence" ? 2.6f : 0f;
+                float size = src.name == "XmasLamp" ? 5.0f : src.name == "XmasTree" ? 4.0f : src.name == "LightFence" ? 2.6f : src.name == "XmasGate" ? 7.0f : 0f;
                 if (size <= 0f) continue;
                 var pool = Prefab("WarmPool", t.position + Vector3.up * 0.05f, 0f, 1f, false);
                 if (pool) { pool.transform.localScale = new Vector3(size * t.lossyScale.x, 1f, size * t.lossyScale.z); pools++; }
@@ -424,6 +424,7 @@ public static partial class BrawlMapBuilder
     /// <summary>Beyond the border: glaciers turned to the arena, big decorated pines, snowmen and lamps.</summary>
     static void PlaceXmasBackdrop(int seed)
     {
+        PlaceGates("XmasGate");   // the village gate behind each spawn
         var rnd = new Random(seed);
         for (int i = 0; i < 28; i++)
         {
