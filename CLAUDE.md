@@ -9,6 +9,8 @@ FlatKit (toon shading), DOTween. Windows, Rider.
 - When asking him to change a setting, give its **exact label or config key** (e.g. Title Data key `max_death_time`,
   WeaponConfig field `Bullet Speed Scale`), never a paraphrase.
 - Game setting is the **1960s-70s** (TF2-like): wood, painted/enamelled metal, canvas, incandescent lamps. Nothing modern.
+  Tho removed props that looked modern: triangular hazard / warning signs, black-yellow hazard stripes. Check every new
+  prop against the era before building it (no road signs, plastic, safety markings, modern equipment).
 - Art direction: Brawl Stars-like — chunky, bright, readable; square blocky UI (GUI PRO Kit frames), not glossy.
 - Safe area: everything readable/usable stays inside the notch-safe area (landscape: left/right only); only decoration
   may reach the screen edges.
@@ -115,6 +117,30 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - Unity keeps a scene / texture file memory-mapped after it was open or imported (IOException "user-mapped section",
   Win32 1224). `Build` falls back to saving the base scene over the map through Unity; a locked map icon is kept
   (`WriteMapped`, warning in the build log): restart Unity and rebuild that map to refresh it.
+- **Volcano theme** (`Theme.Volcano`, BrawlMapBuilderVolcano.cs, props in Tools/IceArt/props11.py + props12.py,
+  textures `volcano_tex.py` -> BasaltGround.png / LavaFlow.png, same folder/palette): a 1960s lava island.
+  `#` one rock family per wall (`PrepareVolcanoWalls`: touching '#' tiles share it, mirrored walls too): basalt columns
+  BasaltBlockA/B/C, BasaltBouldersA/B, platy BasaltSlabsA/B (glowing seams), ObsidianWall, red TuffRockA/B.
+  `x` LavaRock / ObsidianChunk / SurveyCrates / LavaBombs / MineCart, `f` BasaltLow, `t` ObsidianSpire / FireCrystal /
+  CharredTree / MagmaPillar / BurntPine, `b` ScorchGrassA/B (burnt grass, palette ramp `char_grad`: black leaves, ember
+  tips), decor LavaCrack / PumiceRocks / EmberTuft (the grass clump at 0.33 x, no "grass" in its name so not a bush) /
+  CooledFlow, floor `BasaltFloor`. SurveyCrates = crate, drum seismograph, olive army-surplus oil drum.
+  **Tho: no smoke / cloud / dust-cloud objects** (the sulfur-smoke bush and the volcano's smoke plume were removed).
+  Border: low `BasaltRimA/B/C` (~4 m, grounded, not stretched; collider 6 m tall) with `LavaLake` quads all round
+  (they start at the outermost rim's centre line, ends behind the gates at |z| > 24.2), `VolcanoGate`, far `Volcano`
+  cones at z +-80, gradient sky `VolcanoSky.mat` (BrawlFortress/SkyGradient: the map scenes have no camera, the sky
+  must be the skybox). Glowing faces (palette `lava_grad`) use `VolcanoGlow.mat` (BrawlFortress/LavaGlow, unlit,
+  two-sided, shimmer) instead of XmasGlow; lava uses BrawlFortress/Lava (world-UV, two scrolling layers).
+  `VolcanoThemeSetup` (called from IceThemeSetup.Setup) makes those materials, the floor, LavaLake and EruptionVent prefabs.
+  Maps: MagmaRift (Comp), ObsidianKeep (CTF), CalderaCrown (KOTH), LavaLine (Payload), CinderWorks (MvM), EmberThrone
+  (Boss, Hale), AshenHollow (Zombie). Menu `Tools/Maps/Build Volcano Maps` (2-3 maps per MCP call).
+  - **Eruption vents** (`Assets/Scripts/Map/EruptionVent.cs`, placed by `PlaceVents`): 2 per half on open floor (no bush
+    neighbour, <= 2 solid neighbours, >= 5 m from spawns, 4.5 m from the middle, 3 m from a payload path), mirrored with
+    the same phase; the two pairs alternate (period 10 s, warning 2.2 s: cracks brighten + red disc fills; eruption
+    1.3 s: lava fountain + embers). Clock = PhotonNetwork.Time (no RPC). Damage 35% max HP once per eruption, dealt by
+    the owner of each character (photonView.IsMine), only while `gameState == Started`, bosses immune, ownerId -1 like
+    the DeathWall. Vents are not static, not on the wall layer, and ignored by the NavMesh bake (as are the lava lakes).
+    **Not yet tested in a real match** (damage, kill feed for ownerId -1, bots walking into vents: bots do not avoid them).
 - MCP gotcha: `AssetDatabase.Refresh()` does not report compile errors; if a builder change "does nothing", check the
   console for CS errors (Unity keeps running the last good assembly). Generated textures are written only when changed
   (`IceThemeSetup.WriteIfChanged`, `common.write_palette`): Unity maps imported textures and rewriting them fails (1224).

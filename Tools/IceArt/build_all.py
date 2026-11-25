@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -77,6 +77,40 @@ BUILDERS = {
     'TempleGate': props9.build_templegate,
     'IceGate': props10.build_icegate,
     'XmasGate': props10.build_xmasgate,
+    # Volcano theme
+    'BasaltBlockA': lambda: props11.build_basaltblock('A', 1101, 'BasaltBlockA'),
+    'BasaltBlockB': lambda: props11.build_basaltblock('B', 1102, 'BasaltBlockB'),
+    'BasaltBlockC': lambda: props11.build_basaltblock('C', 1103, 'BasaltBlockC'),
+    'BasaltLow': props11.build_basaltlow,
+    'ObsidianSpire': props11.build_obsidianspire,
+    'FireCrystal': props11.build_firecrystal,
+    'CharredTree': props11.build_charredtree,
+    'LavaRock': props11.build_lavarock,
+    'ObsidianChunk': props11.build_obsidianchunk,
+    'SurveyCrates': props11.build_surveycrates,
+    'LavaCrack': props11.build_lavacrack,
+    'PumiceRocks': props11.build_pumicerocks,
+    'BasaltRimA': lambda: props11.build_basaltrim('A', 1111, 'BasaltRimA'),
+    'BasaltRimB': lambda: props11.build_basaltrim('B', 1112, 'BasaltRimB'),
+    'BasaltRimC': lambda: props11.build_basaltrim('C', 1113, 'BasaltRimC'),
+    'VolcanoGate': props11.build_volcanogate,
+    'Volcano': props11.build_volcano,
+    'LavaVent': props11.build_lavavent,
+    'BasaltBouldersA': lambda: props12.build_boulders('A', 1301, 'BasaltBouldersA'),
+    'BasaltBouldersB': lambda: props12.build_boulders('B', 1302, 'BasaltBouldersB'),
+    'BasaltSlabsA': lambda: props12.build_slabs('A', 1303, 'BasaltSlabsA'),
+    'BasaltSlabsB': lambda: props12.build_slabs('B', 1304, 'BasaltSlabsB'),
+    'ObsidianWall': props12.build_obsidianwall,
+    'TuffRockA': lambda: props12.build_tuff('A', 1305, 'TuffRockA'),
+    'TuffRockB': lambda: props12.build_tuff('B', 1306, 'TuffRockB'),
+    'MagmaPillar': props12.build_magmapillar,
+    'BurntPine': props12.build_burntpine,
+    'LavaBombs': props12.build_lavabombs,
+    'MineCart': props12.build_minecart,
+    'CooledFlow': props12.build_cooledflow,
+    'ScorchGrassA': lambda: props12.build_scorchgrass('A'),
+    'ScorchGrassB': lambda: props12.build_scorchgrass('B'),
+    'EmberTuft': props12.build_embertuft,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

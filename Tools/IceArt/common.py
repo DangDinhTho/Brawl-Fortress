@@ -34,6 +34,10 @@ PALETTE = {
     'sandstone':   (0.90, 0.74, 0.48), 'sandstone_dark': (0.68, 0.50, 0.29), 'sand_grad': (0.86, 0.70, 0.45),
     'lapis':       (0.14, 0.30, 0.72), 'turquoise':   (0.18, 0.68, 0.66), 'terracotta': (0.78, 0.40, 0.22),
     'palm':        (0.32, 0.60, 0.22), 'palm_dark':   (0.17, 0.38, 0.14), 'papyrus_grad': (0.40, 0.60, 0.25),
+    # Volcano (appended; fills the 8 x 8 palette): warm basalt, obsidian glass, ash tops, a lava ramp for the glowing
+    # faces (cracks, crystals, embers) and a charred-leaf ramp (black -> brown -> glowing ember tips) for the burnt bushes
+    'basalt':      (0.37, 0.32, 0.38), 'basalt_dark': (0.20, 0.17, 0.23), 'obsidian':  (0.17, 0.12, 0.27), 'obsidian_light': (0.50, 0.40, 0.76),
+    'ash':         (0.66, 0.62, 0.60), 'lava_grad':   (1.00, 0.45, 0.10), 'char_grad': (0.30, 0.22, 0.18),
 }
 GRADIENTS = {
     'frost_grad': [(0.0, (0.24, 0.30, 0.72)), (0.30, (0.47, 0.55, 0.93)), (0.66, (0.71, 0.76, 0.99)), (1.0, (0.93, 0.95, 1.00))],
@@ -41,6 +45,8 @@ GRADIENTS = {
     'papyrus_grad': [(0.0, (0.12, 0.30, 0.10)), (0.45, (0.25, 0.52, 0.18)), (0.82, (0.50, 0.70, 0.26)), (1.0, (0.88, 0.78, 0.44))],   # tan tips
     'pine_grad':  [(0.0, (0.05, 0.24, 0.16)), (0.35, (0.10, 0.42, 0.26)), (0.72, (0.22, 0.60, 0.36)), (0.86, (0.70, 0.86, 0.80)), (1.0, (0.96, 0.98, 1.00))],   # snow on the tips
     'ice_grad':   [(0.0, (0.56, 0.86, 1.00)), (0.25, (0.46, 0.80, 0.99)), (0.65, (0.62, 0.89, 1.00)), (1.0, (0.84, 0.97, 1.00))],   # pale, lighter at the foot: reads as clear ice
+    'lava_grad':  [(0.0, (0.60, 0.06, 0.04)), (0.35, (0.96, 0.26, 0.06)), (0.70, (1.00, 0.58, 0.10)), (1.0, (1.00, 0.92, 0.45))],   # deep red -> orange -> yellow-white
+    'char_grad':  [(0.0, (0.11, 0.09, 0.10)), (0.50, (0.22, 0.17, 0.17)), (0.80, (0.36, 0.26, 0.21)), (0.92, (0.86, 0.40, 0.14)), (1.0, (1.00, 0.68, 0.28))],   # charred leaves, ember tips
 }
 
 def _ramp(stops, t):

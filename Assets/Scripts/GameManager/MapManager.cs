@@ -178,4 +178,11 @@ public enum Map: byte
     Map_Brawl_DuneFoundry,     // MannVsMachine, Egypt
     Map_Brawl_PharaohsCourt,   // JungleBoss, Hale, Egypt
     Map_Brawl_MummyValley,     // Zombie, Egypt
+    Map_Brawl_MagmaRift,       // Competitive, Volcano
+    Map_Brawl_ObsidianKeep,    // CaptureTheFlag, Volcano
+    Map_Brawl_CalderaCrown,    // KingOfTheHill, Volcano
+    Map_Brawl_LavaLine,        // Payload, Volcano
+    Map_Brawl_CinderWorks,     // MannVsMachine, Volcano
+    Map_Brawl_EmberThrone,     // JungleBoss, Hale, Volcano
+    Map_Brawl_AshenHollow,     // Zombie, Volcano
 }
