@@ -35,7 +35,9 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 `multiplay`, `max_ticket_ads_per_day`, `admob_ids` (per platform: inter, rewarded, app_open, mrec, banner),
 `show_mrec_matching`, `show_inter_back_home` (bool, default true; name kept for old builds: since Nov 2026 it switches the
   end-of-match interstitial shown when the player closes the reward popup (`PopupReward`, Claim) with a plain claim; no
-  interstitial after the x2 rewarded ad, none on the Home buttons of the scoreboard / MedalScene any more),
+  interstitial after the x2 rewarded ad, none on the Home buttons of the scoreboard / MedalScene any more; the
+  scoreboard no longer leaves on its own: the 30 s auto-quit `PopupScoreBoard.WaitAutoQuickGame` was removed, Nov 2026,
+  the player taps Home),
   `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
   multiplies the Payload cart speed on every map after it is fitted to the track), `bush_hp` (number, default 250:
   health of one grass clump; explosions / fire tear it at 0; rockets deal 80-100), `free_map` (default missing / null:
@@ -538,6 +540,15 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
     the owner of each character (photonView.IsMine), only while `gameState == Started`, bosses immune, ownerId -1 like
     the DeathWall. Vents are not static, not on the wall layer, and ignored by the NavMesh bake (as are the lava lakes).
     **Not yet tested in a real match** (damage, kill feed for ownerId -1, bots walking into vents: bots do not avoid them).
+    The warning disc (BrawlFortress/VentWarn) was pink on phones until Nov 2026: written with `half`, its `step()`
+    comparisons did not compile for Metal / GLES3 / Vulkan (fine in the D3D11 editor); now `float`. The disc renders in
+    the editor (solo match on MagmaRift); not yet seen on a phone.
+- **Mobile shader check**: the Windows editor compiles D3D11 only, so a shader can be fine there and pink on a phone.
+  After writing / changing a custom shader, compile it for the phones: `ShaderUtil.GetShaderData(shader).GetSubshader(0)
+  .GetPass(p).CompileVariant(ShaderType.Fragment, new string[0], ShaderCompilerPlatform.Metal, BuildTarget.iOS)` (also
+  GLES3x / Vulkan with BuildTarget.Android) and read `Success` / `Messages`. Avoid `half` with `step()` / comparisons.
+  Nov 2026: all 13 BrawlFortress/* shaders pass (FlatKit surface shaders cannot be checked this way: "did not find
+  kernel", a false alarm).
 - MCP gotcha: `AssetDatabase.Refresh()` does not report compile errors; if a builder change "does nothing", check the
   console for CS errors (Unity keeps running the last good assembly). Generated textures are written only when changed
   (`IceThemeSetup.WriteIfChanged`, `common.write_palette`): Unity maps imported textures and rewriting them fails (1224).

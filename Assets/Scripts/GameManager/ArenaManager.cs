@@ -692,8 +692,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         // ad); Title Data show_inter_back_home switches it (it used to gate the ad on the Home button)
         GUIManager.instan.CreatePopup<PopupReward>(rewardData, GameManager.DoubleSourceEndGame, ConfigManager.showInterBackHome);
 
-        popupScoreBoard.goHomeBtn.SetActive(true);
-        popupScoreBoard.StartCoroutine(popupScoreBoard.WaitAutoQuickGame());
+        popupScoreBoard.goHomeBtn.SetActive(true);   // the player leaves with this button (no automatic return, Nov 2026)
     }
 
     public Team GetTeamWin()

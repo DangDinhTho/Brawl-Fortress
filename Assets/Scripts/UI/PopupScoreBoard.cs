@@ -15,15 +15,11 @@ public class PopupScoreBoard : PopupBase
     public Text[] txtTeamScores;
     public GameObject goHomeBtn;
 
-    [Tooltip("Seconds before leaving automatically once the result is shown")]
-    public float autoQuitDelay = 30f;
-
     [Tooltip("Where the MREC (300x250) shows on the end-of-match board")]
     public AdCorner mrecPosition = AdCorner.Bottom;
     private bool mrecShown;
 
     private bool leaving;
-    private Coroutine autoQuitRoutine;
 
     private void Awake()
     {
@@ -81,29 +77,16 @@ public class PopupScoreBoard : PopupBase
         base.Dismiss();
     }
 
+    /// <summary>The Home button (the only way out: the board no longer leaves on its own after 30 s, Nov 2026).</summary>
     public void GoHome()
     {
-        if (leaving) return; // button + auto-quit could both fire
+        if (leaving) return; // a double tap
         leaving = true;
-        if (autoQuitRoutine != null) StopCoroutine(autoQuitRoutine);
         goHomeBtn.SetActive(false);
         HideMrec();
         AudioListener.volume = 0f;   // silent from the moment Home is chosen (back on in Home)
         // no ad here any more: the end-of-match interstitial shows when the reward is claimed (PopupReward.Dismiss)
         StartCoroutine(WaitLeaveRoom());
-    }
-
-    public void StartAutoQuit()
-    {
-        if (autoQuitRoutine == null && !leaving)
-            autoQuitRoutine = StartCoroutine(WaitAutoQuickGame());
-    }
-
-    public IEnumerator WaitAutoQuickGame()
-    {
-        yield return new WaitForSeconds(autoQuitDelay);
-        autoQuitRoutine = null;
-        GoHome();
     }
 
     IEnumerator WaitLeaveRoom()

@@ -23,25 +23,28 @@ Shader "BrawlFortress/VentWarn"
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
-            fixed4 _Color, _Edge;
-            half _Fill, _Alpha;
+            // float, not half: with half the step() comparisons failed to compile for Metal / GLES3 / Vulkan
+            // ("Incompatible min precision type ... Expected int or uint"): the disc was pink on phones (fine in the
+            // D3D11 editor)
+            float4 _Color, _Edge;
+            float _Fill, _Alpha;
             struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; };
             struct v2f { float4 pos : SV_POSITION; float2 uv : TEXCOORD0; };
             v2f vert (appdata v) { v2f o; o.pos = UnityObjectToClipPos(v.vertex); o.uv = v.uv * 2 - 1; return o; }
-            fixed4 frag (v2f i) : SV_Target
+            float4 frag (v2f i) : SV_Target
             {
-                half d = length(i.uv);
-                half aa = max(fwidth(d), 1e-3);
-                half inside = 1 - smoothstep(0.96 - aa, 0.96 + aa, d);
-                half rim = (1 - smoothstep(0.075 - aa, 0.075 + aa, abs(d - 0.90))) * inside;
+                float d = length(i.uv);
+                float aa = max(fwidth(d), 1e-3);
+                float inside = 1 - smoothstep(0.96 - aa, 0.96 + aa, d);
+                float rim = (1 - smoothstep(0.075 - aa, 0.075 + aa, abs(d - 0.90))) * inside;
                 // stripes rotating slowly inside the rim: reads as a hazard marking, not as a team ring
-                half ang = atan2(i.uv.y, i.uv.x) / 6.2831853;
-                half stripes = step(0.5, frac(ang * 12 + _Time.y * 0.6)) * 0.12;
-                half filled = 1 - smoothstep(_Fill - aa, _Fill + aa, d);
-                half lead = (1 - smoothstep(0.0, 0.06, abs(d - _Fill))) * step(0.02, _Fill) * step(_Fill, 0.995);
-                half a = rim * 0.95 + (filled * 0.42 + stripes) * inside + lead * 0.9 * inside;
-                fixed3 c = lerp(_Color.rgb, _Edge.rgb, saturate(lead + rim * 0.35));
-                return fixed4(c, saturate(a) * _Alpha * _Color.a);
+                float ang = atan2(i.uv.y, i.uv.x) / 6.2831853;
+                float stripes = step(0.5, frac(ang * 12 + _Time.y * 0.6)) * 0.12;
+                float filled = 1 - smoothstep(_Fill - aa, _Fill + aa, d);
+                float lead = (1 - smoothstep(0.0, 0.06, abs(d - _Fill))) * step(0.02, _Fill) * step(_Fill, 0.995);
+                float a = rim * 0.95 + (filled * 0.42 + stripes) * inside + lead * 0.9 * inside;
+                float3 c = lerp(_Color.rgb, _Edge.rgb, saturate(lead + rim * 0.35));
+                return float4(c, saturate(a) * _Alpha * _Color.a);
             }
             ENDCG
         }
