@@ -235,4 +235,11 @@ public enum Map: byte
     Map_Brawl_RangerStation,  // MannVsMachine, Savanna
     Map_Brawl_LionsDen,       // JungleBoss, Hale, Savanna
     Map_Brawl_BonePlains,     // Zombie, Savanna
+    Map_Brawl_SakuraShrine,   // Competitive, Japan
+    Map_Brawl_ShrineHeist,    // CaptureTheFlag, Japan
+    Map_Brawl_PagodaHill,     // KingOfTheHill, Japan
+    Map_Brawl_SakuraExpress,  // Payload, Japan
+    Map_Brawl_LanternWorks,   // MannVsMachine, Japan
+    Map_Brawl_KomainuCourt,   // JungleBoss, Hale, Japan
+    Map_Brawl_HauntedTemple,  // Zombie, Japan
 }

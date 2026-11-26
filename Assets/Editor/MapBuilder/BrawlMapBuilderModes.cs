@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 // KOTH: control point in the centre, tiles rows 12-14 x cols 9-11 must stay empty.
 public static partial class BrawlMapBuilder
 {
-    public static IEnumerable<Def> AllDefs() => Competitive.Concat(CTF).Concat(KOTH).Concat(ExtraDefs()).Concat(IceMaps).Concat(XmasMaps).Concat(EgyptMaps).Concat(VolcanoMaps).Concat(FactoryMaps).Concat(CircusMaps).Concat(LunarMaps).Concat(SwampMaps).Concat(GreekMaps).Concat(CandyMaps).Concat(OceanMaps).Concat(SavannaMaps);
+    public static IEnumerable<Def> AllDefs() => Competitive.Concat(CTF).Concat(KOTH).Concat(ExtraDefs()).Concat(IceMaps).Concat(XmasMaps).Concat(EgyptMaps).Concat(VolcanoMaps).Concat(FactoryMaps).Concat(CircusMaps).Concat(LunarMaps).Concat(SwampMaps).Concat(GreekMaps).Concat(CandyMaps).Concat(OceanMaps).Concat(SavannaMaps).Concat(JapanMaps);
     static partial void ExtraDefsImpl(List<Def> list);
     static IEnumerable<Def> ExtraDefs() { var l = new List<Def>(); ExtraDefsImpl(l); return l; }
 

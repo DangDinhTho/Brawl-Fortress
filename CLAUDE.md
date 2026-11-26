@@ -187,6 +187,33 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   mode, all new layouts (checked before building with a copy of the hole picker: two clear 3x3 pockets per half):
   BaobabGrove (Comp), SafariRaid (CTF), TermiteHill (KOTH), SavannaExpress (Payload, path B), RangerStation (MvM,
   path A), LionsDen (Boss, Hale), BonePlains (Zombie). Menu `Tools/Maps/Build Savanna Maps` (2 maps per MCP call).
+- **Japan theme** (`Theme.Japan`, NOT the old asset-pack `Theme.Bamboo`; BrawlMapBuilderJapan.cs + JapanThemeSetup.cs,
+  props in Tools/IceArt/props21.py, floor `japan_tex.py` -> ShrineGround.png): a 1960s-70s Shinto shrine and temple
+  garden in spring. **The landmark is the torii** (Tho's ask): `ToriiGate` (myojin torii: smooth vermilion pillars on
+  black sleeves and stone footings, nuki with wedges, vermilion shimaki and black kasagi curving up at the ends
+  (`sweep_box` along `curved()`), strut and a black plaque in a gold frame (no lettering), a shimenawa rope with shide,
+  big stone lanterns) behind each spawn, and a smaller detailed `ToriiSmall` at the start of each `PathSlab` stone
+  path in the arena: one per path end, **never in rows** (Tho rejected a senbon-torii tunnel: clutter from the top-down
+  camera). `#` one family per wall: IshigakiStones, BambooFenceWall, SakeBarrels,
+  PlasterWall (namako tiles, grey tile roof: `hip_roof`), MossRock; `x` StoneLanternLow / WaterBasin / OfferingBox /
+  TaruStack, `f` BambooFence, `t` SakuraTree / BlackPine / KasugaLantern / Komainu (original chunky guardian), `b`
+  BambooGrass, decor SteppingStones / MossTuft / PetalScatter / ZenStones. Border ShrineWallA/B/C (earthen walls
+  under tile roofs on a stone base; B with a cherry tree, C with a belfry; grounded, collider 6 m); backdrop Pagoda,
+  ShrineHall (with a torii before it), SnowPeak far off each end, cherry trees and pines around.
+  **Pink**: blossom faces sit on the sand ramp in slot 1 = `SakuraPink.mat` (`JapanThemeSetup.Pink`, like the baobab
+  bark) for SakuraTree, PetalScatter, ShrineWallB (`JapanThemeSetup.PinkProps`); Blender preview `props21.pink_preview`.
+  Lighting: `GreekLook` + `GreekSun` + `JapanSky` (soft blue, pale pink-gold horizon).
+  **Torii paths** (`Assets/Scripts/Map/ToriiPath.cs`, placed by `PlaceToriiPaths`): per half the 2 best straight open
+  runs along z (2 tiles wide, >= 5 long, rows 3-12, no bushes, >= 5 m apart, clear of a path), mirrored; a run that
+  reaches the middle row over open tiles goes on to z = 0, so mirrored runs join into one path (slabs every 0.66 m, nearly
+  touching: wider gaps read as a ladder from above; laid out from the middle outwards so they line up; a torii at the outer end, and at the inner end when a run does not join). Speed x1.3 both ways through
+  `TerrainSpeed.FactorAt` (player and NavMesh agents); `ToriiSmall` collides on its two pillars only.
+  A path joins the other half's only when its mirror partner (a path at -x in the same half) exists, the middle
+  tiles are open and the longer box clears a payload / robot path; otherwise it ends before the middle with a torii
+  at both ends. **Not yet tested in a real match.** Maps, one per mode, all new layouts (checked before building with
+  a copy of the path picker): SakuraShrine (Comp), ShrineHeist (CTF), PagodaHill (KOTH), SakuraExpress (Payload,
+  path C), LanternWorks (MvM, path D, half paths), KomainuCourt (Boss, Hale), HauntedTemple (Zombie, half paths).
+  Menu `Tools/Maps/Build Japan Maps` (2-3 maps per MCP call).
   Builder gotcha: tiles are moved after they are made, so their colliders sit at the origin until
   `Physics.SyncTransforms()`: a placement pass that tests the physics scene (CheckBox / CheckSphere) must sync first
   (PlaceBogPuddles never got its middle puddle for this reason).

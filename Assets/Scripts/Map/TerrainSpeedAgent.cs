@@ -2,14 +2,15 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Map features that change how fast characters move: Swamp bog puddles (<see cref="BogPuddle"/>, slower) and Ocean
-/// currents (<see cref="OceanCurrent"/>, faster downstream, slower upstream). One place for the player
+/// Map features that change how fast characters move: Swamp bog puddles (<see cref="BogPuddle"/>, slower), Ocean
+/// currents (<see cref="OceanCurrent"/>, faster downstream, slower upstream) and Japan torii paths
+/// (<see cref="ToriiPath"/>, faster both ways). One place for the player
 /// (PlayerFPSController) and for NavMesh agents (<see cref="TerrainSpeedAgent"/>).
 /// </summary>
 public static class TerrainSpeed
 {
     /// <summary>Speed multiplier for a character at p moving along moveDir (any length; zero = standing still).</summary>
-    public static float FactorAt(Vector3 p, Vector3 moveDir) => BogPuddle.SpeedFactorAt(p) * OceanCurrent.FactorAt(p, moveDir);
+    public static float FactorAt(Vector3 p, Vector3 moveDir) => BogPuddle.SpeedFactorAt(p) * OceanCurrent.FactorAt(p, moveDir) * ToriiPath.FactorAt(p);
 
     static float nextAgentScan;
     /// <summary>Called by the map features: gives every NavMesh agent (bots spawn and respawn) a TerrainSpeedAgent,

@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, props19, props20, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, props19, props20, props21, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -329,6 +329,35 @@ BUILDERS = {
     'Giraffe': props20.build_giraffe,
     'Elephant': props20.build_elephant,
     'SafariCamp': props20.build_safaricamp,
+    # Japan theme (a 1960s-70s shrine and temple garden in spring)
+    'ToriiGate': props21.build_toriigate,
+    'ToriiSmall': props21.build_toriismall,
+    'PathSlab': props21.build_pathslab,
+    'IshigakiStones': props21.build_ishigaki,
+    'BambooFenceWall': props21.build_bamboofencewall,
+    'SakeBarrels': props21.build_sakebarrels,
+    'PlasterWall': props21.build_plasterwall,
+    'MossRock': props21.build_mossrock,
+    'StoneLanternLow': props21.build_stonelanternlow,
+    'WaterBasin': props21.build_waterbasin,
+    'OfferingBox': props21.build_offeringbox,
+    'TaruStack': props21.build_tarustack,
+    'BambooFence': props21.build_bamboofence,
+    'SakuraTree': props21.build_sakuratree,
+    'BlackPine': props21.build_blackpine,
+    'KasugaLantern': props21.build_kasugalantern,
+    'Komainu': props21.build_komainu,
+    'BambooGrass': props21.build_bamboograss,
+    'SteppingStones': props21.build_steppingstones,
+    'MossTuft': props21.build_mosstuft,
+    'PetalScatter': props21.build_petalscatter,
+    'ZenStones': props21.build_zenstones,
+    'ShrineWallA': lambda: props21.build_shrinewall('A', 3751, 'ShrineWallA'),
+    'ShrineWallB': lambda: props21.build_shrinewall('B', 3752, 'ShrineWallB'),
+    'ShrineWallC': lambda: props21.build_shrinewall('C', 3753, 'ShrineWallC'),
+    'Pagoda': props21.build_pagoda,
+    'ShrineHall': props21.build_shrinehall,
+    'SnowPeak': props21.build_snowpeak,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),
@@ -363,6 +392,7 @@ def main():
         if preview:
             if ob.get('pink_preview'): props18.pink_preview(ob)   # candy: pink slot (after the export)
             if ob.get('bark_preview'): props20.bark_preview(ob)   # savanna: the baobab bark slot (after the export)
+            if ob.get('sakura_preview'): props21.pink_preview(ob)   # japan: the blossom slot (after the export)
             render_preview([ob], os.path.join(PREVIEW, n + '.png'), res=320)
         d = ob.dimensions
         print('BUILT %-14s %5d tris  %.2f x %.2f x %.2f m' % (n, tris, d.x, d.y, d.z))

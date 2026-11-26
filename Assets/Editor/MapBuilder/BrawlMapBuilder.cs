@@ -20,7 +20,7 @@ using Random = System.Random;
 /// </summary>
 public static partial class BrawlMapBuilder
 {
-    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice, Xmas, Egypt, Volcano, Factory, Circus, Lunar, Swamp, Greek, Candy, Ocean, Savanna }
+    public enum Theme { Western, Bamboo, Cave, Moon, Mix, Ice, Xmas, Egypt, Volcano, Factory, Circus, Lunar, Swamp, Greek, Candy, Ocean, Savanna, Japan }
 
     public class Def
     {
@@ -371,7 +371,7 @@ public static partial class BrawlMapBuilder
         ApplyLighting(d.theme);
         PrepareBorderAndGround(d.theme);
         Physics.SyncTransforms();
-        if (d.theme == Theme.Volcano || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar || d.theme == Theme.Swamp || d.theme == Theme.Greek || d.theme == Theme.Candy || d.theme == Theme.Ocean || d.theme == Theme.Savanna) PrepareVolcanoWalls(d);   // one family per wall
+        if (d.theme == Theme.Volcano || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar || d.theme == Theme.Swamp || d.theme == Theme.Greek || d.theme == Theme.Candy || d.theme == Theme.Ocean || d.theme == Theme.Savanna || d.theme == Theme.Japan) PrepareVolcanoWalls(d);   // one family per wall
         PlaceGrid(d);
         GrassHeight.Raise(scene); // grass about as tall as the characters
         if (d.theme == Theme.Moon) PlaceMoonBackdrop(d.seed);
@@ -388,6 +388,7 @@ public static partial class BrawlMapBuilder
         if (d.theme == Theme.Candy) { PlaceCandyBackdrop(d.seed); ScatterCandyFloor(d.seed); }
         if (d.theme == Theme.Ocean) { PlaceOceanBackdrop(d.seed); PlaceCurrents(d); ScatterOceanFloor(d.seed); }
         if (d.theme == Theme.Savanna) { PlaceSavannaBackdrop(d.seed); PlaceWaterHoles(d); ScatterSavannaFloor(d.seed); }
+        if (d.theme == Theme.Japan) { PlaceJapanBackdrop(d.seed); PlaceToriiPaths(d); ScatterJapanFloor(d.seed); }
         var holder = scene.GetRootGameObjects().FirstOrDefault(g => g.name == "_templates");
         if (holder) Object.DestroyImmediate(holder);
         Physics.SyncTransforms();
@@ -400,6 +401,7 @@ public static partial class BrawlMapBuilder
         if (d.theme == Theme.Greek) { GreekSun(); GreekSky(); }
         if (d.theme == Theme.Candy) { GreekSun(); CandySky(); }   // the softer Greek light, pastel sky
         if (d.theme == Theme.Savanna) { EgyptSun(); SavannaSky(); }   // the bright neutral desert daylight, a clear sky
+        if (d.theme == Theme.Japan) { GreekSun(); JapanSky(); }       // the soft Greek daylight, a spring sky
         if (d.theme == Theme.Ocean) { OceanWater(); OceanSky(); }   // bright neutral daylight materials
         Physics.SyncTransforms();
         // bushes, navmesh, path points
@@ -579,6 +581,7 @@ public static partial class BrawlMapBuilder
             Theme.Candy => "Assets/Scenes/BrawlScene.unity",
             Theme.Ocean => "Assets/Scenes/BrawlScene.unity",
             Theme.Savanna => "Assets/Scenes/BrawlScene.unity",
+            Theme.Japan => "Assets/Scenes/BrawlScene.unity",
             Theme.Bamboo => "Assets/Scenes/BrawlScene_2.unity",
             Theme.Cave => "Assets/Scenes/Map_Brawl_Payload.unity",
             Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
@@ -604,6 +607,7 @@ public static partial class BrawlMapBuilder
         if (theme == Theme.Candy) { GreekLook(light); CandySky(); }
         if (theme == Theme.Ocean) OceanLook(light);
         if (theme == Theme.Savanna) { EgyptLook(light); SavannaSky(); }
+        if (theme == Theme.Japan) { GreekLook(light); JapanSky(); }
         if (theme == Theme.Lunar) LunarLook(light);
         if (theme == Theme.Swamp) SwampLook(light);
     }
@@ -631,7 +635,7 @@ public static partial class BrawlMapBuilder
             var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
             string n = src ? src.name : t.name;
             int ci = Array.IndexOf(Desert, n);
-            if (ci >= 0 && (theme == Theme.Ice || theme == Theme.Xmas || theme == Theme.Egypt || theme == Theme.Volcano || theme == Theme.Factory || theme == Theme.Circus || theme == Theme.Lunar || theme == Theme.Swamp || theme == Theme.Greek || theme == Theme.Candy || theme == Theme.Ocean || theme == Theme.Savanna))   // Xmas keeps the glacier border
+            if (ci >= 0 && (theme == Theme.Ice || theme == Theme.Xmas || theme == Theme.Egypt || theme == Theme.Volcano || theme == Theme.Factory || theme == Theme.Circus || theme == Theme.Lunar || theme == Theme.Swamp || theme == Theme.Greek || theme == Theme.Candy || theme == Theme.Ocean || theme == Theme.Savanna || theme == Theme.Japan))   // Xmas keeps the glacier border
             {
                 // themed border: one of three cliffs of the theme, on the same spot, turn and scale as the old cliff
                 // (Ice / Xmas: glacier walls; Egypt: layered sandstone cliffs, one with a carved temple front)
@@ -645,6 +649,7 @@ public static partial class BrawlMapBuilder
                              : theme == Theme.Candy && prefabs.ContainsKey("CandyWallA") ? "CandyWall" + "ABC"[idx % 3]
                              : theme == Theme.Ocean && prefabs.ContainsKey("ReefWallA") ? "ReefWall" + "ABC"[idx % 3]
                              : theme == Theme.Savanna && prefabs.ContainsKey("SavannaRidgeA") ? "SavannaRidge" + "ABC"[idx % 3]
+                             : theme == Theme.Japan && prefabs.ContainsKey("ShrineWallA") ? "ShrineWall" + "ABC"[idx % 3]
                              : prefabs.ContainsKey("GlacierWallA") ? "GlacierWall" + "ABC"[idx % 3] : "IceCliff" + "ABC"[idx % 3];
                 var ng = Prefab(gname, t.position, 0, 1, true);
                 if (ng)
@@ -652,14 +657,14 @@ public static partial class BrawlMapBuilder
                     ng.transform.rotation = t.rotation;
                     // the glacier is ~10 m long against the old cliffs' 7.4 m; the sandstone cliff is built at 7.6 m
                     ng.transform.localScale = t.localScale * (gname.StartsWith("Glacier") ? 0.74f : 1f);
-                    if (gname.StartsWith("Glacier") || gname.StartsWith("SandCliff") || gname.StartsWith("BasaltRim") || gname.StartsWith("FactoryWall") || gname.StartsWith("CircusWall") || gname.StartsWith("CraterWall") || gname.StartsWith("SwampBank") || gname.StartsWith("GreekCliff") || gname.StartsWith("CandyWall") || gname.StartsWith("ReefWall") || gname.StartsWith("SavannaRidge"))
+                    if (gname.StartsWith("Glacier") || gname.StartsWith("SandCliff") || gname.StartsWith("BasaltRim") || gname.StartsWith("FactoryWall") || gname.StartsWith("CircusWall") || gname.StartsWith("CraterWall") || gname.StartsWith("SwampBank") || gname.StartsWith("GreekCliff") || gname.StartsWith("CandyWall") || gname.StartsWith("ReefWall") || gname.StartsWith("SavannaRidge") || gname.StartsWith("ShrineWall"))
                     {
                         // its detailed face (columns and fallen ice; Blender -Y) imports as local +Z: turn it to the arena
                         Vector3 front = ng.transform.forward; front.y = 0f;
                         Vector3 toArena = -ng.transform.position; toArena.y = 0f;
                         if (Vector3.Dot(front, toArena) < 0f) ng.transform.Rotate(0f, 180f, 0f, Space.World);
                     }
-                    if (gname.StartsWith("BasaltRim") || gname.StartsWith("CircusWall") || gname.StartsWith("CraterWall") || gname.StartsWith("SwampBank") || gname.StartsWith("GreekCliff") || gname.StartsWith("CandyWall") || gname.StartsWith("ReefWall") || gname.StartsWith("SavannaRidge"))
+                    if (gname.StartsWith("BasaltRim") || gname.StartsWith("CircusWall") || gname.StartsWith("CraterWall") || gname.StartsWith("SwampBank") || gname.StartsWith("GreekCliff") || gname.StartsWith("CandyWall") || gname.StartsWith("ReefWall") || gname.StartsWith("SavannaRidge") || gname.StartsWith("ShrineWall"))
                     {   // a low rim on the ground (the lava lake behind it shows over it), not stretched to the old cliff
                         var p = ng.transform.position; ng.transform.position = new Vector3(p.x, 0f, p.z);
                         var sc = ng.transform.localScale; ng.transform.localScale = new Vector3(sc.x, 1f, sc.z);
@@ -714,6 +719,10 @@ public static partial class BrawlMapBuilder
                 break;
             case Theme.Cave:
                 Prefab("Floor2", Vector3.zero, 0, 1, true, world, new Vector3(75, 1, 75));
+                break;
+            case Theme.Japan:
+                if (prefabs.ContainsKey("JapanFloor")) Prefab("JapanFloor", Vector3.zero, 0, 1, true);
+                else Prefab("Floor1", Vector3.zero, 0, 1, true, world, new Vector3(50, 1, 50));
                 break;
             case Theme.Savanna:
                 if (prefabs.ContainsKey("SavannaFloor")) Prefab("SavannaFloor", Vector3.zero, 0, 1, true);
@@ -892,7 +901,7 @@ public static partial class BrawlMapBuilder
                 {
                     if (!free) continue;
                     if (xmasNight && NightLamp(g, r, c, cr, cc, d.seed, p)) { placed++; continue; }   // Xmas night: extra lamps along the walls
-                    if (rnd.NextDouble() < (d.theme == Theme.Ice || d.theme == Theme.Xmas || d.theme == Theme.Egypt || d.theme == Theme.Volcano || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar || d.theme == Theme.Swamp || d.theme == Theme.Greek || d.theme == Theme.Candy || d.theme == Theme.Ocean || d.theme == Theme.Savanna ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
+                    if (rnd.NextDouble() < (d.theme == Theme.Ice || d.theme == Theme.Xmas || d.theme == Theme.Egypt || d.theme == Theme.Volcano || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar || d.theme == Theme.Swamp || d.theme == Theme.Greek || d.theme == Theme.Candy || d.theme == Theme.Ocean || d.theme == Theme.Savanna || d.theme == Theme.Japan ? 0.09 : 0.06)) { Decor(d.theme, p, baseRot, rnd); decor++; }
                     continue;
                 }
                 if (!free) { skipped++; continue; }
@@ -965,6 +974,7 @@ public static partial class BrawlMapBuilder
             case Theme.Candy: CandyTile(ch, p, baseRot, fenceRot, rnd); break;
             case Theme.Ocean: OceanTile(ch, p, baseRot, fenceRot, rnd); break;
             case Theme.Savanna: SavannaTile(ch, p, baseRot, fenceRot, rnd); break;
+            case Theme.Japan: JapanTile(ch, p, baseRot, fenceRot, rnd); break;
             case Theme.Ice:
                 switch (ch)
                 {
@@ -1066,6 +1076,7 @@ public static partial class BrawlMapBuilder
             case Theme.Candy: CandyDecor(o, rot, rnd); break;
             case Theme.Ocean: OceanDecor(o, rot, rnd); break;
             case Theme.Savanna: SavannaDecor(o, rot, rnd); break;
+            case Theme.Japan: JapanDecor(o, rot, rnd); break;
             case Theme.Ice:
                 {
                     rnd = MixRnd(rnd);   // decorrelated from the neighbouring tiles' picks
@@ -1094,7 +1105,7 @@ public static partial class BrawlMapBuilder
             if (BushAreaGenerator.IsBushRenderer(rr)) markups.Add(new NavMeshBuildMarkup { root = rr.transform, ignoreFromBuild = true });
         // Volcano: the lava lakes and the eruption vents (fountain, warning disc) are not ground to walk on or obstacles
         foreach (var t in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true)))
-            if (t.name.StartsWith("LavaLake") || t.GetComponent<EruptionVent>() || t.name.StartsWith("AcidLake") || t.name.StartsWith("SeaWater") || t.name.StartsWith("ChocoLake") || t.name.StartsWith("Caustics") || t.GetComponent<OceanCurrent>() || t.GetComponent<WaterHole>() || t.name.StartsWith("GlowPool") || t.name.StartsWith("WarmPool") || t.GetComponent<BogPuddle>()) markups.Add(new NavMeshBuildMarkup { root = t, ignoreFromBuild = true });
+            if (t.name.StartsWith("LavaLake") || t.GetComponent<EruptionVent>() || t.name.StartsWith("AcidLake") || t.name.StartsWith("SeaWater") || t.name.StartsWith("ChocoLake") || t.name.StartsWith("Caustics") || t.GetComponent<OceanCurrent>() || t.GetComponent<WaterHole>() || t.GetComponent<ToriiPath>() || t.name.StartsWith("GlowPool") || t.name.StartsWith("WarmPool") || t.GetComponent<BogPuddle>()) markups.Add(new NavMeshBuildMarkup { root = t, ignoreFromBuild = true });
         foreach (var root in scene.GetRootGameObjects())
         {
             var tmp = new List<NavMeshBuildSource>();

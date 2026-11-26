@@ -91,6 +91,7 @@ public static class IceThemeSetup
         var candyPink = CandyThemeSetup.Pink(props);      // Candy props: slot 1 is a pink tint (the palette has no pink), not a glow
         var oceanGlow = OceanThemeSetup.Glow(tex);        // Ocean props: glowing runes, orbs, crystals, pearls
         var baobabBark = SavannaThemeSetup.Bark(props);   // baobabs: slot 1 is the pinkish-brown bark, not a glow
+        var sakuraPink = JapanThemeSetup.Pink(props);     // cherry blossom: slot 1 is the pink tint, not a glow
         var gtex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/IceGround.png");
         var groundMat = MakeMat(GroundMat, reference, gtex, gtex ? Color.white : new Color(0.88f, 0.93f, 1.0f));
         var world = AssetDatabase.LoadAssetAtPath<Material>("Assets/Battle Arena - Cartoon Assets/Materials/World.mat");
@@ -119,7 +120,7 @@ public static class IceThemeSetup
             {
                 var mf = r.GetComponent<MeshFilter>();
                 int subs = mf && mf.sharedMesh ? mf.sharedMesh.subMeshCount : r.sharedMaterials.Length;
-                var g1 = volcanoGlow != null && VolcanoThemeSetup.IsVolcano(name) ? volcanoGlow : swampGlow != null && SwampThemeSetup.IsSwamp(name) ? swampGlow : candyPink != null && CandyThemeSetup.IsCandy(name) ? candyPink : oceanGlow != null && OceanThemeSetup.IsOcean(name) ? oceanGlow : baobabBark != null && SavannaThemeSetup.IsBaobab(name) ? baobabBark : glow;
+                var g1 = volcanoGlow != null && VolcanoThemeSetup.IsVolcano(name) ? volcanoGlow : swampGlow != null && SwampThemeSetup.IsSwamp(name) ? swampGlow : candyPink != null && CandyThemeSetup.IsCandy(name) ? candyPink : oceanGlow != null && OceanThemeSetup.IsOcean(name) ? oceanGlow : baobabBark != null && SavannaThemeSetup.IsBaobab(name) ? baobabBark : sakuraPink != null && JapanThemeSetup.IsPink(name) ? sakuraPink : glow;
                 r.sharedMaterials = Enumerable.Range(0, Mathf.Max(1, subs)).Select(i => i == 1 ? g1 : props).ToArray();
             }
             AddCollider(inst, name);
@@ -167,6 +168,7 @@ public static class IceThemeSetup
         made += CandyThemeSetup.Setup(reference);          // candy floor, chocolate lake, sky
         made += OceanThemeSetup.Setup(reference, props);   // underwater material, seabed floor, caustics, current lane, sky
         made += SavannaThemeSetup.Setup(reference);         // savanna floor, water hole, sky
+        made += JapanThemeSetup.Setup(reference);           // shrine yard floor, torii path box, sky
         AssetDatabase.SaveAssets();
         return made + " prefabs in " + PrefabDir + " (material " + (reference ? reference.shader.name : "Standard") + ")";
     }
@@ -308,7 +310,9 @@ public static class IceThemeSetup
             || name.StartsWith("CoralReef") || name == "AtlantisWall" || name == "ShipHull" || name == "BarnacleRock" || name == "GiantClam"
             || name == "TreasureChest" || name == "AnchorRock" || name == "DivingHelmet" || name == "CannonWreck" || name == "CoralRidge"
             || name.StartsWith("KopjeRock") || name == "ThornBoma" || name == "TermiteMound" || name == "SafariStack" || name == "SavannaBoulder"
-            || name == "DeadLog" || name == "ElephantSkull" || name == "WaterBarrels" || name == "SafariCrate" || name == "ThornHedge")
+            || name == "DeadLog" || name == "ElephantSkull" || name == "WaterBarrels" || name == "SafariCrate" || name == "ThornHedge"
+            || name == "IshigakiStones" || name == "BambooFenceWall" || name == "SakeBarrels" || name == "PlasterWall" || name == "MossRock"
+            || name == "StoneLanternLow" || name == "WaterBasin" || name == "OfferingBox" || name == "TaruStack" || name == "BambooFence")
         {
             // snow drips hang over the edge: keep the collider inside its 1.5 m tile so it never blocks the next one
             var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, b.center.y, 0f);
@@ -328,7 +332,8 @@ public static class IceThemeSetup
             case "MaquisGrass": case "MarbleRubble": case "PotteryShards": case "GeraniumPot": case "GreekTemple": case "WhiteVillage": case "Windmill": case "Caique":
             case "SugarGrass": case "Sprinkles": case "WrappedCandy": case "ChocoChips": case "CandyCastle": case "GingerbreadHouse": case "LayerCake":
             case "KelpGrass": case "Starfish": case "SeaShells": case "SeaUrchins": case "CoralBits": case "AtlantisTemple": case "SunkenShip": case "GiantScallop":
-            case "SavannaGrass": case "StrawTuft": case "AloePlant": case "HornSkull": case "SavannaStones": case "PondReeds": case "BaobabGiant": case "Giraffe": case "Elephant": case "SafariCamp": return;   // walk through / ground decor
+            case "SavannaGrass": case "StrawTuft": case "AloePlant": case "HornSkull": case "SavannaStones": case "PondReeds": case "BaobabGiant": case "Giraffe": case "Elephant": case "SafariCamp":
+            case "BambooGrass": case "SteppingStones": case "MossTuft": case "PetalScatter": case "ZenStones": case "PathSlab": case "Pagoda": case "ShrineHall": case "SnowPeak": return;   // walk through / ground decor
             case "Igloo": case "SnowRock": case "IceBoulder":
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true)) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 return;
@@ -355,6 +360,7 @@ public static class IceThemeSetup
             case "CandyWallA": case "CandyWallB": case "CandyWallC":
             case "ReefWallA": case "ReefWallB": case "ReefWallC":
             case "SavannaRidgeA": case "SavannaRidgeB": case "SavannaRidgeC":
+            case "ShrineWallA": case "ShrineWallB": case "ShrineWallC":
                 {   // the column body only (not the toppled columns and cracks in front, ~1 m), and tall enough that the
                     // border stays a wall above the low basalt: the lava lake behind it is out of bounds
                     var bc = go.AddComponent<BoxCollider>(); float h = Mathf.Max(b.size.y, 6f);
@@ -386,6 +392,14 @@ public static class IceThemeSetup
             case "AcaciaTree": Capsule(go, 0.24f, 3.9f); return;
             case "TermiteSpire": Capsule(go, 0.52f, 3.3f); return;
             case "Euphorbia": Capsule(go, 0.45f, 3.3f); return;
+            case "SakuraTree": Capsule(go, 0.28f, 3.0f); return;
+            case "BlackPine": Capsule(go, 0.26f, 3.3f); return;
+            case "KasugaLantern": Capsule(go, 0.42f, 2.7f); return;
+            case "Komainu": Capsule(go, 0.55f, 1.8f); return;
+            case "ToriiSmall":   // the two pillars only: the path runs between them
+                foreach (float sx in new[] { -1.42f, 1.42f })
+                { var cc = go.AddComponent<CapsuleCollider>(); cc.center = new Vector3(sx, 1.6f, 0f); cc.radius = 0.16f; cc.height = 3.2f; }
+                return;
             case "FloodMast": Capsule(go, 0.22f, 3.1f); return;
             case "Beacon": Capsule(go, 0.20f, 2.6f); return;
             case "FireCrystal": Capsule(go, 0.55f, 2.5f); return;
@@ -393,7 +407,7 @@ public static class IceThemeSetup
             case "MagmaPillar": Capsule(go, 0.55f, 2.7f); return;
             case "BurntPine": Capsule(go, 0.30f, 3.0f); return;
             case "IceGate": case "XmasGate":
-            case "TempleGate": case "VolcanoGate": case "FactoryGate": case "CircusGate": case "AirlockGate": case "SwampGate": case "GreekGate": case "CandyGate": case "AtlantisGate": case "SafariGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
+            case "TempleGate": case "VolcanoGate": case "FactoryGate": case "CircusGate": case "AirlockGate": case "SwampGate": case "GreekGate": case "CandyGate": case "AtlantisGate": case "SafariGate": case "ToriiGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
             case "PalmTree": Capsule(go, 0.25f, 3.2f); return;
             case "CatStatue": Capsule(go, 0.55f, 2.3f); return;
             case "LotusColumn": Capsule(go, 0.50f, 3.0f); return;
