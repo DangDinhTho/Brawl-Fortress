@@ -29,6 +29,20 @@ public class WaterHole : MonoBehaviour
 
     float WorldRadius => radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
 
+    /// <summary>True when feet at p stand in a water hole (the heal test; used by CharacterFx for splashes and "+").</summary>
+    public static bool IsInside(Vector3 p)
+    {
+        for (int i = 0; i < all.Count; i++)
+        {
+            var h = all[i];
+            Vector3 d = p - h.transform.position;
+            float up = d.y; d.y = 0f;
+            float r = h.WorldRadius;
+            if (d.sqrMagnitude <= r * r && up > -1f && up < 1.5f) return true;
+        }
+        return false;
+    }
+
     void Update()
     {
         if (all.Count == 0 || all[0] != this) return;   // one driver per scene

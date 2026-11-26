@@ -41,6 +41,7 @@ public class TF2Bot : TF2Player
         if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
         if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
         if (GetComponent<FootRing>() == null) gameObject.AddComponent<FootRing>();
+        if (GetComponent<CharacterFx>() == null) gameObject.AddComponent<CharacterFx>();
         healthManager.Init(this);
         if (photonView.IsMine)
         {

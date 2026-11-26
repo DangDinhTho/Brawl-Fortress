@@ -19,7 +19,8 @@ public class BuildableMarker : MonoBehaviour
     const float RingUv = 0.72f; // same as FootRing
     static readonly int ColorId = Shader.PropertyToID("_Color"), FillId = Shader.PropertyToID("_FillAlpha"), RingRId = Shader.PropertyToID("_RingR"),
         WidthId = Shader.PropertyToID("_Width"), DashedId = Shader.PropertyToID("_Dashed"), DashCountId = Shader.PropertyToID("_DashCount"),
-        ProgressId = Shader.PropertyToID("_Progress"), GlowId = Shader.PropertyToID("_Glow");
+        ProgressId = Shader.PropertyToID("_Progress"), GlowId = Shader.PropertyToID("_Glow"),
+        CenterFillId = Shader.PropertyToID("_CenterFill"), FalloffId = Shader.PropertyToID("_Falloff"), RimAlphaId = Shader.PropertyToID("_RimAlpha");
 
     // sentry range ring (faint dashed circle at the shooting radius)
     Transform rangeDisc; MeshRenderer rangeRend; FieldOfView sentryFov;
@@ -210,11 +211,14 @@ public class BuildableMarker : MonoBehaviour
             {
                 float half = radius / RingUv;
                 Vector3 p = transform.position;
-                disc.SetPositionAndRotation(new Vector3(p.x, p.y + 0.035f, p.z), Quaternion.identity);
+                disc.SetPositionAndRotation(new Vector3(p.x, p.y + FootRing.HeightOffset, p.z), Quaternion.identity);
                 disc.localScale = new Vector3(2f * half, 1f, 2f * half);
                 c.a = FootRing.Alpha;
                 mpb.SetColor(ColorId, c);
                 mpb.SetFloat(FillId, FootRing.FillAlpha);
+                mpb.SetFloat(CenterFillId, FootRing.CenterFill);
+                mpb.SetFloat(FalloffId, FootRing.Falloff);
+                mpb.SetFloat(RimAlphaId, FootRing.RimAlpha);
                 mpb.SetFloat(RingRId, RingUv);
                 mpb.SetFloat(WidthId, FootRing.Width / half);
                 mpb.SetFloat(DashedId, 0f);
@@ -237,7 +241,10 @@ public class BuildableMarker : MonoBehaviour
                 rangeDisc.localScale = new Vector3(2f * half, 1f, 2f * half);
                 Color rc = c; rc.a = 0.35f;                 // faint: a hint of the danger zone, not a wall of colour
                 mpb.SetColor(ColorId, rc);
-                mpb.SetFloat(FillId, 0.05f);
+                mpb.SetFloat(FillId, 0.12f);
+                mpb.SetFloat(CenterFillId, 0f);
+                mpb.SetFloat(FalloffId, 5f);                // only a faint band inside the edge
+                mpb.SetFloat(RimAlphaId, 0.8f);
                 mpb.SetFloat(RingRId, RingUv);
                 mpb.SetFloat(WidthId, 0.07f / half);
                 mpb.SetFloat(DashedId, 1f);

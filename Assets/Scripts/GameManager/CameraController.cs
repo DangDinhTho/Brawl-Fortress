@@ -68,12 +68,26 @@ public class CameraController : MonoBehaviour
 
     }
 
+    [Header("Brawl Stars style view (Nov 2026)")]
+    [Tooltip("Camera pitch (deg). Was 45: Brawl Stars looks down much more steeply")]
+    public float pitch = 58f;
+    [Tooltip("Vertical field of view (deg). Was 40")]
+    public float fieldOfView = 38f;
+    [Tooltip("Distance from the followed point (m). Was 15: a wider view")]
+    public float cameraDistance = 19f;
+    [Tooltip("Stop the camera at the arena's edges (ArenaCameraClamp) instead of always centring the character")]
+    public bool clampToArena = true;
+
     public void InitCam(Team team)
     {
-        if (team == Team.blue)
-        {
-            freeLook.transform.localRotation = Quaternion.Euler(45, 180, 0);
-        }
+        freeLook.transform.localRotation = Quaternion.Euler(pitch, team == Team.blue ? 180f : 0f, 0f);
+        var lens = freeLook.m_Lens; lens.FieldOfView = fieldOfView; freeLook.m_Lens = lens;
+        var framing = freeLook.GetCinemachineComponent<CinemachineFramingTransposer>();
+        if (framing != null) framing.m_CameraDistance = cameraDistance;
+        var clamp = freeLook.GetComponent<ArenaCameraClamp>();
+        if (clamp == null && clampToArena) clamp = freeLook.gameObject.AddComponent<ArenaCameraClamp>();
+        if (clamp != null) clamp.enabled = clampToArena;
+        ArenaBounds.Reset();
         SetFreeLook(true);
     }
 

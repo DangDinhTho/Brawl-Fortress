@@ -11,8 +11,8 @@ public class OverheadBarStyle : ScriptableObject
     public TMP_FontAsset font;
     [Tooltip("Old pill sprite (the bar now draws its own rounded boxes, BrawlHudKit)")] public Sprite pill;
 
-    [Tooltip("Scale of the whole overhead group (name, bar, ammo): Brawl Stars bars read from far away")]
-    public float scale = 1.55f;
+    [Tooltip("Scale of the whole overhead group (name, bar, ammo): Brawl Stars bars read from far away (1.55 was a little too big: 1.3)")]
+    public float scale = 1.3f;
 
     [Header("Health bar (canvas units, before Scale)")]
     public Vector2 barSize = new Vector2(540f, 106f);

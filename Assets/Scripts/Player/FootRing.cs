@@ -5,32 +5,50 @@ using UnityEngine;
 /// Brawl-Stars-style team ring under a character's feet (added to every TF2Player / TF2Bot / TF2Robot in CreateCharacter,
 /// next to FakeShadow and BushStealth). Colours are relative to the local viewer (ArenaManager.mainPlayer):
 /// local player green, allies blue, enemies red. Drawn after FakeShadow.
-/// Size: diameter = the larger side of the ground projection of the model's bounds (LOD0 skinned renderers, weapons excluded;
-/// UseRendererBounds = false uses the posed mesh vertices instead), times RadiusScale, clamped to Min/MaxRadius.
-/// Measured a few times after spawn (MeasureTimes), the largest value is kept so the ring does not breathe with animations.
+/// Size (Nov 2026, Tho): the radius of the collider that takes the hits (players: CharacterController 0.30 m; bots,
+/// robots, zombies: CapsuleCollider 0.35 m) times RadiusScale, so every character's circle is about the same size and
+/// shows where it can be hit (the model's bounds made a Heavy's circle twice a Scout's). Bosses keep the old measure:
+/// the larger side of the ground projection of the model's bounds (LOD0 skinned renderers, weapons excluded;
+/// UseRendererBounds = false uses the posed mesh vertices instead), clamped to Min/MaxRadius, measured a few times after
+/// spawn (MeasureTimes), the largest value kept.
 ///  - The disc is a child of the character, so BushStealth hides it together with an enemy hidden in a bush.
 ///  - Spy: enemies see the ring in the team colour the model is drawn with (TF2Player.MeshTeam, set by SetMeshTeam
 ///    = a disguise), and do not see it while the Spy is cloaked (TF2Player.MeshInvisible).
 ///  - Local player only: glow while a Medic beam is on him or Ubercharged is set, dashed ring while hidden in a bush
 ///    (BushStealth.InBush). The reload arc around the ring is off (ShowReloadArc): the ammo bar under the health bar
 ///    shows the reload now (OverheadBarView).
-///  - Look (Nov 2026 HUD pass): thick band with a dark outline on both edges, lighter inner half, soft team disc; the
-///    team colours are the overhead bar's (OverheadBarStyle mine / ally / enemy) so ring and bar match.
+///  - Look (Nov 2026, like Brawl Stars): a translucent team-coloured disc, strongest at its edge and fading towards the
+///    centre, with a thin light rim; no dark outline. The team colours are the overhead bar's (OverheadBarStyle mine /
+///    ally / enemy) so circle and bar match.
 /// Material: Resources/Materials/FootRing.mat (shader BrawlFortress/FootRing). Tuning values are the static fields below.
 /// </summary>
 public class FootRing : MonoBehaviour
 {
-    /// <summary>Ring centre-line position in the shader's uv space (must match _RingR on the material).</summary>
-    const float RingUv = 0.72f;
-    /// <summary>Ring width (m), alpha, inner fill alpha.</summary>
-    public static float Width = 0.15f, Alpha = 1f, FillAlpha = 0.2f;
-    /// <summary>Dark outline on each edge of the band (m).</summary>
-    public static float OutlineWidth = 0.032f;
-    public static Color OutlineColor = new Color(0.047f, 0.031f, 0.071f, 0.85f);
+    /// <summary>Circle edge position in the shader's uv space (the quad is larger for the glow halo).</summary>
+    public const float RingUv = 0.72f;
+    /// <summary>Rim width (m), overall alpha, fill alpha at the edge, fill at the centre (share of the edge), falloff power, rim alpha.</summary>
+    public static float Width = 0.05f, Alpha = 1f, FillAlpha = 0.6f, CenterFill = 0.15f, Falloff = 1.4f, RimAlpha = 0.95f;
     /// <summary>Reload arc around the local player's ring (off: the ammo bar shows it).</summary>
     public static bool ShowReloadArc = false;
-    /// <summary>Multiplier on the measured radius, limits (m), and the radius used until the model is measured.</summary>
-    public static float RadiusScale = 1f, MinRadius = 0.35f, MaxRadius = 2f, DefaultRadius = 0.5f;
+    /// <summary>Circle radius = hit collider radius x RadiusScale (m). Boss measure limits, and the radius used until measured.</summary>
+    public static float RadiusScale = 1.9f, BossRadiusScale = 1f, MinRadius = 0.35f, MaxRadius = 2f, DefaultRadius = 0.5f;
+    static readonly int CenterFillId = Shader.PropertyToID("_CenterFill");
+    static readonly int FalloffId = Shader.PropertyToID("_Falloff");
+    static readonly int RimAlphaId = Shader.PropertyToID("_RimAlpha");
+
+    /// <summary>World radius (m) of the collider that takes the hits: the CharacterController (players) or the root
+    /// CapsuleCollider (bots); -1 when there is none.</summary>
+    public static float HitRadius(Component c)
+    {
+        if (c == null) return -1f;
+        var cc = c.GetComponent<CharacterController>();
+        Vector3 s = c.transform.lossyScale;
+        float k = Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.z));
+        if (cc != null) return cc.radius * k;
+        var cap = c.GetComponent<CapsuleCollider>();
+        if (cap != null) return cap.radius * k;
+        return -1f;
+    }
     /// <summary>true (default) = ground projection of the renderers' bounds (SkinnedMeshRenderer.bounds, Tho's choice, roomier);
     /// false = tight projection of the posed mesh vertices.</summary>
     public static bool UseRendererBounds = true;
@@ -44,7 +62,7 @@ public class FootRing : MonoBehaviour
     public static Color HealGlowColor = new Color(0.45f, 1f, 0.55f);
     public static Color UberGlowColor = new Color(1f, 0.85f, 0.3f);
     /// <summary>Height above the feet (m); FakeShadow uses 0.03.</summary>
-    public static float HeightOffset = 0.035f;
+    public static float HeightOffset = 0.07f;   // above the bog / pond surfaces (0.048)
     public static int DashCount = 14;
     /// <summary>Boss (Boss Battle): a fiery, thick, spinning dashed ring that always glows, whatever the viewer's team.</summary>
     public static Color BossColor = new Color(1f, 0.42f, 0.1f);
@@ -173,14 +191,20 @@ public class FootRing : MonoBehaviour
     {
         if (disc == null || player == null) return;
 
-        if (measures < MeasureTimes && Time.time >= nextMeasure && !Dead)
+        bool boss = player is TF2Boss;
+        if (!boss)
+        {
+            float hr = HitRadius(this);
+            radius = hr > 0f ? hr * RadiusScale : DefaultRadius;
+        }
+        else if (measures < MeasureTimes && Time.time >= nextMeasure && !Dead)
         {
             measures++;
             nextMeasure = Time.time + MeasureInterval;
             float r = MeasureRadius();
             if (r > 0f)
             {
-                r = Mathf.Clamp(r * RadiusScale, MinRadius, MaxRadius);
+                r = Mathf.Clamp(r * BossRadiusScale, MinRadius, MaxRadius);
                 radius = measured ? Mathf.Max(radius, r) : r;
                 measured = true;
             }
@@ -198,7 +222,6 @@ public class FootRing : MonoBehaviour
         float half = radius / RingUv; // quad half-size so the ring centre-line sits at 'radius'
         Vector3 feet = Feet;
         disc.position = new Vector3(feet.x, feet.y + HeightOffset, feet.z);
-        bool boss = player is TF2Boss;
         disc.rotation = boss ? Quaternion.Euler(0f, Time.time * BossSpinSpeed, 0f) : Quaternion.identity;   // the boss's dashes turn slowly
         var ps = transform.lossyScale;
         disc.localScale = new Vector3(2f * half / Mathf.Max(ps.x, 1e-4f), 1f / Mathf.Max(ps.y, 1e-4f), 2f * half / Mathf.Max(ps.z, 1e-4f));
@@ -232,10 +255,12 @@ public class FootRing : MonoBehaviour
 
         mpb.SetColor(ColorId, c);
         mpb.SetFloat(FillId, FillAlpha);
+        mpb.SetFloat(CenterFillId, CenterFill);
+        mpb.SetFloat(FalloffId, Falloff);
+        mpb.SetFloat(RimAlphaId, RimAlpha);
         mpb.SetFloat(RingRId, RingUv);
         mpb.SetFloat(WidthId, Width * (boss ? BossWidthScale : 1f) / half);
-        mpb.SetFloat(OutlineId, OutlineWidth / half);
-        mpb.SetColor(OutlineColorId, OutlineColor);
+        mpb.SetFloat(OutlineId, 0f);
         mpb.SetFloat(DashedId, dashed ? 1f : 0f);
         mpb.SetFloat(DashCountId, boss ? BossDashCount : DashCount);
         mpb.SetFloat(ProgressId, progress);

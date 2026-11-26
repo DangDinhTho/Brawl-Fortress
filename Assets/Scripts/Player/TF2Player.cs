@@ -141,6 +141,7 @@ public class TF2Player : MonoBehaviour
         if (GetComponent<BushStealth>() == null) gameObject.AddComponent<BushStealth>();
         if (GetComponent<FakeShadow>() == null) gameObject.AddComponent<FakeShadow>();
         if (GetComponent<FootRing>() == null) gameObject.AddComponent<FootRing>();
+        if (GetComponent<CharacterFx>() == null) gameObject.AddComponent<CharacterFx>();
         if (!isBot && photonView.IsMine && GetComponent<AimIndicator>() == null) gameObject.AddComponent<AimIndicator>();
 
         if (!isBot)

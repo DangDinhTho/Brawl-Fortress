@@ -231,9 +231,10 @@ public static class IceThemeSetup
         }
         var pm = new Material(props);
         pm.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(EgyptPalette);
-        DesertTint(Save(PropsEgyptMat, pm), new Color(1.04f, 1.04f, 1.07f), new Color(0.72f, 0.72f, 0.76f));
+        // a touch of orange in the light (Tho: the first neutral white, 1.04/1.04/1.07 and floor 0.97/1.03/1.28, was too white)
+        DesertTint(Save(PropsEgyptMat, pm), new Color(1.07f, 1.03f, 1.00f), new Color(0.74f, 0.71f, 0.70f));
         var sandMat = AssetDatabase.LoadAssetAtPath<Material>(SandGroundMat);
-        if (sandMat != null) DesertTint(Save(SandDesertMat, new Material(sandMat)), new Color(0.97f, 1.03f, 1.28f), new Color(0.74f, 0.75f, 0.82f));
+        if (sandMat != null) DesertTint(Save(SandDesertMat, new Material(sandMat)), new Color(1.00f, 1.02f, 1.18f), new Color(0.76f, 0.74f, 0.78f));
         AssetDatabase.SaveAssets();
     }
 

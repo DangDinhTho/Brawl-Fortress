@@ -62,7 +62,7 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   white hit flash; fill pulses below 25%; big bold HP number on the bar; bold name above in a light team tint; the
   local player's orange ammo bar under it (one segment per bullet up to 8, else one bar with quarter ticks; the
   segment being reloaded fills in pale orange; frame blinks red when empty). The whole group is scaled by `scale`
-  (1.55: at 1.0 the HP number was unreadable from the match camera).
+  (1.3; at 1.0 the HP number was unreadable from the match camera, Tho found 1.55 a little too big).
 - `BrawlHudKit`: runtime rounded-rect sprites (drawn at 4x, `pixelsPerUnitMultiplier` 4), HUD text style (Lilita One,
   thick dark outline + drop shadow) through ONE shared material per font + outline (`HudMaterial`; do not use TMP's
   `outlineWidth` setter or `fontMaterial` for HUD text: they make a material per text, and a material instanced from
@@ -70,12 +70,42 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - Damage numbers (UltimateTextDamage, `TextDamageItem_default_stack_TMP`): restyled per pooled item in
   `UltimateTextDamageManager.AllocateOneInstance` -> `BrawlHudKit.StyleDamageNumber` (Lilita One, red vertical
   gradient, thick outline, 1.55x size).
-- FootRing: thicker band (0.15 m) with a dark outline on both edges (`_Outline`, `_OutlineColor` in the shader), lighter
-  inner half, soft team disc; colours come from OverheadBarStyle so ring and bar match; the reload arc is off
-  (`ShowReloadArc`): the ammo bar shows the reload.
-- Checked in a solo match (camera renders, Wild West): bars / names / ammo readable at 1280x720, rings thick and
-  outlined. The overlay damage numbers could not be screenshotted from the editor (styling checked on the live
+- FootRing (Nov 2026, Tho: like Brawl Stars): a translucent team disc, strongest at its edge and fading towards the
+  centre (`FillAlpha` 0.6 at the edge, `CenterFill` 0.15, `Falloff` 1.4) with a thin light rim (`Width` 0.05 m); NO dark
+  outline. Radius = the hit collider's radius (players: CharacterController 0.30, bots / robots / zombies: CapsuleCollider
+  0.35) x `RadiusScale` 1.9 (1.45 = Soldier 0.44 m was too small), so every character's circle is about the same size (the model's bounds made them very
+  different); bosses keep the model measure. Drawn 0.07 m above the feet (`HeightOffset`: the bog / pond surfaces are at
+  0.048 and hid it) in queue Transparent-4 (after the Ocean currents). The Engineer buildings' circle and the sentry's
+  range ring (BuildableMarker) use the same shader. Colours come from OverheadBarStyle so ring and bar match; the reload
+  arc is off (`ShowReloadArc`): the ammo bar shows the reload.
+- **Character effects** (Nov 2026): `CharacterFx` on every character (added next to FootRing) + `BrawlFx` (one shared
+  world-space ParticleSystem per kind, fed with Emit; shapes drawn by the shader BrawlFortress/FxParticle through
+  Resources/Materials/FxPuff / FxPlus / FxSpark): a dust puff behind the feet every 1.05 m walked on the ground (none in a
+  bush or in the air); in a Swamp bog puddle mud drops + bubbles; in a Savanna water hole water drops and green "+" when
+  it heals; speed lines on a Japan torii path or with an Ocean current, bubbles against it; on a hit (HealthBase.
+  OnTakeDamage, every client) the model flashes white (MaterialPropertyBlock `_Color` / `_ColorDim` x2.6 for 0.12 s,
+  renderers that already have a block are left alone: the Spy cloak) and sparks fly. The movement is read from the
+  position, so bots and remote players get it too, with no network message. Nothing shows for a character hidden from
+  the viewer (`BushStealth.Hidden`, cloaked Spy) or dead. Checked in a solo match on GlowshroomBog (dust, mud, bubbles,
+  flash, "+"; speed lines and sparks triggered by hand); torii paths, currents and water holes not walked in a match.
+- Checked in a solo match (camera renders, Wild West): bars / names / ammo readable at 1280x720. The overlay damage numbers could not be screenshotted from the editor (styling checked on the live
   items: Lilita One, HUD material, gradient). Preview image: Assets/Screenshots/hud_brawl_style.png.
+
+## Match camera (Brawl Stars style, Nov 2026)
+- `TopDownCam` in Arena.unity (CinemachineVirtualCamera + FramingTransposer, Follow = the character), set up by
+  `CameraController.InitCam`: `pitch` 58 (was 45), `fieldOfView` 38 (was 40), `cameraDistance` 19 (was 15): steeper and
+  wider, about 28 m of the arena's width at 19.5:9. Blue team: yaw 180.
+- `ArenaCameraClamp` (a CinemachineExtension added to it at runtime; Assets/Scripts/GameManager/ArenaCameraClamp.cs) stops
+  the camera at the arena's edges instead of always centring the character: after the Body stage it shifts the camera so
+  the view's ground footprint stays inside the arena + `endMargin` 3 m (bottom of the screen, own base), `topMargin` 8 m
+  (top, enemy base: the view reaches ~11 m ahead and ~6 m behind, with 2 m a character at the enemy base sat under the
+  top HUD; Tho then widened all margins) and `sideMargin` 5 m. `Follow` stays the character (death / respawn / spectate code compares it).
+- `ArenaBounds`: the arena rectangle, measured once per match: end VitualWalls when present, else the farthest first hit
+  of rays at 1 m from the spawns' centre (up to 32 m), never narrower than the spawns + a margin. Generated maps measure
+  about x -18.5..17.8, z -22.2..22.1. (A percentile of the hits picked the inside obstacles: 11 m.)
+- The steeper camera looks at the spawns / bomb holes from higher up, so the end-gate check in BrawlMapBuilderGates
+  (built for the old 45 deg camera, CamUp 10.4 / CamBack 10.6) is on the safe side.
+- Checked in a solo match on SunTemple: spawn, middle, side edge, enemy end. Not tried on a phone or in multiplayer.
 
 ## Attack controls (Brawl Stars style, Nov 2026)
 - The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`
@@ -210,8 +240,10 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   bright near-neutral trilight ambient, light haze, sun) + `EgyptSun(true)` after the mode objects. FlatKit ignores the
   light colour (`_LightContribution 0`): the colour is the material's. **White sun** (Nov 2026: Tho still found Egypt too
   yellow): props get `IcePropsEgypt` (palette `IcePaletteEgypt.png` = IcePalette with the sand family (khaki, bone,
-  sandstone, sand_grad cells) toned 30-40% towards grey, `_Color` 1.04/1.04/1.07), the floor `SandGroundDesert`
-  (`_Color` 0.97/1.03/1.28: golden yellow -> light cream; Egypt only). Made by `IceThemeSetup.EgyptWhiteSun` (menu
+  sandstone, sand_grad cells) toned 30-40% towards grey, `_Color` 1.07/1.03/1.00), the floor `SandGroundDesert`
+  (`_Color` 1.00/1.02/1.18: golden yellow -> warm cream; Egypt only). Tho then found the neutral white (props
+  1.04/1.04/1.07, floor 0.97/1.03/1.28) too white and asked for a little orange: keep it subtle (1.09/1.03/0.96 with floor
+  1.02/1.02/1.12 already reads golden again). Icon grade Egypt: `wb` 0.14, `yellowSat` 0.86 (stronger values cancel the warmth). Made by `IceThemeSetup.EgyptWhiteSun` (menu
   `Tools/Maps/Egypt/Make White Sun Materials`, also run by Setup Assets); existing scenes: `Tools/Maps/Egypt/Apply White
   Sun To Egypt Maps`. Factory / Circus / Lunar / Savanna keep `IcePropsDesert` (`EgyptSun()`).
   Ice and Xmas close that gap the same way (`BrawlMapBuilder.PlaceGates`): `IceGate` (glacier arch, natural ice) and

@@ -60,6 +60,8 @@ public class BushStealth : MonoBehaviour
     public bool IsDead => player == null || player.healthManager == null || player.healthManager.death;
     /// <summary>True when this character is in a bush and alive: its reveal zone is active.</summary>
     public bool InBush => CurrentBush != null && !IsDead;
+    /// <summary>True while this character is hidden from the local viewer (renderers off): effects must not give it away.</summary>
+    public bool Hidden => hidden;
 
     public Vector3 Position => player != null && player.remotePlayer != null ? player.remotePlayer.transform.position : transform.position;
 
