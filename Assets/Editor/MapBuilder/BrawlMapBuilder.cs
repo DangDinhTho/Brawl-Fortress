@@ -1301,6 +1301,10 @@ public static partial class BrawlMapBuilder
         "Map_Brawl_HaleMesa", "Map_Brawl_DustDevil", "Map_Brawl_FrontierOutpost", "Map_Brawl_BigfootGulch",  // Boss Battle
         "Map_Brawl_StompingGrounds", "Map_Brawl_YetiHollow", "Map_Brawl_MoonlitDen",
         "Map_Brawl_GhoulMine", "Map_Brawl_CryptTunnels", "Map_Brawl_LastLight", "Map_Brawl_DeadCrater",      // Zombie
+        // second pass (Nov 2026): the Mix-theme maps (orange desert floor, mixed cliffs) read as the same desert as the
+        // Western map of their mode (Wild West, Gold Rush, Sheriff Square, Dynamite Trail, Mann vs Machine)
+        "Map_Brawl_FrontierRuins", "Map_Brawl_BorderSiege", "Map_Brawl_CrossroadRuins", "Map_Brawl_FrontierConvoy",
+        "Map_Brawl_LastStand",
     };
 
     [MenuItem("Tools/Maps/Remove Retired Map Cards")]

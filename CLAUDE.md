@@ -34,7 +34,10 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 `default_battle_time`, `base_death_time` / `max_death_time` (respawn wait, default 8 / 12 s), `mode_unlock_level`,
 `multiplay`, `max_ticket_ads_per_day`, `admob_ids` (per platform: inter, rewarded, app_open, mrec, banner),
 `show_mrec_matching`, `show_inter_back_home`, `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
-  multiplies the Payload cart speed on every map after it is fitted to the track).
+  multiplies the Payload cart speed on every map after it is fitted to the track), `free_map` (default missing / null:
+  a list of map enum names that become free on top of the default free maps, e.g. `["Map_Brawl_JingleSquare",
+  "Map_Brawl_LanternEve"]` for Christmas; a JSON array or names separated by commas; unknown names are skipped; old
+  builds do not read this key, so it may list new map ids; free maps show first in PopupSelectMap).
 - **Do not add new mode / weapon / map ids to Title Data until a store build that parses Title Data leniently is out**
   (old builds choke on unknown enum names). This includes `Map_Brawl_FrostPeak` and the Yeti boss maps.
 - Changes Tho still has to make on PlayFab: `weapon_stats` Sniperrifle `interval` 2.75 -> 1.75, Minigun `interval`
@@ -48,11 +51,24 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - The Find a game button is always shown; when offline it offers Retry (PopupConfirm + PopupWaitingFocus spinner).
 
 ## Map selection
-- One map per art theme per mode (37 cards). 19 older maps that repeated a theme are **retired**: listed in
+- One map per art theme per mode. The old themes are Western (orange canyon), Bamboo (green), Cave (blue rock,
+  crystals), Moon (purple) and Mix (orange desert floor with mixed cliffs = reads as a second desert). Hand-made old
+  maps: BrawlScene "Wild West" / Map_Brawl_MvM = Western, BrawlScene_2 / Map_Brawl_Koth = Bamboo, ShowDown /
+  Map_Brawl_CTF = Moon, Map_Brawl_Payload / ZombieYard = Cave. 24 older maps that repeated a theme are **retired**
+  (the 5 Mix maps FrontierRuins, BorderSiege, CrossroadRuins, FrontierConvoy, LastStand since Nov 2026): listed in
   `BrawlMapBuilder.Retired`, cards removed from `PopupSelectMap` (menu `Tools/Maps/Remove Retired Map Cards`; AddCard
   never re-adds them). Their scenes stay in the build and their `Map` enum values stay: all clients share Photon
   AppVersion 1.0, so an old client's room on a retired map must still load, and the enum is sent as a byte.
-- `DefaultTicketCosts` lists only the kept maps, priced in card order (first free, Competitive first 3 free, then 1, 2, ...).
+- `DefaultTicketCosts` lists only the kept maps, priced in card order: in each mode the first 3 maps are free, the
+  next 3 cost 1, 2, 3 tickets, all others 5. **Boss Battle and Zombie have no free map**: 1, 2, 3, then 5.
+  Title Data `map_config` overrides a map; `free_map` makes more maps free. A tab switch selects the mode's first
+  card even when it costs tickets (Boss / Zombie): `autoPicked`, so Done asks the price (`using_ticket_confirm`) or
+  offers tickets (`TicketAds.Offer`) like tapping the card does.
+- `PopupSelectMap`: no "All" tab (removed); it opens on the tab of the selected map's mode (`RevealTab` scrolls the
+  tab bar to it). `SortCards`: free maps first (the `free_map` ones, then the default free ones), then the paid ones
+  in card order. `FitCards` zooms the card grid (content `localScale`, content anchored top-left at viewport width /
+  zoom) so `columns` (3) fill the list's width, clamped to `maxCardScale` 1.3, one column less below `minCardScale`
+  0.85: 300 px cards at 16:9, ~343 px at 19.5:9 (were 286 px with an empty strip on the right; on 4:3 they ran off).
 
 ## Map builder (Assets/Editor/MapBuilder)
 - `BrawlMapBuilder.cs`: maps defined as ASCII half-layouts (`Def`: half rows + center, mirrored for the other team).

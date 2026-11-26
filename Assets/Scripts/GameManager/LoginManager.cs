@@ -597,6 +597,34 @@ public class LoginManager : MonoBehaviour
         return res;
     }
 
+    /// <summary>A list of map names: a JSON array (["Map_Brawl_JingleSquare", "Map_Brawl_LanternEve"]) or plain names
+    /// separated by commas / spaces. A name this build does not know (a map added later) is skipped with a warning.
+    /// Missing, empty or null = no map.</summary>
+    static HashSet<Map> ParseMapNames(Dictionary<string, string> data, string key)
+    {
+        var res = new HashSet<Map>();
+        if (!data.TryGetValue(key, out var s) || string.IsNullOrWhiteSpace(s)) return res;
+        s = s.Trim();
+        if (s == "null") return res;
+        var names = new List<string>();
+        if (s.StartsWith("["))
+        {
+            try
+            {
+                foreach (var t in Newtonsoft.Json.Linq.JArray.Parse(s))
+                    if (t.Type != Newtonsoft.Json.Linq.JTokenType.Null) names.Add(t.ToString());
+            }
+            catch (Exception e) { Debug.LogError($"TitleData '{key}' parse error: {e.Message}"); return res; }
+        }
+        else names.AddRange(s.Split(new[] { ',', ';', ' ', '\t', '\r', '\n', '"' }, StringSplitOptions.RemoveEmptyEntries));
+        foreach (var n in names)
+        {
+            if (Enum.TryParse(n.Trim(), true, out Map m) && Enum.IsDefined(typeof(Map), m)) res.Add(m);
+            else Debug.LogWarning($"TitleData '{key}': unknown map '{n}' skipped");
+        }
+        return res;
+    }
+
     static void ReadBool(Dictionary<string, string> data, string key, ref bool target)
     {
         if (data.TryGetValue(key, out var s) && bool.TryParse(s, out var v)) target = v;
@@ -660,6 +688,7 @@ public class LoginManager : MonoBehaviour
         }
 
         ConfigManager.ApplyMapTicketDefaults(); // maps missing from map_config keep their default ticket price
+        ConfigManager.freeMaps = ParseMapNames(data, "free_map"); // extra free maps (events), on top of the default free ones
         var battleTimes = ParseEnumDict<Map, int>(data, "battle_map_times");
         if (battleTimes != null) ConfigManager.battleTimes = battleTimes;
 
