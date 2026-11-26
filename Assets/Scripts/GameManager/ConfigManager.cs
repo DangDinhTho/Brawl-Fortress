@@ -19,6 +19,10 @@ public class ConfigManager
     /// time (BombCartController): 1 = as fitted, 1.2 = 20% faster, 0.8 = 20% slower. Title Data key
     /// "cart_payload_speed_scale" (a number, e.g. 1.15); missing, malformed or not above 0 keeps 1.</summary>
     public static float cartPayloadSpeedScale = 1f;
+    /// <summary>Health of one grass clump of a bush (BushDamage.ClumpHp): explosions and fire wear it down, at 0 the
+    /// clump is torn (rocket 80-100 per shot in Nov 2026: 250 = 3 rockets). Title Data key "bush_hp" (a number, e.g. 300);
+    /// missing, malformed or not above 0 keeps 250.</summary>
+    public static float bushHp = 250f;
     public static int timeFlagBackHome = 30;
     public static int pricePerCrate = 5;
 

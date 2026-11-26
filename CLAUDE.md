@@ -37,7 +37,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   end-of-match interstitial shown when the player closes the reward popup (`PopupReward`, Claim) with a plain claim; no
   interstitial after the x2 rewarded ad, none on the Home buttons of the scoreboard / MedalScene any more),
   `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
-  multiplies the Payload cart speed on every map after it is fitted to the track), `free_map` (default missing / null:
+  multiplies the Payload cart speed on every map after it is fitted to the track), `bush_hp` (number, default 250:
+  health of one grass clump; explosions / fire tear it at 0; rockets deal 80-100), `free_map` (default missing / null:
   a list of map enum names that become free on top of the default free maps, e.g. `["Map_Brawl_JingleSquare",
   "Map_Brawl_LanternEve"]` for Christmas; a JSON array or names separated by commas; unknown names are skipped; old
   builds do not read this key, so it may list new map ids; free maps show first in PopupSelectMap).
@@ -115,11 +116,11 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - Checked in a solo match on SunTemple: spawn, middle, side edge, enemy end. Not tried on a phone or in multiplayer.
 
 ## Destructible bushes (Brawl Stars style, Nov 2026)
-- Each box of a `BushArea` is one grass clump. Its health `BushDamage.ClumpHp` takes **3 rockets** (`RocketsToTear`; Tho:
-  at 80 HP one rocket tore a bush): computed from Title Data `weapon_stats` RocketLauncher min / max = max(3 x min,
-  2 x max + 1) -> 240 with 80-100 (fallback 240 before the stats load), so it follows a rocket damage change. A rocket
-  blast deals the shot's damage (no falloff) to every clump within 1.8 + 0.45 m. With 240: grenades (70-85) take 3-4,
-  sticky bombs (103-138) 2-3. Explosions (every `ExplosionDamage`:
+- Each box of a `BushArea` is one grass clump. Its health `BushDamage.ClumpHp` = `ConfigManager.bushHp`, Title Data key
+  `bush_hp` (number, default **250**; Tho: at 80 HP one rocket tore a bush, he wants at least 3). Rockets deal 80-100
+  (`weapon_stats` RocketLauncher): 250 = 3 rockets (4 when three low rolls sum under 250, ~2%). A rocket blast deals the
+  shot's damage (no falloff) to every clump within 1.8 + 0.45 m. With 250: grenades (70-85) take 3-4, sticky bombs
+  (103-138) 2-3. Explosions (every `ExplosionDamage`:
   grenades, sticky bombs, sentry rockets...; rockets where they blow up: `BulletNormal.BushBlastRadius`, Rocket 1.8 m)
   and fire (`FlameDamage`, `FireFactor` 0.6 x ClumpHp / 80 of the flame's damage every 0.2 s over its trigger's bounds:
   fire burns as fast as at 80 HP) wear the clumps they reach down. At 0: `BushArea.Shatter` = leaves burst out (`BrawlFx.Leaves`, leaf shape 3 of FxParticle,
@@ -140,8 +141,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   the palette colour of the upper leaves; old themes read the World atlas). Run it after adding a grass model. The leaf
   colour is tinted by the clump material's `_Color` at runtime (night / desert / Egypt materials).
 - Checked in a solo match on SunTemple: a scripted blast, a real rocket from the pool and the bots' own rockets / grenades
-  tore clumps, leaves burst, stubble stayed. Fire and multiplayer sync not tried. 3-rocket health: real rockets from the
-  pool (97, 81, 85 damage) left the bush whole after 2 and tore 8 clumps with the 3rd.
+  tore clumps, leaves burst, stubble stayed. Fire and multiplayer sync not tried. At 240 HP real rockets from the pool
+  (97, 81, 85 damage) left the bush whole after 2 and tore 8 clumps with the 3rd; 250 (now) not re-run in a match.
 
 ## Attack controls (Brawl Stars style, Nov 2026)
 - The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`

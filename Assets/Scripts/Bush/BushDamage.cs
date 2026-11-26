@@ -19,24 +19,9 @@ using UnityEngine;
 public static class BushDamage
 {
     public const byte BushEventCode = 41;
-    /// <summary>Rockets it takes to tear a clump down (Tho, Nov 2026: one rocket was enough at 80 HP, he wants 3).</summary>
-    public static int RocketsToTear = 3;
-    /// <summary>Health used before the weapon stats are known: 3 rockets of the lowest roll (Title Data weapon_stats
-    /// RocketLauncher 80-100 in Nov 2026).</summary>
-    const float FallbackHp = 240f;
-    /// <summary>Health of one grass clump (~4 clumps per 1.5 m tile), from the rocket's damage in Title Data
-    /// (weapon_stats RocketLauncher min / max): RocketsToTear rockets of the lowest roll tear it, RocketsToTear - 1 of
-    /// the highest never do (80-100 -> 240). If the range is too wide for both, the second rule wins.</summary>
-    public static float ClumpHp
-    {
-        get
-        {
-            if (ConfigManager.weaponStats == null || !ConfigManager.weaponStats.TryGetValue(WeaponId.RocketLauncher, out var s) || s == null || s.maxDamage <= 0f)
-                return FallbackHp;
-            float lo = Mathf.Max(1f, s.minDamage > 0f ? s.minDamage : s.maxDamage), hi = s.maxDamage;
-            return Mathf.Max(RocketsToTear * lo, (RocketsToTear - 1) * hi + 1f);
-        }
-    }
+    /// <summary>Health of one grass clump (~4 clumps per 1.5 m tile): Title Data "bush_hp", default 250 (Tho, Nov 2026:
+    /// at 80 HP one rocket tore a bush; rockets deal 80-100, so 250 takes 3).</summary>
+    public static float ClumpHp => ConfigManager.bushHp;
     /// <summary>Share of the flame's damage dealt to clumps in it every FireTick seconds, at the old 80 HP: scaled by
     /// ClumpHp / 80 so fire still burns a clump down as fast as before.</summary>
     public static float FireFactor = 0.6f, FireTick = 0.2f;
