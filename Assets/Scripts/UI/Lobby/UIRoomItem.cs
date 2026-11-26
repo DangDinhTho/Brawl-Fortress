@@ -49,11 +49,15 @@ public class UIRoomItem : MonoBehaviour
         }
 
         // a room an older version opened on a map this build no longer has (the retired maps, Nov 2026): we would load
-        // another map than the others
-        if (roomInfo.CustomProperties.TryGetValue(TF2GameProps.Map, out var mapObj) && mapObj != null && !MapInBuild((Map)mapObj))
+        // another map than the others; or a map Title Data "hidden_map" hides (e.g. one that crashes)
+        if (roomInfo.CustomProperties.TryGetValue(TF2GameProps.Map, out var mapObj) && mapObj != null)
         {
-            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("room_map_unavailable"));
-            return;
+            string why = UnavailableReason((Map)mapObj);
+            if (why != null)
+            {
+                GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize(why));
+                return;
+            }
         }
 
         PhotonNetwork.JoinRoom(roomInfo.Name);
@@ -61,4 +65,13 @@ public class UIRoomItem : MonoBehaviour
 
     /// <summary>True when this build has the map's scene.</summary>
     public static bool MapInBuild(Map map) => Application.CanStreamedLevelBeLoaded(map.ToString());
+
+    /// <summary>Why a room on this map cannot be played here (a Main.csv key), or null: not in this build
+    /// ("room_map_unavailable") or hidden by Title Data "hidden_map" ("room_map_hidden").</summary>
+    public static string UnavailableReason(Map map)
+    {
+        if (!MapInBuild(map)) return "room_map_unavailable";
+        if (ConfigManager.IsHidden(map)) return "room_map_hidden";
+        return null;
+    }
 }

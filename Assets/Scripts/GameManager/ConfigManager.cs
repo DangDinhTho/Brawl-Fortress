@@ -292,6 +292,17 @@ public class ConfigManager
     /// <summary>Free through Title Data "free_map" (not one of the maps that are free anyway).</summary>
     public static bool IsFreeByEvent(Map map) => freeMaps.Contains(map);
 
+    /// <summary>Maps hidden by Title Data "hidden_map" (same format as "free_map": a JSON array or names separated by
+    /// commas; unknown names are skipped), e.g. a map that crashes until a fixed build is out. Their cards are taken out
+    /// of PopupSelectMap, they are never a fallback map (FirstMapOf), rooms on them cannot be joined, and a solo match
+    /// that still asks for one plays the mode's first map. Empty when the key is missing.</summary>
+    public static HashSet<Map> hiddenMaps = new HashSet<Map>();
+
+    public static bool IsHidden(Map map) => hiddenMaps.Contains(map);
+
+    /// <summary>This build has the map's scene and Title Data does not hide it.</summary>
+    public static bool IsPlayable(Map map) => !hiddenMaps.Contains(map) && Application.CanStreamedLevelBeLoaded(map.ToString());
+
     /// <summary>Tickets needed to play a map (0 = free): 0 for the maps in Title Data "free_map", else from mapConfigs
     /// (Title Data "map_config" or the defaults below).</summary>
     public static int GetTicketCost(Map map)
@@ -303,12 +314,13 @@ public class ConfigManager
         return 0;
     }
 
-    /// <summary>The first map of a game mode (card order) that is in this build; a room's map that cannot be loaded falls
-    /// back to it (rooms made with the old default Map_ARN_Tumble, no longer in the build, hung on "Waiting for other players").</summary>
+    /// <summary>The first map of a game mode (card order) that is in this build and not hidden ("hidden_map"); a room's
+    /// map that cannot be loaded falls back to it (rooms made with the old default Map_ARN_Tumble, no longer in the build,
+    /// hung on "Waiting for other players").</summary>
     public static Map FirstMapOf(GameMode mode)
     {
-        foreach (var e in DefaultTicketCosts) if (e.mode == mode && Application.CanStreamedLevelBeLoaded(e.map.ToString())) return e.map;
-        foreach (var e in DefaultTicketCosts) if (Application.CanStreamedLevelBeLoaded(e.map.ToString())) return e.map;
+        foreach (var e in DefaultTicketCosts) if (e.mode == mode && IsPlayable(e.map)) return e.map;
+        foreach (var e in DefaultTicketCosts) if (IsPlayable(e.map)) return e.map;
         return Map.BrawlScene;
     }
 

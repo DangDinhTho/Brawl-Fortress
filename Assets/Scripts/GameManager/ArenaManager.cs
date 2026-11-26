@@ -148,6 +148,14 @@ public class ArenaManager : MonoBehaviourPunCallbacks
             Debug.LogWarning("Map " + map + " is not in this build: playing " + ConfigManager.FirstMapOf(gameMode));
             map = ConfigManager.FirstMapOf(gameMode);
         }
+        // a solo match on a map Title Data "hidden_map" hides (a selection made before the key was set): play the mode's
+        // first map. Not in a Photon room: an older client there would still load the hidden map (guests cannot join a
+        // room on a hidden map anyway: UIRoomItem / PopupInsideRoom)
+        else if (PhotonNetwork.OfflineMode && ConfigManager.IsHidden(map))
+        {
+            Debug.LogWarning("Map " + map + " is hidden (Title Data hidden_map): playing " + ConfigManager.FirstMapOf(gameMode));
+            map = ConfigManager.FirstMapOf(gameMode);
+        }
         AsyncOperation loadingOperation = SceneManager.LoadSceneAsync(map.ToString(), LoadSceneMode.Additive);
         while (!loadingOperation.isDone)
         {

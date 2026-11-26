@@ -389,11 +389,12 @@ public class PopupInsideRoom : MonoBehaviour
 
     public void OnChangeMap(GameMode gameMode, Map map)
     {
-        // the host (an older version) picked a map this build no longer has (the retired maps, Nov 2026): we would load
-        // another map than the others, so leave the room
-        if (!PhotonNetwork.IsMasterClient && PhotonNetwork.InRoom && !UIRoomItem.MapInBuild(map))
+        // the host (an older version) picked a map this build no longer has (the retired maps, Nov 2026), or one Title
+        // Data "hidden_map" hides: we would load another map than the others / a map that may crash, so leave the room
+        string why = !PhotonNetwork.IsMasterClient && PhotonNetwork.InRoom ? UIRoomItem.UnavailableReason(map) : null;
+        if (why != null)
         {
-            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("room_map_unavailable"));
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize(why));
             LeaveRoom();
             return;
         }

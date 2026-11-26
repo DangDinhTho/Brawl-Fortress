@@ -67,11 +67,36 @@ public class PopupSelectMap : PopupBase
             if (c != null && c.gameMode == GameMode.Competitive) { mapSelected = c.map; break; }
     }
 
+    /// <summary>Maps hidden by Title Data "hidden_map": their cards are switched off and left out of the list (tabs,
+    /// counts, the first map of a mode).</summary>
+    private void DropHiddenCards()
+    {
+        foreach (var c in cards)
+            if (c != null && ConfigManager.IsHidden(c.map)) { DOTween.Kill(c); c.gameObject.SetActive(false); }
+        cards.RemoveAll(c => c == null || ConfigManager.IsHidden(c.map));
+    }
+
+    /// <summary>The previous choice may be a map with no card here (hidden by "hidden_map", retired): select the first
+    /// map of the same mode instead, or of Competitive.</summary>
+    private void EnsureVisibleSelection()
+    {
+        foreach (var c in cards) if (c != null && c.map == mapSelected) return;
+        UIMapIcon pick = null;
+        foreach (var c in cards) if (c != null && c.gameMode == gameModeSelected && !c.IsLocked) { pick = c; break; }
+        if (pick == null) foreach (var c in cards) if (c != null && c.gameMode == GameMode.Competitive) { pick = c; break; }
+        if (pick == null && cards.Count > 0) pick = cards[0];
+        if (pick == null) return;
+        gameModeSelected = pick.gameMode;
+        mapSelected = pick.map;
+    }
+
     private void InitTabs()
     {
         cards.Clear();
         if (mapContainer) mapContainer.GetComponentsInChildren(true, cards);
+        DropHiddenCards();
         SortCards();
+        EnsureVisibleSelection();
         EnsureUnlockedSelection();
         FitCards();
         if (tabs == null || tabs.Length == 0) return;

@@ -43,7 +43,13 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   health of one grass clump; explosions / fire tear it at 0; rockets deal 80-100), `free_map` (default missing / null:
   a list of map enum names that become free on top of the default free maps, e.g. `["Map_Brawl_JingleSquare",
   "Map_Brawl_LanternEve"]` for Christmas; a JSON array or names separated by commas; unknown names are skipped; old
-  builds do not read this key, so it may list new map ids; free maps show first in PopupSelectMap).
+  builds do not read this key, so it may list new map ids; free maps show first in PopupSelectMap), `hidden_map` (same
+  format as `free_map`, default missing: maps taken out of the game, e.g. one that crashes until a fixed build is out;
+  `ConfigManager.hiddenMaps` / `IsHidden` / `IsPlayable`: PopupSelectMap drops their cards (and a selection on one moves
+  to the mode's first visible map), `FirstMapOf` skips them, a room on one cannot be joined and a guest leaves when the
+  host picks one (`UIRoomItem.UnavailableReason`, message `room_map_hidden`), a solo match that still asks for one plays
+  the mode's first map (`ArenaManager.WaitLoadMap`, OfflineMode only). Old builds do not read it. Checked in Play mode
+  with Map_Brawl_Payload + Map_Brawl_MoonRail hidden).
 - **Do not add new mode / weapon / map ids to Title Data until a store build that parses Title Data leniently is out**
   (old builds choke on unknown enum names). This includes `Map_Brawl_FrostPeak` and the Yeti boss maps.
 - Changes Tho still has to make on PlayFab: `weapon_stats` Sniperrifle `interval` 2.75 -> 1.75, Minigun `interval`

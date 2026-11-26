@@ -689,6 +689,7 @@ public class LoginManager : MonoBehaviour
 
         ConfigManager.ApplyMapTicketDefaults(); // maps missing from map_config keep their default ticket price
         ConfigManager.freeMaps = ParseMapNames(data, "free_map"); // extra free maps (events), on top of the default free ones
+        ConfigManager.hiddenMaps = ParseMapNames(data, "hidden_map"); // maps taken out of the selection (e.g. one that crashes)
         var battleTimes = ParseEnumDict<Map, int>(data, "battle_map_times");
         if (battleTimes != null) ConfigManager.battleTimes = battleTimes;
 
