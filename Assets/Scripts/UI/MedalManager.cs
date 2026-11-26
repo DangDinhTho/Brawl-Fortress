@@ -126,14 +126,8 @@ public class MedalManager : MonoBehaviour
         goingHome = true;
         loadingPanel.SetActive(true);
         AdsManager.instan.HideNavtiveAds();
-        if (ConfigManager.showInterBackHome)
-        {
-            AdsManager.instan.ShowInterAds(LoadSceneHome);
-        }
-        else
-        {
-            LoadSceneHome();
-        }
+        // no interstitial on the way Home: it shows when the end-of-match reward is claimed (PopupReward.Dismiss)
+        LoadSceneHome();
     }
 
     private void LoadSceneHome()

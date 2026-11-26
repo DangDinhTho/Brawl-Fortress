@@ -647,7 +647,7 @@ public class ArenaManager : MonoBehaviourPunCallbacks
         popupScoreBoard = GUIManager.instan.CreatePopup<PopupScoreBoard>(true);
         StartCoroutine(MuteAfter(voice != null ? voice.length + 0.2f : 0f));
         yield return new WaitForSeconds(2);
-        // results and rewards right away; the end-of-match ad now shows when the player goes Home (PopupScoreBoard.GoHome)
+        // results and rewards right away; the end-of-match ad shows when the player claims the reward (PopupReward.Dismiss)
         OnShowAdsEndGameDone();
     }
 
@@ -688,7 +688,9 @@ public class ArenaManager : MonoBehaviourPunCallbacks
     {
         GameManager.instan.userData.oldScore = GameManager.instan.userData.score;
         GameManager.instan.userData.score += CaculatePlayerScore();
-        GUIManager.instan.CreatePopup<PopupReward>(rewardData, GameManager.DoubleSourceEndGame);
+        // end-of-match interstitial: when the player closes this popup with a plain claim (not after the x2 rewarded
+        // ad); Title Data show_inter_back_home switches it (it used to gate the ad on the Home button)
+        GUIManager.instan.CreatePopup<PopupReward>(rewardData, GameManager.DoubleSourceEndGame, ConfigManager.showInterBackHome);
 
         popupScoreBoard.goHomeBtn.SetActive(true);
         popupScoreBoard.StartCoroutine(popupScoreBoard.WaitAutoQuickGame());

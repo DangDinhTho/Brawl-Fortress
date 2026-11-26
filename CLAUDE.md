@@ -33,7 +33,10 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 `weapon_stats` (player weapon stats; interval etc. are ONLY here, no code fallback), `battle_map_times`,
 `default_battle_time`, `base_death_time` / `max_death_time` (respawn wait, default 8 / 12 s), `mode_unlock_level`,
 `multiplay`, `max_ticket_ads_per_day`, `admob_ids` (per platform: inter, rewarded, app_open, mrec, banner),
-`show_mrec_matching`, `show_inter_back_home`, `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
+`show_mrec_matching`, `show_inter_back_home` (bool, default true; name kept for old builds: since Nov 2026 it switches the
+  end-of-match interstitial shown when the player closes the reward popup (`PopupReward`, Claim) with a plain claim; no
+  interstitial after the x2 rewarded ad, none on the Home buttons of the scoreboard / MedalScene any more),
+  `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
   multiplies the Payload cart speed on every map after it is fitted to the track), `free_map` (default missing / null:
   a list of map enum names that become free on top of the default free maps, e.g. `["Map_Brawl_JingleSquare",
   "Map_Brawl_LanternEve"]` for Christmas; a JSON array or names separated by commas; unknown names are skipped; old

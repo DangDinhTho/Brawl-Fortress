@@ -89,17 +89,8 @@ public class PopupScoreBoard : PopupBase
         goHomeBtn.SetActive(false);
         HideMrec();
         AudioListener.volume = 0f;   // silent from the moment Home is chosen (back on in Home)
-        // the end-of-match ad, then Home. A fallback leaves anyway if the ad never reports back.
-        bool left = false;
-        System.Action leave = () => { if (left || this == null) return; left = true; StartCoroutine(WaitLeaveRoom()); };
-        StartCoroutine(LeaveFallback(leave));
-        AdsManager.instan.ShowInterAds(leave);
-    }
-
-    IEnumerator LeaveFallback(System.Action leave)
-    {
-        yield return new WaitForSecondsRealtime(15f);
-        leave();
+        // no ad here any more: the end-of-match interstitial shows when the reward is claimed (PopupReward.Dismiss)
+        StartCoroutine(WaitLeaveRoom());
     }
 
     public void StartAutoQuit()

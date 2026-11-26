@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// args[0] = RewardData, args[1] (optional) = double source ("endgame", "daily"...).
+/// args[0] = RewardData, args[1] (optional) = double source ("endgame", "daily"...),
+/// args[2] (optional, bool) = show an interstitial when the receive button closes the popup (end of match only).
 /// When a source is given, a "Watch ad: x2" button is shown (rewarded ad, opt-in),
 /// on the same row as the receive button (the receive button is centred when x2 is not offered).
 /// </summary>
@@ -24,13 +25,19 @@ public class PopupReward : PopupBase
 
     private string doubleSource;
     private bool doubling;
+    private bool interOnClaim;     // end-of-match popup: an interstitial follows a plain claim
+    private bool watchedRewarded;  // the x2 rewarded ad was watched: no interstitial on top of it
+    private bool closed;
 
     public override void OnCreate(params object[] args)
     {
         base.OnCreate(args);
         rewardData = args.Length > 0 ? args[0] as RewardData : null;
         doubleSource = args.Length > 1 ? args[1] as string : null;
+        interOnClaim = args.Length > 2 && args[2] is bool b && b;
         doubling = false;
+        watchedRewarded = false;
+        closed = false;
 
         if (doubleBtn != null)
         {
@@ -78,14 +85,27 @@ public class PopupReward : PopupBase
         // The rewarded callback only fires when the reward is earned; closing the ad early keeps the button.
         AdsManager.instan.ShowRewardAds(() =>
         {
-            if (doubling) return;
+            if (doubling || this == null) return;
             doubling = true;
+            watchedRewarded = true;
             GameManager.instan.RequestDoubleReward(doubleSource, OnDoubled, OnDoubleFailed);
         });
     }
 
+    /// <summary>Hooked to the receive button (RecieveBtn.onClick) in the prefab. On the end-of-match popup a plain
+    /// claim (x2 not watched) is followed by an interstitial (AdsManager skips it for remove_ads / promo).</summary>
+    public override void Dismiss()
+    {
+        if (closed) return;
+        closed = true;
+        bool inter = interOnClaim && !watchedRewarded;
+        base.Dismiss();
+        if (inter) AdsManager.instan.ShowInterAds(null);
+    }
+
     private void OnDoubled(RewardData extra)
     {
+        if (this == null) return; // closed while the server was answering
         doubleSource = null;
         if (doubleBtn != null) doubleBtn.SetActive(false);
         LayoutButtons();
@@ -95,6 +115,7 @@ public class PopupReward : PopupBase
 
     private void OnDoubleFailed()
     {
+        if (this == null) return;
         doubling = false;
         doubleSource = null; // already claimed / expired: don't offer it again
         if (doubleBtn != null) doubleBtn.SetActive(false);
