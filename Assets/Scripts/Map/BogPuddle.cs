@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 /// <summary>
 /// Swamp maps: a puddle of bog mud on the floor that slows whoever wades through it (players, bots, robots, zombies,
 /// bosses), a hot spot for fights. Movement is owned by each character's client (the player's own, the master client
 /// for bots), so every client only slows what it moves: the local player through
-/// <see cref="SpeedFactorAt"/> (PlayerFPSController), NavMesh agents through a <see cref="MudSlowAgent"/> added at run
-/// time. No network message: the puddles are part of the map scene.
+/// <see cref="TerrainSpeed.FactorAt"/> (PlayerFPSController), NavMesh agents through a <see cref="TerrainSpeedAgent"/>
+/// added at run time. No network message: the puddles are part of the map scene.
 /// Placed by the map builder (BrawlMapBuilder.PlaceBogPuddles); the prefab is made by SwampThemeSetup (a flat mesh of
 /// unit radius, BrawlFortress/Bog), scaled to the puddle's size.
 /// </summary>
@@ -18,7 +17,6 @@ public class BogPuddle : MonoBehaviour
     public float radius = 0.94f;
 
     static readonly List<BogPuddle> all = new List<BogPuddle>();
-    static float nextAgentScan;
 
     void OnEnable() { all.Add(this); }
     void OnDisable() { all.Remove(this); }
@@ -44,10 +42,7 @@ public class BogPuddle : MonoBehaviour
     void Update()
     {
         // one puddle looks for new NavMesh agents now and then (bots spawn and respawn during the match)
-        if (all.Count == 0 || all[0] != this || Time.unscaledTime < nextAgentScan) return;
-        nextAgentScan = Time.unscaledTime + 1f;
-        foreach (var ag in FindObjectsByType<NavMeshAgent>(FindObjectsSortMode.None))
-            if (ag.enabled && ag.GetComponent<MudSlowAgent>() == null) ag.gameObject.AddComponent<MudSlowAgent>();
+        if (all.Count > 0 && all[0] == this) TerrainSpeed.EnsureAgents();
     }
 
 #if UNITY_EDITOR

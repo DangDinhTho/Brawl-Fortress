@@ -221,4 +221,11 @@ public enum Map: byte
     Map_Brawl_ToffeeFactory,  // MannVsMachine, Candy
     Map_Brawl_GumdropArena,   // JungleBoss, Hale, Candy
     Map_Brawl_RottenSweets,   // Zombie, Candy
+    Map_Brawl_CoralKingdom,   // Competitive, Ocean
+    Map_Brawl_PearlHeist,     // CaptureTheFlag, Ocean
+    Map_Brawl_TridentCrown,   // KingOfTheHill, Ocean
+    Map_Brawl_TidalExpress,   // Payload, Ocean
+    Map_Brawl_AbyssWorks,     // MannVsMachine, Ocean
+    Map_Brawl_AtlantisArena,  // JungleBoss, Hale, Ocean
+    Map_Brawl_GhostReef,      // Zombie, Ocean
 }

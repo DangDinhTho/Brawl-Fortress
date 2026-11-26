@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, props19, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -270,6 +270,35 @@ BUILDERS = {
     'CandyCastle': props18.build_candycastle,
     'GingerbreadHouse': props18.build_gingerbreadhouse,
     'LayerCake': props18.build_layercake,
+    # ocean theme (sea floor, sunken city)
+    'CoralReefA': lambda: props19.build_coralreef('A', 2881, 'CoralReefA'),
+    'CoralReefB': lambda: props19.build_coralreef('B', 2882, 'CoralReefB'),
+    'AtlantisWall': props19.build_atlantiswall,
+    'ShipHull': props19.build_shiphull,
+    'BarnacleRock': props19.build_barnaclerock,
+    'GiantClam': props19.build_giantclam,
+    'TreasureChest': props19.build_treasurechest,
+    'AnchorRock': props19.build_anchorrock,
+    'DivingHelmet': props19.build_divinghelmet,
+    'CannonWreck': props19.build_cannonwreck,
+    'CoralRidge': props19.build_coralridge,
+    'AtlantisColumn': props19.build_atlantiscolumn,
+    'SeaFan': props19.build_seafan,
+    'TridentStatue': props19.build_tridentstatue,
+    'GlowCrystal': props19.build_glowcrystal,
+    'BrokenMast': props19.build_brokenmast,
+    'KelpGrass': props19.build_kelpgrass,
+    'Starfish': props19.build_starfish,
+    'SeaShells': props19.build_seashells,
+    'SeaUrchins': props19.build_seaurchins,
+    'CoralBits': props19.build_coralbits,
+    'ReefWallA': lambda: props19.build_reefwall('A', 3121, 'ReefWallA'),
+    'ReefWallB': lambda: props19.build_reefwall('B', 3122, 'ReefWallB'),
+    'ReefWallC': lambda: props19.build_reefwall('C', 3123, 'ReefWallC'),
+    'AtlantisGate': props19.build_atlantisgate,
+    'AtlantisTemple': props19.build_atlantistemple,
+    'SunkenShip': props19.build_sunkenship,
+    'GiantScallop': props19.build_giantscallop,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

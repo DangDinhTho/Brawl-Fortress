@@ -141,6 +141,24 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Moon rock uses `ash` / `metal` / `stone` (the stone_* cells read bluish). Maps, one per mode: CraterBase (Comp, new layout), MoonRockRaid (CTF), TranquilityHill
   (KOTH), LunarExpress (Payload), OrbitalWorks (MvM), StardustArena (Boss, Hale), DarkSideCrater (Zombie). Menu
   `Tools/Maps/Build Lunar Maps` (2 maps per MCP call).
+- **Ocean theme** (`Theme.Ocean`, BrawlMapBuilderOcean.cs + OceanThemeSetup.cs, props in Tools/IceArt/props19.py,
+  floor `ocean_tex.py` -> SeabedGround.png): the sea floor and a sunken city (original Atlantis-like ruins of pale jade
+  stone, gold bands, glowing runes / orbs / crystals), an old wooden wreck. `#` one family per wall: CoralReefA/B,
+  AtlantisWall, ShipHull, BarnacleRock; `x` GiantClam / TreasureChest / AnchorRock / DivingHelmet (brass) / CannonWreck,
+  `f` CoralRidge, `t` AtlantisColumn / SeaFan / TridentStatue (original sea-king merman) / GlowCrystal / BrokenMast,
+  `b` KelpGrass (papyrus ramp) swaying (`KelpSway.cs`, one driver object; kelp clumps made not static), decor Starfish
+  / SeaShells / SeaUrchins / CoralBits. Border ReefWallA/B/C (low reef banks, B with a wreck's bow, C with a ruined
+  arch; collider 6 m), `AtlantisGate`; the 100 m sea floor goes on beyond (no lake), backdrop AtlantisTemple (domed
+  rotunda, off each end), SunkenShip, GiantScallop. Glow slot = `OceanGlow.mat`. `Caustics` quad (BrawlFortress/Caustics,
+  procedural additive light web) over the arena. Lighting `OceanLook` / `OceanWater` (IceProps -> IcePropsOcean) /
+  `OceanSky`, blue-green fog. **Currents** (`Assets/Scripts/Map/OceanCurrent.cs`, placed by `PlaceCurrents`): per half
+  the 2 best straight runs of open tiles along z (2 tiles wide, >= 5 long, rows 3-12, >= 5 m apart, clear of a path),
+  mirrored, all flowing to the middle; x(1 + 0.35 cos) of the angle between the move and the flow (BrawlFortress/Current:
+  chevrons; the quad's local Y is the flow). **Not yet tested in a real match.** Maps, one per mode, all new layouts (each with
+  4 lanes, checked before building with a copy of the lane picker): CoralKingdom (Comp), PearlHeist (CTF), TridentCrown
+  (KOTH), TidalExpress (Payload, own path (0,16.5)/(0,10)/(3,4)), AbyssWorks (MvM, path E), AtlantisArena (Boss, Hale),
+  GhostReef (Zombie). Menu `Tools/Maps/Build Ocean Maps` (2 maps per MCP call). The MvM base scene has a red spawn at
+  (0, -15.4): keep tile (row 3, col 10) free on MvM layouts.
 - **Candy theme** (`Theme.Candy`, BrawlMapBuilderCandy.cs + CandyThemeSetup.cs, props in Tools/IceArt/props18.py,
   textures `candy_tex.py` -> CandyGround.png / ChocoFlow.png): a candy kingdom (1960s-70s sweet shop spirit). `#` one
   family per wall: WaferBlock, CakeBlock, ChocoBlock, GumdropStack, MarshmallowStack; `x` Cupcake / GumballMachine /
@@ -185,9 +203,9 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   `SwampGlow.mat` (LavaGlow shader, slow breathing). After the mode objects, `SwampTwilight` swaps IceProps ->
   `IcePropsSwamp` and adds GlowPool (cyan) / WarmPool (lanterns) quads; sky `SwampSky.mat` (SkyGradient), green fog.
   **Bog puddles** (`Assets/Scripts/Map/BogPuddle.cs` + `MudSlowAgent.cs`, placed by `PlaceBogPuddles`): 2 per half on
-  open floor (+1 in the middle on Competitive when free), mirrored, radius 1.35-2.1 m, slow x0.6. The local player via
-  `BogPuddle.SpeedFactorAt` in PlayerFPSController; NavMesh agents get a MudSlowAgent (keeps other scripts' agent.speed as
-  the base). No network message. Mesh made in SwampThemeSetup (vertex alpha = wet edge band, BrawlFortress/Bog shader).
+  open floor (+1 in the middle on Competitive when free), mirrored, radius 1.35-2.1 m, slow x0.6. Applied through
+  `TerrainSpeed.FactorAt(pos, moveDir)` (TerrainSpeedAgent.cs; also the Ocean currents): the local player in
+  PlayerFPSController, NavMesh agents via a runtime `TerrainSpeedAgent` (keeps other scripts' agent.speed as the base). No network message. Mesh made in SwampThemeSetup (vertex alpha = wet edge band, BrawlFortress/Bog shader).
   **Not yet tested in a real match.** Maps, one per mode, all new layouts: GlowshroomBog (Comp),
   ToadstoolRaid (CTF), MireCrown (KOTH), BayouExpress (Payload, path D), SwampMill (MvM, path C), RotwoodArena (Boss,
   Hale), GhoulBayou (Zombie). Menu `Tools/Maps/Build Swamp Maps` (2 maps per MCP call).
