@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -215,6 +215,34 @@ BUILDERS = {
     'SwampGate': props16.build_swampgate,
     'BigCypress': props16.build_bigcypress,
     'StiltShack': props16.build_stiltshack,
+    # greek theme (Mediterranean acropolis by the sea)
+    'MarbleBlocksA': lambda: props17.build_marbleblocks('A', 2291, 'MarbleBlocksA'),
+    'MarbleBlocksB': lambda: props17.build_marbleblocks('B', 2292, 'MarbleBlocksB'),
+    'BrokenColumns': props17.build_brokencolumns,
+    'WhiteWall': props17.build_whitewall,
+    'StoneWall': props17.build_stonewall,
+    'FallenDrums': props17.build_fallendrums,
+    'ColumnCapital': props17.build_columncapital,
+    'Pithoi': props17.build_pithoi,
+    'OlivePress': props17.build_olivepress,
+    'MarbleLow': props17.build_marblelow,
+    'DoricColumn': props17.build_doriccolumn,
+    'MarbleStatue': props17.build_marblestatue,
+    'OliveTree': props17.build_olivetree,
+    'GreekCypress': props17.build_greekcypress,
+    'BronzeBrazier': props17.build_bronzebrazier,
+    'MaquisGrass': props17.build_maquisgrass,
+    'MarbleRubble': props17.build_marblerubble,
+    'PotteryShards': props17.build_potteryshards,
+    'GeraniumPot': props17.build_geraniumpot,
+    'GreekCliffA': lambda: props17.build_greekcliff('A', 2511, 'GreekCliffA'),
+    'GreekCliffB': lambda: props17.build_greekcliff('B', 2512, 'GreekCliffB'),
+    'GreekCliffC': lambda: props17.build_greekcliff('C', 2513, 'GreekCliffC'),
+    'GreekGate': props17.build_greekgate,
+    'GreekTemple': props17.build_greektemple,
+    'WhiteVillage': props17.build_whitevillage,
+    'Windmill': props17.build_windmill,
+    'Caique': props17.build_caique,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

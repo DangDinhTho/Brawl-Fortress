@@ -141,6 +141,22 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Moon rock uses `ash` / `metal` / `stone` (the stone_* cells read bluish). Maps, one per mode: CraterBase (Comp, new layout), MoonRockRaid (CTF), TranquilityHill
   (KOTH), LunarExpress (Payload), OrbitalWorks (MvM), StardustArena (Boss, Hale), DarkSideCrater (Zombie). Menu
   `Tools/Maps/Build Lunar Maps` (2 maps per MCP call).
+- **Greek theme** (`Theme.Greek`, BrawlMapBuilderGreek.cs + GreekThemeSetup.cs, props in Tools/IceArt/props17.py,
+  textures `greek_tex.py` -> GreekGround.png / SeaFlow.png): a Mediterranean acropolis by the sea. `#` one family per
+  wall: MarbleBlocksA/B, BrokenColumns, WhiteWall (whitewashed house, blue door), StoneWall (dry stone, vine); `x`
+  FallenDrums / ColumnCapital / Pithoi / OlivePress, `f` MarbleLow, `t` DoricColumn / MarbleStatue (original headless
+  robed figure) / OliveTree / GreekCypress / BronzeBrazier, `b` MaquisGrass (papyrus ramp: the palette has no purple ramp,
+  frost_grad lavender read as ice), decor MarbleRubble / PotteryShards / GeraniumPot. Border GreekCliffA/B/C (low
+  limestone cliffs: ruined colonnade / blue-domed chapel / olives and cypress; grounded, collider 6 m) with `SeaWater`
+  quads behind (BrawlFortress/Lava + SeaFlow), `GreekGate` (propylon); backdrop GreekTemple (original Doric temple on its
+  rock, off each end), WhiteVillage, Windmill (on islets), Caique boats. Marble colour by facing + height (darker
+  weathered foot), never by the light. Lighting: `GreekLook` (softer than EgyptLook: Tho found the desert light
+  glaring on marble / whitewash) + `GreekSun` swapping IceProps -> `IcePropsGreek` (_Color 0.98, dim 0.68: 0.86 was too dark, the softer ambient did most of it) + `GreekSky`
+  (SkyGradient, warm horizon); GreekGround _Color 0.98, sea _Boost 0.9. Maps, one per mode, all new layouts: MarbleAgora (Comp), AmphoraHeist
+  (CTF), OracleHill (KOTH), HarborLine (Payload, path E), BronzeForge (MvM, path B), TitanTerrace (Boss, Hale),
+  NecropolisSteps (Zombie). Menu `Tools/Maps/Build Greek Maps` (2 maps per MCP call). New Payload/MvM layouts: check
+  the build log's `skipped=` (tiles cut by the path); BronzeForge was redrawn around its path (Catmull-Rom of
+  pathHalf + its point mirror, 1.7 m clear) until skipped=0.
 - **Swamp theme** (`Theme.Swamp`, BrawlMapBuilderSwamp.cs + SwampThemeSetup.cs, props in Tools/IceArt/props16.py,
   textures `swamp_tex.py` -> SwampGround.png / AcidFlow.png / BogMud.png): a toxic bog and glowing mushroom wood at dusk,
   1960s-70s backwoods. `#` one family per wall: MossBoulderA/B, ShroomCluster, RootTangle, LogStack; `x` Stump / RowBoat /

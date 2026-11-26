@@ -207,4 +207,11 @@ public enum Map: byte
     Map_Brawl_SwampMill,      // MannVsMachine, Swamp
     Map_Brawl_RotwoodArena,   // JungleBoss, Hale, Swamp
     Map_Brawl_GhoulBayou,     // Zombie, Swamp
+    Map_Brawl_MarbleAgora,    // Competitive, Greek
+    Map_Brawl_AmphoraHeist,   // CaptureTheFlag, Greek
+    Map_Brawl_OracleHill,     // KingOfTheHill, Greek
+    Map_Brawl_HarborLine,     // Payload, Greek
+    Map_Brawl_BronzeForge,    // MannVsMachine, Greek
+    Map_Brawl_TitanTerrace,   // JungleBoss, Hale, Greek
+    Map_Brawl_NecropolisSteps, // Zombie, Greek
 }
