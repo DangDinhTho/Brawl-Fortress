@@ -115,10 +115,14 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - Checked in a solo match on SunTemple: spawn, middle, side edge, enemy end. Not tried on a phone or in multiplayer.
 
 ## Destructible bushes (Brawl Stars style, Nov 2026)
-- Each box of a `BushArea` is one grass clump with `BushDamage.ClumpHp` 80. Explosions (every `ExplosionDamage`:
+- Each box of a `BushArea` is one grass clump. Its health `BushDamage.ClumpHp` takes **3 rockets** (`RocketsToTear`; Tho:
+  at 80 HP one rocket tore a bush): computed from Title Data `weapon_stats` RocketLauncher min / max = max(3 x min,
+  2 x max + 1) -> 240 with 80-100 (fallback 240 before the stats load), so it follows a rocket damage change. A rocket
+  blast deals the shot's damage (no falloff) to every clump within 1.8 + 0.45 m. With 240: grenades (70-85) take 3-4,
+  sticky bombs (103-138) 2-3. Explosions (every `ExplosionDamage`:
   grenades, sticky bombs, sentry rockets...; rockets where they blow up: `BulletNormal.BushBlastRadius`, Rocket 1.8 m)
-  and fire (`FlameDamage`, `FireFactor` 0.6 of the flame's damage every 0.2 s over its trigger's bounds) wear the clumps
-  they reach down. At 0: `BushArea.Shatter` = leaves burst out (`BrawlFx.Leaves`, leaf shape 3 of FxParticle,
+  and fire (`FlameDamage`, `FireFactor` 0.6 x ClumpHp / 80 of the flame's damage every 0.2 s over its trigger's bounds:
+  fire burns as fast as at 80 HP) wear the clumps they reach down. At 0: `BushArea.Shatter` = leaves burst out (`BrawlFx.Leaves`, leaf shape 3 of FxParticle,
   Resources/Materials/FxLeaf), the clump renderer is hidden, `BushStubble` leaves 2-3 tufts of stalks cut off low (8-11
   stalks packed in an 11 cm radius per tuft, taller in the middle, leaning a little outwards; 5-sided prisms 8-22 cm,
   lighter flat cut tops, drawn with the clump's own material at the palette uvs of its leaf roots. Tho rejected the clump
@@ -136,7 +140,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   the palette colour of the upper leaves; old themes read the World atlas). Run it after adding a grass model. The leaf
   colour is tinted by the clump material's `_Color` at runtime (night / desert / Egypt materials).
 - Checked in a solo match on SunTemple: a scripted blast, a real rocket from the pool and the bots' own rockets / grenades
-  tore clumps, leaves burst, stubble stayed. Fire and multiplayer sync not tried.
+  tore clumps, leaves burst, stubble stayed. Fire and multiplayer sync not tried. 3-rocket health: real rockets from the
+  pool (97, 81, 85 damage) left the bush whole after 2 and tore 8 clumps with the 3rd.
 
 ## Attack controls (Brawl Stars style, Nov 2026)
 - The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`
