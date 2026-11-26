@@ -228,4 +228,11 @@ public enum Map: byte
     Map_Brawl_AbyssWorks,     // MannVsMachine, Ocean
     Map_Brawl_AtlantisArena,  // JungleBoss, Hale, Ocean
     Map_Brawl_GhostReef,      // Zombie, Ocean
+    Map_Brawl_BaobabGrove,    // Competitive, Savanna
+    Map_Brawl_SafariRaid,     // CaptureTheFlag, Savanna
+    Map_Brawl_TermiteHill,    // KingOfTheHill, Savanna
+    Map_Brawl_SavannaExpress, // Payload, Savanna
+    Map_Brawl_RangerStation,  // MannVsMachine, Savanna
+    Map_Brawl_LionsDen,       // JungleBoss, Hale, Savanna
+    Map_Brawl_BonePlains,     // Zombie, Savanna
 }

@@ -70,6 +70,7 @@ public static class OceanThemeSetup
         if (cSh != null)
         {
             var cm = IceThemeSetup.Save(CausticsMat, new Material(cSh));
+            cm.SetFloat("_Intensity", 0.28f); EditorUtility.SetDirty(cm);   // softer than the shader default (0.35): it read as busy
             var go = new GameObject("Caustics");
             var q = new GameObject("Light");
             q.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");

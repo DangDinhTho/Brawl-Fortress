@@ -159,6 +159,37 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   (KOTH), TidalExpress (Payload, own path (0,16.5)/(0,10)/(3,4)), AbyssWorks (MvM, path E), AtlantisArena (Boss, Hale),
   GhostReef (Zombie). Menu `Tools/Maps/Build Ocean Maps` (2 maps per MCP call). The MvM base scene has a red spawn at
   (0, -15.4): keep tile (row 3, col 10) free on MvM layouts.
+- **Savanna theme** (`Theme.Savanna`, BrawlMapBuilderSavanna.cs + SavannaThemeSetup.cs, props in Tools/IceArt/props20.py,
+  floor `savanna_tex.py` -> SavannaGround.png): wild Africa, a 1960s-70s game reserve with a safari camp (original designs).
+  `#` one family per wall: KopjeRockA (balanced granite boulders) / KopjeRockB (split boulder), ThornBoma (palisade of
+  stakes, thorn brush heaped against it), TermiteMound (red earth, fused spires), SafariStack (expedition crates, tarp,
+  jerry cans, hurricane lantern); `x` SavannaBoulder / DeadLog / ElephantSkull / WaterBarrels / SafariCrate (pith
+  helmet), `f` ThornHedge, `t` BaobabTree / AcaciaTree (umbrella) / TermiteSpire / Euphorbia (candelabra; the first
+  try read as an American saguaro), `b` SavannaGrass (sand ramp, golden), decor StrawTuft (grass clump at 0.32 x) /
+  AloePlant / HornSkull / SavannaStones, PondReeds at the water. Border SavannaRidgeA/B/C (low red-earth banks crowned
+  with boulders; B with a baobab, C with an acacia and a ranger's lookout; grounded, collider 6 m), `SafariGate`
+  (granite pillars, log lintel, carved elephant board, lanterns); the 100 m floor goes on beyond, backdrop BaobabGiant,
+  Giraffe (Voronoi coat), Elephant, SafariCamp (ridge tents, an original boxy expedition truck), acacias / kopjes.
+  **Baobab** (the theme's landmark; Tho wanted it like the Avenue of the Baobabs, pinkish-brown bark, not low-poly):
+  `baobab()` in props20.py: a smooth 28-sided column (shallow grooves, flared foot), a crown of curved Bezier branches
+  forking at the ends, lumpy foliage clumps on the twig ends (branches show between them), flat top. Bark faces go to
+  slot 1 on the sand ramp and slot 1 is `BaobabBark.mat` (props material tinted, `SavannaThemeSetup.Bark`, like the
+  candy pink) for BaobabTree, BaobabGiant, SavannaRidgeB (`SavannaThemeSetup.BarkProps`); Blender preview: `bark_preview`.
+  Smooth look lessons: colour organic shapes per vertex on a ramp (the foliage clumps: papyrus ramp by height), not per
+  face by facing (that gave a triangle mosaic that read as low-poly); noise lumps, not per-vertex random jitter; a tube
+  needs >= 8 sides or its edges pass the 50 deg smoothing angle (`SMOOTH_ANGLE`) and show as facets. BaobabTree ~6.6k tris.
+  Lighting = Egypt's (`EgyptLook` + `EgyptSun`) + `SavannaSky` (SkyGradient, warm pale horizon).
+  **Water holes** (`Assets/Scripts/Map/WaterHole.cs`, placed by `PlaceWaterHoles`, BrawlFortress/Pond: depth from vertex
+  alpha, drop rings, wet mud edge, twinkling pale-green "+" glints = heals): 2 per half on open floor (+1 in the middle on
+  Competitive), mirrored, radius 1.35-2 m; heal `healPerSecond` 0.06 x max HP (ticks of 0.5 s through
+  `HealthBase.Buff`, by the character's owner, only while `gameState == Started`); not bosses, not MvM robots.
+  **Not yet tested in a real match.** Holes stay 4 m off a payload / robot path (a hole is up to 2 m wide). Maps, one per
+  mode, all new layouts (checked before building with a copy of the hole picker: two clear 3x3 pockets per half):
+  BaobabGrove (Comp), SafariRaid (CTF), TermiteHill (KOTH), SavannaExpress (Payload, path B), RangerStation (MvM,
+  path A), LionsDen (Boss, Hale), BonePlains (Zombie). Menu `Tools/Maps/Build Savanna Maps` (2 maps per MCP call).
+  Builder gotcha: tiles are moved after they are made, so their colliders sit at the origin until
+  `Physics.SyncTransforms()`: a placement pass that tests the physics scene (CheckBox / CheckSphere) must sync first
+  (PlaceBogPuddles never got its middle puddle for this reason).
 - **Candy theme** (`Theme.Candy`, BrawlMapBuilderCandy.cs + CandyThemeSetup.cs, props in Tools/IceArt/props18.py,
   textures `candy_tex.py` -> CandyGround.png / ChocoFlow.png): a candy kingdom (1960s-70s sweet shop spirit). `#` one
   family per wall: WaferBlock, CakeBlock, ChocoBlock, GumdropStack, MarshmallowStack; `x` Cupcake / GumballMachine /

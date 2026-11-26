@@ -317,6 +317,7 @@ public class ConfigManager
         (GameMode.Competitive, Map.Map_Brawl_MarbleAgora, 12),
         (GameMode.Competitive, Map.Map_Brawl_CandyPlaza, 13),
         (GameMode.Competitive, Map.Map_Brawl_CoralKingdom, 14),
+        (GameMode.Competitive, Map.Map_Brawl_BaobabGrove, 15),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_CTF, 0),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_GemHeist, 1),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_BambooRaid, 2),
@@ -333,6 +334,7 @@ public class ConfigManager
         (GameMode.CaptureTheFlag, Map.Map_Brawl_AmphoraHeist, 13),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_CookieHeist, 14),
         (GameMode.CaptureTheFlag, Map.Map_Brawl_PearlHeist, 15),
+        (GameMode.CaptureTheFlag, Map.Map_Brawl_SafariRaid, 16),
         (GameMode.KingOfTheHill, Map.Map_Brawl_Koth, 0),
         (GameMode.KingOfTheHill, Map.Map_Brawl_CrystalCrown, 1),
         (GameMode.KingOfTheHill, Map.Map_Brawl_MoonAltar, 2),
@@ -349,6 +351,7 @@ public class ConfigManager
         (GameMode.KingOfTheHill, Map.Map_Brawl_OracleHill, 13),
         (GameMode.KingOfTheHill, Map.Map_Brawl_FrostingHill, 14),
         (GameMode.KingOfTheHill, Map.Map_Brawl_TridentCrown, 15),
+        (GameMode.KingOfTheHill, Map.Map_Brawl_TermiteHill, 16),
         (GameMode.Payload, Map.Map_Brawl_Payload, 0),
         (GameMode.Payload, Map.Map_Brawl_MoonRail, 1),
         (GameMode.Payload, Map.Map_Brawl_BambooLine, 2),
@@ -365,6 +368,7 @@ public class ConfigManager
         (GameMode.Payload, Map.Map_Brawl_HarborLine, 13),
         (GameMode.Payload, Map.Map_Brawl_CaramelExpress, 14),
         (GameMode.Payload, Map.Map_Brawl_TidalExpress, 15),
+        (GameMode.Payload, Map.Map_Brawl_SavannaExpress, 16),
         (GameMode.MannVsMachine, Map.Map_Brawl_MvM, 0),
         (GameMode.MannVsMachine, Map.Map_Brawl_IronGrove, 1),
         (GameMode.MannVsMachine, Map.Map_Brawl_CrystalFactory, 2),
@@ -381,6 +385,7 @@ public class ConfigManager
         (GameMode.MannVsMachine, Map.Map_Brawl_BronzeForge, 13),
         (GameMode.MannVsMachine, Map.Map_Brawl_ToffeeFactory, 14),
         (GameMode.MannVsMachine, Map.Map_Brawl_AbyssWorks, 15),
+        (GameMode.MannVsMachine, Map.Map_Brawl_RangerStation, 16),
         (GameMode.JungleBoss, Map.Map_Brawl_HaleJungle, 0),
         (GameMode.JungleBoss, Map.Map_Brawl_RedRockPit, 1),
         (GameMode.JungleBoss, Map.Map_Brawl_LunarColossus, 2),
@@ -395,6 +400,7 @@ public class ConfigManager
         (GameMode.JungleBoss, Map.Map_Brawl_TitanTerrace, 11),
         (GameMode.JungleBoss, Map.Map_Brawl_GumdropArena, 12),
         (GameMode.JungleBoss, Map.Map_Brawl_AtlantisArena, 13),
+        (GameMode.JungleBoss, Map.Map_Brawl_LionsDen, 14),
         (GameMode.Zombie, Map.Map_Brawl_ZombieYard, 0),
         (GameMode.Zombie, Map.Map_Brawl_MoonGraveyard, 1),
         (GameMode.Zombie, Map.Map_Brawl_FrostbiteHollow, 2),
@@ -408,6 +414,7 @@ public class ConfigManager
         (GameMode.Zombie, Map.Map_Brawl_NecropolisSteps, 10),
         (GameMode.Zombie, Map.Map_Brawl_RottenSweets, 11),
         (GameMode.Zombie, Map.Map_Brawl_GhostReef, 12),
+        (GameMode.Zombie, Map.Map_Brawl_BonePlains, 13),
         // retired from the map selection (Nov 2026, one map per art theme per mode; scenes still in the build so rooms
         // made by older clients load): Oasis, DustyCanyon, BambooTemple, MoonMaze, LunarVault, BambooShrine, MineExpress,
         // RobotRidge, HaleMesa, DustDevil, FrontierOutpost, BigfootGulch, StompingGrounds, YetiHollow, MoonlitDen,
@@ -438,6 +445,7 @@ public class ConfigManager
         { Map.Map_Brawl_TitanTerrace, TF2Class.hale },
         { Map.Map_Brawl_GumdropArena, TF2Class.hale },
         { Map.Map_Brawl_AtlantisArena, TF2Class.hale },
+        { Map.Map_Brawl_LionsDen, TF2Class.hale },
     };
 
     public static TF2Class BossOfMap(Map map) => bossOfMap.TryGetValue(map, out var b) ? b : TF2Class.hale;

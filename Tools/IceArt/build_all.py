@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, props19, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, props19, props20, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -299,6 +299,36 @@ BUILDERS = {
     'AtlantisTemple': props19.build_atlantistemple,
     'SunkenShip': props19.build_sunkenship,
     'GiantScallop': props19.build_giantscallop,
+    # Savanna theme (wild Africa, a 1960s game reserve)
+    'KopjeRockA': lambda: props20.build_kopjerock('A', 3181, 'KopjeRockA'),
+    'KopjeRockB': lambda: props20.build_kopjerock('B', 3182, 'KopjeRockB'),
+    'ThornBoma': props20.build_thornboma,
+    'TermiteMound': props20.build_termitemound,
+    'SafariStack': props20.build_safaristack,
+    'SavannaBoulder': props20.build_savannaboulder,
+    'DeadLog': props20.build_deadlog,
+    'ElephantSkull': props20.build_elephantskull,
+    'WaterBarrels': props20.build_waterbarrels,
+    'SafariCrate': props20.build_safaricrate,
+    'ThornHedge': props20.build_thornhedge,
+    'BaobabTree': props20.build_baobabtree,
+    'AcaciaTree': props20.build_acaciatree,
+    'TermiteSpire': props20.build_termitespire,
+    'Euphorbia': props20.build_euphorbia,
+    'SavannaGrass': props20.build_savannagrass,
+    'StrawTuft': props20.build_strawtuft,
+    'AloePlant': props20.build_aloeplant,
+    'HornSkull': props20.build_hornskull,
+    'SavannaStones': props20.build_savannastones,
+    'PondReeds': props20.build_pondreeds,
+    'SavannaRidgeA': lambda: props20.build_savannaridge('A', 3401, 'SavannaRidgeA'),
+    'SavannaRidgeB': lambda: props20.build_savannaridge('B', 3402, 'SavannaRidgeB'),
+    'SavannaRidgeC': lambda: props20.build_savannaridge('C', 3403, 'SavannaRidgeC'),
+    'SafariGate': props20.build_safarigate,
+    'BaobabGiant': lambda: props20.build_baobabtree(3411, 'BaobabGiant', 14.0, 10),
+    'Giraffe': props20.build_giraffe,
+    'Elephant': props20.build_elephant,
+    'SafariCamp': props20.build_safaricamp,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),
@@ -332,6 +362,7 @@ def main():
         reset(); ob = BUILDERS[n](); tris = finish(ob, n); export_fbx(ob, n)
         if preview:
             if ob.get('pink_preview'): props18.pink_preview(ob)   # candy: pink slot (after the export)
+            if ob.get('bark_preview'): props20.bark_preview(ob)   # savanna: the baobab bark slot (after the export)
             render_preview([ob], os.path.join(PREVIEW, n + '.png'), res=320)
         d = ob.dimensions
         print('BUILT %-14s %5d tris  %.2f x %.2f x %.2f m' % (n, tris, d.x, d.y, d.z))
