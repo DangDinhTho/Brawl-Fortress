@@ -607,6 +607,14 @@ public class LoginManager : MonoBehaviour
         if (data.TryGetValue(key, out var s) && int.TryParse(s, out var v)) target = v;
     }
 
+    /// <summary>A decimal number with a dot ("1.15"), whatever the device's language; must be above 0.</summary>
+    static void ReadPositiveFloat(Dictionary<string, string> data, string key, ref float target)
+    {
+        if (data.TryGetValue(key, out var s)
+            && float.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)
+            && v > 0f && !float.IsInfinity(v)) target = v;
+    }
+
     static void ReadString(Dictionary<string, string> data, string key, ref string target)
     {
         if (data.TryGetValue(key, out var s)) target = s;
@@ -669,6 +677,7 @@ public class LoginManager : MonoBehaviour
         ReadInt(data, "default_battle_time", ref ConfigManager.defaultBattleTime);
         ReadInt(data, "base_death_time", ref ConfigManager.baseDeathTime);
         ReadInt(data, "max_death_time", ref ConfigManager.maxDeathTime);
+        ReadPositiveFloat(data, "cart_payload_speed_scale", ref ConfigManager.cartPayloadSpeedScale);
         ReadBool(data, "can_get_ticket_by_ads", ref ConfigManager.canGetTicketByAds);
         ReadBool(data, "show_banner", ref ConfigManager.showBanner);
         ReadBool(data, "multiplay", ref ConfigManager.multiplay);

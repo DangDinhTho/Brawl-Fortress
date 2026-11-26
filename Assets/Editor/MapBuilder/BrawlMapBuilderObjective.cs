@@ -402,6 +402,7 @@ public static partial class BrawlMapBuilder
             target.position = new Vector3(end.x, 0.1f, end.z);
             var cart = vehicle.GetComponent<BombCartController>();
             if (cart) { cart.target = target; EditorUtility.SetDirty(cart); }
+            if (d.mode == GameMode.Payload) SizeCart(vehicle);
 
             foreach (var n in new[] { "MegaExplosionYellow", "BasicZoneBlue" })
             {
@@ -424,6 +425,126 @@ public static partial class BrawlMapBuilder
             log += " path=" + pts.Count + "pts frags=" + frags.Count + " vehicle=" + vehicle.name + " pv=" + string.Join("/", clones.SelectMany(c => c.GetComponentsInChildren<Photon.Pun.PhotonView>(true)).Select(pv => new SerializedObject(pv).FindProperty("sceneViewId").intValue));
         }
         finally { }
+    }
+
+    // ------------------------------------------------------------------ cart size
+    // The cart was small for its track (about 1 m wide on the 0.95 m gauge with 1.5 m sleepers): 1.25 x keeps its wheels
+    // on the rails and makes it read better; the push zone (EntryFieldOfView radius, 2 m) grows with it.
+    const float CartScale = 1.25f, CartPushRadius = 2.5f;
+
+    static void SizeCart(GameObject vehicle)
+    {
+        vehicle.transform.localScale = Vector3.one * CartScale;
+        var fov = vehicle.GetComponent<EntryFieldOfView>();
+        if (fov) { fov.radius = CartPushRadius; EditorUtility.SetDirty(fov); }
+        EditorUtility.SetDirty(vehicle.transform);
+    }
+
+    /// <summary>Applies the cart size and push zone to every Payload map in the build (generated or hand-made) without
+    /// rebuilding them. The generated maps clone the cart of Map_Brawl_Payload, Build() also sizes it.</summary>
+    [MenuItem("Tools/Maps/Apply Payload Cart Size")]
+    public static string ApplyPayloadCartSize()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        GuardUnsavedScenes();
+        var done = new List<string>();
+        foreach (var path in EditorBuildSettings.scenes.Where(x => x.enabled && x.path.Contains("/Map_Brawl_")).Select(x => x.path))
+        {
+            var sc = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+            var cart = sc.GetRootGameObjects().FirstOrDefault(g => g.GetComponent<BombCartController>());
+            if (!cart) continue;
+            SizeCart(cart);
+            EditorSceneManager.MarkSceneDirty(sc);
+            EditorSceneManager.SaveScene(sc);
+            done.Add(sc.name);
+        }
+        return done.Count + " payload maps: " + string.Join(", ", done);
+    }
+
+    // ------------------------------------------------------------------ the hand-made source map
+    /// <summary>Map_Brawl_Payload is hand-made (the generated maps clone its cart systems; Build() never rebuilds it).
+    /// Its cart's Bezier path did not follow its hand-laid rail pieces (up to 2.4 m off: the cart rolled beside the track)
+    /// and its NavMeshSurface had been switched off since the first commit (no NavMesh: bots stood still). This rebuilds
+    /// the fragments as a Catmull-Rom through the centres of the rail pieces (under the "rail" object), from the cart to a
+    /// little past the target, switches the surface on, rebakes it (bushes walkable), snaps the patrol points onto it and
+    /// rebuilds the bush patrol points.</summary>
+    [MenuItem("Tools/Maps/Fix Payload Source Map")]
+    public static string FixPayloadSourceMap()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        GuardUnsavedScenes();
+        log = "";
+        scene = EditorSceneManager.OpenScene("Assets/Scenes/Map_Brawl_Payload.unity", OpenSceneMode.Single);
+        var roots = scene.GetRootGameObjects();
+        var curves = roots.First(g => g.name == "BezierCurves").transform;
+        var vehicle = roots.First(g => g.GetComponent<CoasterfollowerAdv>());
+        var target = roots.First(g => g.name == "Target").transform;
+        float y = curves.GetChild(0).GetComponent<BezierFragment>().pointA.position.y;
+        var railRoot = roots.SelectMany(g => g.GetComponentsInChildren<Transform>(true)).First(t => t.name == "rail");
+        var centres = railRoot.GetComponentsInChildren<Renderer>(true).Select(r => r.bounds.center).ToList();
+
+        // the path: from the cart along the rail pieces (ordered down the map) to 2.2 m past the last one
+        Vector3 start = vehicle.transform.position;
+        var pts = new List<Vector3> { new Vector3(start.x, y, start.z) };
+        foreach (var c in centres.Where(c => c.z < start.z - 1f).OrderByDescending(c => c.z)) pts.Add(new Vector3(c.x, y, c.z));
+        var dir = pts[pts.Count - 1] - pts[pts.Count - 2]; dir.y = 0f; dir.Normalize();
+        pts.Add(pts[pts.Count - 1] + dir * 2.2f);
+        pathPoints = pts;   // Ctrl() makes the Catmull-Rom tangents from pathPoints
+
+        var template = curves.GetChild(0).gameObject;
+        for (int i = curves.childCount - 1; i >= 1; i--) Object.DestroyImmediate(curves.GetChild(i).gameObject);
+        var frags = new List<GameObject>();
+        for (int i = 0; i < pts.Count - 1; i++)
+        {
+            var f = i == 0 ? template : Object.Instantiate(template, curves);
+            f.name = i == 0 ? "fragment" : "fragment (" + i + ")";
+            var bf = f.GetComponent<BezierFragment>();
+            Ctrl(i, out var a, out var b, out var c1, out var c2);
+            f.transform.position = a;
+            bf.pointA.position = a; bf.pointB.position = b;
+            bf.bezierPoint[0].position = c1; bf.bezierPoint[1].position = c2;
+            bf.pointA.rotation = Quaternion.LookRotation((c1 - a).normalized + new Vector3(0, 0, 1e-4f));
+            bf.pointB.rotation = Quaternion.LookRotation((b - c2).normalized + new Vector3(0, 0, 1e-4f));
+            bf.Update();
+            EditorUtility.SetDirty(bf);
+            frags.Add(f);
+        }
+        var coaster = vehicle.GetComponent<CoasterfollowerAdv>();
+        coaster.fragments = frags.ToArray();
+        EditorUtility.SetDirty(coaster);
+        vehicle.transform.rotation = Quaternion.LookRotation(pts[1] - pts[0]);
+        // the deviation that was the bug: rail piece centres to the new path
+        pathSamples = new List<Vector3>();
+        for (int i = 0; i < pts.Count - 1; i++) { Ctrl(i, out var a, out var b, out var c1, out var c2); for (int k = 0; k <= 12; k++) pathSamples.Add(Cubic(a, c1, c2, b, k / 12f)); }
+        float dev = centres.Max(c => DistToPath(new Vector3(c.x, y, c.z)));
+        float targetDev = DistToPath(new Vector3(target.position.x, y, target.position.z));
+
+        // the NavMesh
+        var nav = roots.First(g => g.name == "NavMeshSurface" || g.name == "NavmeshSurface");
+        nav.SetActive(true);
+        Physics.SyncTransforms();
+        var data = BakeNavMesh(scene.name);
+        UnityEngine.AI.NavMesh.RemoveAllNavMeshData();
+        var inst = UnityEngine.AI.NavMesh.AddNavMeshData(data);
+        var tp = roots.First(g => g.name == "TeamPos").GetComponentsInChildren<Transform>().Where(t => t.childCount == 0).ToList();
+        int off = tp.Count(t => !UnityEngine.AI.NavMesh.SamplePosition(t.position, out var h, 1f, UnityEngine.AI.NavMesh.AllAreas));
+        string path = "?";
+        var red = tp.FirstOrDefault(t => t.position.z < tp.Average(q => q.position.z)); var blue = tp.FirstOrDefault(t => t.position.z > tp.Average(q => q.position.z));
+        if (red && blue && UnityEngine.AI.NavMesh.SamplePosition(red.position, out var ha, 2f, UnityEngine.AI.NavMesh.AllAreas) && UnityEngine.AI.NavMesh.SamplePosition(blue.position, out var hb, 2f, UnityEngine.AI.NavMesh.AllAreas))
+        { var np = new UnityEngine.AI.NavMeshPath(); UnityEngine.AI.NavMesh.CalculatePath(ha.position, hb.position, UnityEngine.AI.NavMesh.AllAreas, np); path = np.status.ToString(); }
+        int cartOff = pathSamples.Count(q => !UnityEngine.AI.NavMesh.SamplePosition(q, out var h, 2.5f, UnityEngine.AI.NavMesh.AllAreas));
+        int snapped = 0;
+        var pp = roots.FirstOrDefault(g => g.name == "PathPoints");
+        if (pp)
+            foreach (Transform t in pp.transform)
+                if (!UnityEngine.AI.NavMesh.SamplePosition(t.position, out var h0, 0.5f, UnityEngine.AI.NavMesh.AllAreas) && UnityEngine.AI.NavMesh.SamplePosition(t.position, out var h1, 4f, UnityEngine.AI.NavMesh.AllAreas))
+                { t.position = h1.position; snapped++; }
+        inst.Remove();
+        int bushPts = BushPatrolPoints.Build(scene);
+        EditorSceneManager.SaveScene(scene);
+        return scene.name + ": path=" + pts.Count + "pts railDev=" + dev.ToString("0.00") + " targetOffPath=" + targetDev.ToString("0.00")
+               + " redToBlue=" + path + " spawnsOffNav=" + off + "/" + tp.Count + " cartPathOffNav=" + cartOff + " pathPointsSnapped=" + snapped
+               + " bushPoints=" + bushPts + "/offNav=" + BushPatrolPoints.LastOffNav + log;
     }
 
     // ------------------------------------------------------------------ rail track

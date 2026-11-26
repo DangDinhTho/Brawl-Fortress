@@ -15,6 +15,10 @@ public class ConfigManager
     /// above it (Title Data keys "base_death_time" / "max_death_time", whole seconds).</summary>
     public static int baseDeathTime = 8;
     public static int maxDeathTime = 12;
+    /// <summary>Multiplies the Payload cart's speed on every map, after it is fitted to the track length and the match
+    /// time (BombCartController): 1 = as fitted, 1.2 = 20% faster, 0.8 = 20% slower. Title Data key
+    /// "cart_payload_speed_scale" (a number, e.g. 1.15); missing, malformed or not above 0 keeps 1.</summary>
+    public static float cartPayloadSpeedScale = 1f;
     public static int timeFlagBackHome = 30;
     public static int pricePerCrate = 5;
 

@@ -1093,7 +1093,8 @@ public static partial class BrawlMapBuilder
     // ------------------------------------------------------------------ navmesh + path points
     static NavMeshData BakeNavMesh(string id)
     {
-        var navGo = Root("NavmeshSurface");
+        // the generated maps call it NavmeshSurface; the hand-made source maps (Map_Brawl_Payload, Map_Brawl_MvM) NavMeshSurface
+        var navGo = scene.GetRootGameObjects().First(g => g.name == "NavmeshSurface" || g.name == "NavMeshSurface");
         navGo.transform.position = Vector3.zero; navGo.transform.rotation = Quaternion.identity;
         var surf = navGo.GetComponents<Component>().First(c => c != null && c.GetType().Name == "NavMeshSurface");
         var so = new SerializedObject(surf);

@@ -33,7 +33,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 `weapon_stats` (player weapon stats; interval etc. are ONLY here, no code fallback), `battle_map_times`,
 `default_battle_time`, `base_death_time` / `max_death_time` (respawn wait, default 8 / 12 s), `mode_unlock_level`,
 `multiplay`, `max_ticket_ads_per_day`, `admob_ids` (per platform: inter, rewarded, app_open, mrec, banner),
-`show_mrec_matching`, `show_inter_back_home`, `show_inter_die`.
+`show_mrec_matching`, `show_inter_back_home`, `show_inter_die`, `cart_payload_speed_scale` (number, default 1:
+  multiplies the Payload cart speed on every map after it is fitted to the track).
 - **Do not add new mode / weapon / map ids to Title Data until a store build that parses Title Data leniently is out**
   (old builds choke on unknown enum names). This includes `Map_Brawl_FrostPeak` and the Yeti boss maps.
 - Changes Tho still has to make on PlayFab: `weapon_stats` Sniperrifle `interval` 2.75 -> 1.75, Minigun `interval`
@@ -121,6 +122,18 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Win32 1224). `Build` falls back to saving the base scene over the map through Unity; a locked map icon is kept
   (`WriteMapped`, warning in the build log; `AssetDatabase.ReleaseCachedFileHandles` does not free it): restart Unity
   and rebuild that map, or run `Tools/Maps/Refresh Recent Map Icons` (icons only: Payload, Egypt, Factory, Circus).
+- **Payload cart & pace** (Nov 2026): `BombCartController` raises its `speeds` (metres per physics step, now a floor)
+  so a whole uncontested push from the cart to the target takes `pushShare` of the match time (0.40 / 0.30 / 0.24 with
+  1 / 2 / 3+ pushers; match time = `ConfigManager.BattleTimeOf`, like the timer; length measured along the coaster's
+  Bezier samples). Then x Title Data `cart_payload_speed_scale` (default 1, read with a dot decimal, must be > 0). Before, one fixed speed (0.4 / 0.6 / 0.75 m/s) made the 65 m tracks take 77% of a match with one
+  pusher: blue lost. Tracks run 22.6-65 m. The cart is 1.25 x (`CartScale`, still on the 0.95 m gauge) with a 2.5 m
+  push zone (`CartPushRadius`, EntryFieldOfView.radius): `SizeCart` in Build(), menu `Tools/Maps/Apply Payload Cart
+  Size` for the existing scenes.
+- **Map_Brawl_Payload** (hand-made; the generated maps clone its cart systems) had its `NavMeshSurface` switched off
+  since the first commit (no NavMesh: bots stood still) and a cart path up to 2.4 m off its hand-laid rail pieces. Menu
+  `Tools/Maps/Fix Payload Source Map` rebuilds the fragments through the rail pieces (under `rail`), switches the
+  surface on and rebakes. `BakeNavMesh` accepts both `NavmeshSurface` (generated) and `NavMeshSurface` (hand-made).
+  A scan of all 139 build maps (NavMesh, spawns on it, red-to-blue path, rail vs cart path) found no other broken map.
 - **Rail track** (Payload, `PlaceRails` in BrawlMapBuilderObjective.cs): one procedural mesh on the shared palette
   material (IceProps; Xmas night: IcePropsNight; Egypt: swapped to the desert one): rails with a head / web / foot
   profile (dark worn head, rust below), uneven rough-sawn sleepers (length, width, a few degrees askew, chamfered; 85%
