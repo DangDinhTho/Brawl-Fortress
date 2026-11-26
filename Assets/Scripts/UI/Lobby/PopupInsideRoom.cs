@@ -389,6 +389,14 @@ public class PopupInsideRoom : MonoBehaviour
 
     public void OnChangeMap(GameMode gameMode, Map map)
     {
+        // the host (an older version) picked a map this build no longer has (the retired maps, Nov 2026): we would load
+        // another map than the others, so leave the room
+        if (!PhotonNetwork.IsMasterClient && PhotonNetwork.InRoom && !UIRoomItem.MapInBuild(map))
+        {
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("room_map_unavailable"));
+            LeaveRoom();
+            return;
+        }
         if (!ConfigManager.CheckSelectMap(map) && ready)
         {
             readyToggle.SetIsOnWithoutNotify(false);

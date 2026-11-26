@@ -48,6 +48,17 @@ public class UIRoomItem : MonoBehaviour
             return;
         }
 
+        // a room an older version opened on a map this build no longer has (the retired maps, Nov 2026): we would load
+        // another map than the others
+        if (roomInfo.CustomProperties.TryGetValue(TF2GameProps.Map, out var mapObj) && mapObj != null && !MapInBuild((Map)mapObj))
+        {
+            GUIManager.instan.CreatePopup<PopupNotify>(LocalizationManager.Localize("room_map_unavailable"));
+            return;
+        }
+
         PhotonNetwork.JoinRoom(roomInfo.Name);
     }
+
+    /// <summary>True when this build has the map's scene.</summary>
+    public static bool MapInBuild(Map map) => Application.CanStreamedLevelBeLoaded(map.ToString());
 }

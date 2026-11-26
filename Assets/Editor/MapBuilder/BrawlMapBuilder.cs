@@ -1271,16 +1271,30 @@ public static partial class BrawlMapBuilder
 
     static void AddBuildSettings(string path)
     {
+        if (Retired.Contains(Path.GetFileNameWithoutExtension(path))) return;   // retired maps stay out of the build
         var list = EditorBuildSettings.scenes.ToList();
         if (list.Any(s => s.path == path)) return;
         list.Add(new EditorBuildSettingsScene(path, true));
         EditorBuildSettings.scenes = list.ToArray();
     }
 
+    /// <summary>Takes the retired maps' scenes out of the build list (menu Tools/Maps/Remove Retired Maps From Build).</summary>
+    [MenuItem("Tools/Maps/Remove Retired Maps From Build")]
+    public static string RemoveRetiredFromBuild()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        var all = EditorBuildSettings.scenes;
+        var kept = all.Where(s => !Retired.Contains(Path.GetFileNameWithoutExtension(s.path))).ToArray();
+        if (kept.Length != all.Length) EditorBuildSettings.scenes = kept;
+        return "removed " + (all.Length - kept.Length) + " retired map scenes from the build, " + kept.Length + " left";
+    }
+
     /// <summary>Maps taken out of the map selection (Nov 2026): in each mode one map per art theme is kept, the free
-    /// one when two share a theme. Their scenes stay in the build and their Map enum values stay (old clients share
-    /// rooms with new ones and the enum goes over the network as a byte); only the cards are gone, and AddCard never
-    /// puts them back.</summary>
+    /// one when two share a theme. Their Map enum values stay (the enum goes over the network as a byte), but since
+    /// Nov 2026 their scenes are out of the build too (Tho: the build had grown a lot). A room an older version opens on
+    /// one of them cannot be joined (UIRoomItem / PopupInsideRoom check the scene is in the build); a solo or Photon
+    /// room that still asks for one plays the mode's first map (ArenaManager.WaitLoadMap). The scene files stay in the
+    /// project; AddCard and AddBuildSettings never put them back.</summary>
     public static readonly HashSet<string> Retired = new HashSet<string>
     {
         "Map_Brawl_Oasis", "Map_Brawl_DustyCanyon", "Map_Brawl_BambooTemple", "Map_Brawl_MoonMaze",          // Competitive

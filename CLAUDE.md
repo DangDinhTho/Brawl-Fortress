@@ -163,8 +163,30 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Map_Brawl_CTF = Moon, Map_Brawl_Payload / ZombieYard = Cave. 24 older maps that repeated a theme are **retired**
   (the 5 Mix maps FrontierRuins, BorderSiege, CrossroadRuins, FrontierConvoy, LastStand since Nov 2026): listed in
   `BrawlMapBuilder.Retired`, cards removed from `PopupSelectMap` (menu `Tools/Maps/Remove Retired Map Cards`; AddCard
-  never re-adds them). Their scenes stay in the build and their `Map` enum values stay: all clients share Photon
-  AppVersion 1.0, so an old client's room on a retired map must still load, and the enum is sent as a byte.
+  never re-adds them). Their `Map` enum values stay (the enum is sent as a byte; all clients share Photon AppVersion
+  1.0). Since Nov 2026 their scenes are **out of the build** too (Tho: the build had grown a lot; menu `Tools/Maps/Remove
+  Retired Maps From Build`, `AddBuildSettings` skips them; the scene files stay in the project): a room an older version
+  opens on one cannot be joined (`UIRoomItem.JoinRoomClick` / `PopupInsideRoom.OnChangeMap` check
+  `UIRoomItem.MapInBuild`, message `room_map_unavailable`, the guest leaves); anything else that still asks for one
+  plays the mode's first map (`ArenaManager.WaitLoadMap`). Build list: 117 maps + FlashScene, Home, Arena, MedalScene.
+
+## Build size: static batching at map load (Nov 2026)
+- Every prop of the generated maps is Batching Static (`SetStaticEditorFlags(int.MaxValue)`). Build-time static batching
+  stored a combined copy of every prop instance per map: 5-36 MB per map uncompressed (Japan maps ~33 MB, old themes
+  5-15), ~1.9 GB for 139 maps, while the props' own meshes are shared by a theme's maps. That was the bulk of the build
+  growth. Now: Player Settings static batching is **off for Android and iPhone** (Standalone keeps it), and
+  `RuntimeStaticBatchProcessor` (Assets/Editor, IProcessSceneWithReport, also runs for scenes loaded in Play mode)
+  clears Batching Static on each processed scene's static MeshRenderers and lists them on a new `RuntimeStaticBatch`
+  object (Assets/Scripts/Map), which runs `StaticBatchingUtility.Combine` in Start and drops the combined meshes' CPU
+  copy (`UploadMeshData(true)`). Same batches as before. PagodaHill (the heaviest, 646k static verts): 393 of 412
+  renderers in 11 combined meshes, 11 ms in the editor (more on a phone, during the map load).
+- Runtime combining needs **Read/Write enabled** meshes: the 328 prop FBX used by static renderers were switched on
+  (Assets/Art/IceTheme + 8 in Brawl Arena/Models; the old Battle Arena models and the generated .asset meshes already
+  were); `IceThemeSetup` sets `isReadable` on the theme FBX. In a player build the processor logs a
+  `[RuntimeStaticBatch]` warning listing static meshes that are not readable (those props are drawn unbatched).
+- Not measured with a real build yet (the editor log had no Brawl Fortress build report). Textures in the build are
+  ~220 MB (estimate, ASTC 4x4), nothing unusual. Map_Brawl_Cavern's lightmaps (139 MB EXR) and Map_Brawl_Payload's
+  LightingData (48 MB) are not referenced by their scenes: not in the build, only in the repo.
 - `DefaultTicketCosts` lists only the kept maps, priced in card order: in each mode the first 3 maps are free, the
   next 3 cost 1, 2, 3 tickets, all others 5. **Boss Battle and Zombie have no free map**: 1, 2, 3, then 5.
   Title Data `map_config` overrides a map; `free_map` makes more maps free. A tab switch selects the mode's first

@@ -73,6 +73,7 @@ public static class IceThemeSetup
             mi.materialImportMode = ModelImporterMaterialImportMode.None;
             mi.importAnimation = false; mi.animationType = ModelImporterAnimationType.None;
             mi.importNormals = ModelImporterNormals.Import;
+            mi.isReadable = true;   // the maps batch their static props when they load (RuntimeStaticBatch): needs Read/Write
             mi.SaveAndReimport();
         }
 
