@@ -237,8 +237,7 @@ public static partial class BrawlMapBuilder
         }
         Lake(-left, -120f, -120f, 120f);
         Lake(right, 120f, -120f, 120f);
-        Lake(-left, right, 24.2f, 120f);
-        Lake(-left, right, -24.2f, -120f);
+        EndLakes(Lake, left, right, 120f);   // the ends, with a floor inlet under the gate
         log += " chocoLake=" + lakes;
         var rnd = new Random(seed);
         for (int s = -1; s <= 1; s += 2)   // mirrored, so both teams look at the same things

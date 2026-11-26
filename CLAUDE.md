@@ -115,6 +115,38 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   zoom) so `columns` (3) fill the list's width, clamped to `maxCardScale` 1.3, one column less below `minCardScale`
   0.85: 300 px cards at 16:9, ~343 px at 19.5:9 (were 286 px with an empty strip on the right; on 4:3 they ran off).
 
+## Map icons and map info (Nov 2026)
+- New-theme icons (Ice and later, 92 maps) come from `MapIconStudio` (Assets/Editor/MapBuilder), not the old fixed
+  grading (that made desert / savanna yellow and dusk / lava / night maps dark): a "hero" shot from behind one end
+  (camera height 19, back 23, looking at z 3.5, fov 46: the far gate and its landmark show at the top: torii, temple
+  gate, big top, lava lake, Atlantis temple; little grey sky), cached raw in `Library/MapIconRaw/<icon>.png`, then
+  graded per image, GENTLY (Tho: the first strong grading had heavy contrast and black spots, worst on ice / snow):
+  white-point stretch only (`blackStretch` 0: a black-point stretch crushed shadows into black specks), gamma to a
+  bright target (0.6+ for day maps), shadow lift + `floor` 0.05 (no pure black), contrast ~0.04, NO clarity (local
+  contrast drew dark halos), mild saturation / vibrance, yellow-orange band control (desert, savanna), highlight
+  shoulder (snow), bloom only on night / lava / glowing maps, vignette 0.05. The raw shot is the reference: a grade
+  should only brighten and freshen it. Settings: `Assets/Editor/MapBuilder/MapIconGrades.json` = one
+  entry per theme (`XmasNight` for night maps) + per-map overrides (`"set": "bloomThreshold=0.85 shoulder=0.6"`,
+  `cam.height=18` for the camera). Edit the JSON and run `MapIconStudio.RegradeAll(theme)` / menu `Tools/Maps/Icons/
+  Regrade New Theme Icons` (no scene opened, ~3.5 s per icon: one theme per MCP call); camera changes need
+  `RenderRawBatch(start, count)` (opens the maps; ~25 per call). `BrawlMapBuilder.RenderIcon` uses the studio for new
+  themes; the old themes keep the old formula. Preview grades into a scratch folder first (`GradeIcon(icon, g, path)`).
+  Once Unity has loaded an icon its file stays memory-mapped and a normal write fails (1224); `WriteMapped` then
+  overwrites it in place without truncating, the new PNG padded to the old length with an ancillary `paDd` chunk
+  (decoders skip it; checked: Unity imports and shows them, pixels identical to the previews). Write with
+  `RegradeAll(theme, null, false)` (one or two themes per MCP call: locked files are slow) + one `AssetDatabase.Refresh()`.
+  (`EditorApplication.OpenProject` from a delayCall did not restart the editor.)
+- Map info: each card in PopupSelectMap gets an "i" button (UIMapIcon.CreateInfoButton, top-left of the picture under
+  the mode label, opposite the ticket badge; the Boss Battle boss badge sits under it; on top of the lock overlay; sprite `PopupSelectMap.infoIcon` = GUI PRO Kit Icon_ImageIcon_Info) opening
+  `PopupMapInfo` (Resources/Popups, made from the ticket popup's frame; content built at runtime): picture in a frame
+  of the theme colour, price badge (FREE / FREE TODAY for `free_map` / xN), name, mode, theme name + description, mode
+  objective, features (Volcano vents, Swamp bog, Ocean currents, Savanna water holes, Japan torii paths, Xmas night,
+  boss name, track for Payload / MvM, tall grass). Data: `MapInfo.cs` + generated `MapInfoTable.cs` (map -> theme;
+  regenerate with `Tools/Maps/Generate Map Info Table` after adding maps; hand-made maps are listed in
+  MapInfoTableGen). Texts: Main.csv keys `theme_*`, `theme_desc_*`, `mode_title_*`, `mode_desc_*`, `feat_*`,
+  `map_info_*`, `boss_name_*` (5 languages). A new theme needs its row in MapIconGrades.json, `theme_<Theme>` /
+  `theme_desc_<Theme>` strings, a colour in `MapInfo.ThemeColor` and, if it has special terrain, a `feat_` line.
+
 ## Map builder (Assets/Editor/MapBuilder)
 - `BrawlMapBuilder.cs`: maps defined as ASCII half-layouts (`Def`: half rows + center, mirrored for the other team).
   Tiles: `#` wall, `x` small obstacle, `f` fence, `t` tall prop, `b` bush (4 clumps per tile), `.` floor/decor.
@@ -172,17 +204,43 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   small Amphorae / DigCrates, backdrop Pyramid / palms / DigTent, floor `SandFloor` (`sand_tex.py`). Border:
   `SandCliffA/B/C` (layered sandstone, B with a carved temple front in a recess) replace the desert cliffs; they stand on
   the ground and are stretched to the old cliff's top (the old cliffs are sunk 0.3-3 m, which buried the temple front);
-  collider = rock body only (not the rubble in front). `TempleGate` at z +-22.5 closes the gap behind each spawn where
-  the base scene's Gate arch stood (Western keeps that Gate; the gap is walled by the invisible VitualWall).
+  collider = rock body only (not the rubble in front). `TempleGate` closes the gap behind each spawn where
+  the base scene's Gate arch stood (Western keeps that Gate; the gap is walled by the invisible VitualWall; see End gates).
   **Lighting** (Tho: sunny, NOT yellow): Western scene lighting + `EgyptLook` (the Western ambient is dark grey and FlatKit adds it:
-  bright near-neutral trilight ambient, light haze, sun) + `EgyptSun` after the mode objects: IceProps / SandGround swapped
-  for `IcePropsDesert` / `SandGroundDesert` (`_Color` ~1.05, a light neutral `_ColorDim` instead of the blue-grey one).
+  bright near-neutral trilight ambient, light haze, sun) + `EgyptSun(true)` after the mode objects. FlatKit ignores the
+  light colour (`_LightContribution 0`): the colour is the material's. **White sun** (Nov 2026: Tho still found Egypt too
+  yellow): props get `IcePropsEgypt` (palette `IcePaletteEgypt.png` = IcePalette with the sand family (khaki, bone,
+  sandstone, sand_grad cells) toned 30-40% towards grey, `_Color` 1.04/1.04/1.07), the floor `SandGroundDesert`
+  (`_Color` 0.97/1.03/1.28: golden yellow -> light cream; Egypt only). Made by `IceThemeSetup.EgyptWhiteSun` (menu
+  `Tools/Maps/Egypt/Make White Sun Materials`, also run by Setup Assets); existing scenes: `Tools/Maps/Egypt/Apply White
+  Sun To Egypt Maps`. Factory / Circus / Lunar / Savanna keep `IcePropsDesert` (`EgyptSun()`).
   Ice and Xmas close that gap the same way (`BrawlMapBuilder.PlaceGates`): `IceGate` (glacier arch, natural ice) and
   `XmasGate` (timber arch, pine garland, C9 bulbs, wreath, lanterns), both in Tools/IceArt/props10.py. Maps: SunTemple, ScarabVault, ObeliskHill, NileExpress, DuneFoundry, PharaohsCourt (Hale), MummyValley.
 - Unity keeps a scene / texture file memory-mapped after it was open or imported (IOException "user-mapped section",
   Win32 1224). `Build` falls back to saving the base scene over the map through Unity; a locked map icon is kept
   (`WriteMapped`, warning in the build log; `AssetDatabase.ReleaseCachedFileHandles` does not free it): restart Unity
   and rebuild that map, or run `Tools/Maps/Refresh Recent Map Icons` (icons only: Payload, Egypt, Factory, Circus).
+- **End gates and the match camera** (Nov 2026, BrawlMapBuilderGates.cs). The match camera (`FreeCamera`, fov 40) hangs
+  11.6 m up and 10.6 m behind the player, towards the player's own end. The themed gates (IceGate ... ToriiGate) stood at
+  |z| 22.5, right behind the back spawn row (19.6) and 8-9.7 m tall: they hid the players at their spawn and, on Payload /
+  MvM, the bomb hole (16.5). Now `PlaceGates` puts them at |z| `GateZ` 27 (in the alcove between the end border pieces)
+  scaled by `GateScale` (largest scale <= 0.98 that stays 30 cm under the camera's line of sight to a player 1 m behind
+  the back spawns: Ice 0.73, Xmas 0.76, Temple 0.77, Greek 0.80, Volcano / Torii 0.84, Candy 0.87, Swamp 0.91, Atlantis
+  0.94, Circus 0.97, Factory / Airlock / Safari 0.98). The end lakes (`EndLakes`: Volcano, Swamp, Greek, Candy) leave a
+  floor inlet under the gate (|x| < 6.5 up to |z| 30.5). `ClearEndCamera` (in Build, after the lighting) casts the
+  camera's lines of sight to every spawn (and 1 m behind it) and to the bomb hole: a backdrop piece beyond the end wall
+  that cuts one is pushed outwards, a border piece becomes a variant of its family that does not (the Savanna ridge B with
+  its 9.9 m baobab -> A / C at the ends); CircusWallA has no lower variant (2 of 72 lines, a corner spawn). Old themes
+  keep the base scene's open Gate arch (it never blocked). Existing scenes: menu `Tools/Maps/Fix End Gates (all maps)` /
+  `FixEndGatesBatch(start, count)` (~1 s per map, ~30 per MCP call; also splits the end lakes, lifts the decals below and
+  rebakes the NavMesh: the gates' old footprint was cut out of it). Checked: no gate in the way on all 92 new-theme maps;
+  a solo match on NileExpress shows the whole team at the spawn. The new-theme icons (except Egypt, re-shot) still show
+  the gates at the old spot.
+- **Z-fighting**: the grass clumps (`grass.build_frostgrass`: FrostGrass, PineGrass, PapyrusGrass, ScorchGrass, YardGrass,
+  FairGrass, StarGrass, BogGrass, MaquisGrass, SugarGrass, KelpGrass, SavannaGrass, StrawTuft, EmberTuft, PondReeds) had a
+  cap at the root of each leaf facing up at y = 0, flush with the floor: the foot of every bush flickered. The caps are gone
+  (634 tris). Floor decals with faces flush with the floor (`FlushDecals`: LavaCrack, CooledFlow) are lifted 1.2 cm.
+  Faces of a new prop must never lie flush with the floor facing up.
 - **Payload cart & pace** (Nov 2026): `BombCartController` raises its `speeds` (metres per physics step, now a floor)
   so a whole uncontested push from the cart to the target takes `pushShare` of the match time (0.40 / 0.30 / 0.24 with
   1 / 2 / 3+ pushers; match time = `ConfigManager.BattleTimeOf`, like the timer; length measured along the coaster's

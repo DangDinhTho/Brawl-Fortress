@@ -38,7 +38,35 @@ public class UIMapIcon : MonoBehaviour
     {
         selectedObj.SetActive(map == popupSelectMap.mapSelected);
         if (map == popupSelectMap.mapSelected) popupSelectMap.mapSelectedItem = this;
+        CreateInfoButton();
         Refresh();
+    }
+
+    [Header("Info button")]
+    [Tooltip("Optional: created at runtime (top-left of the picture, under the mode label) with PopupSelectMap.infoIcon")]
+    public Button infoButton;
+
+    /// <summary>The "i" button: opens PopupMapInfo (theme, objective, special terrain). Top-left of the picture just under
+    /// the mode label, opposite the ticket badge (top-right); on top of the lock overlay, so a player can read about maps
+    /// of a mode they have not unlocked yet.</summary>
+    void CreateInfoButton()
+    {
+        if (infoButton != null || popupSelectMap == null || popupSelectMap.infoIcon == null) return;
+        var go = new GameObject("InfoBtn", typeof(RectTransform), typeof(Image), typeof(Button));
+        go.layer = gameObject.layer;
+        var r = (RectTransform)go.transform; r.SetParent(transform, false);
+        r.anchorMin = r.anchorMax = new Vector2(0f, 1f); r.pivot = new Vector2(0f, 1f);
+        r.sizeDelta = new Vector2(52f, 52f); r.anchoredPosition = new Vector2(12f, -46f);
+        var img = go.GetComponent<Image>(); img.sprite = popupSelectMap.infoIcon; img.preserveAspect = true;
+        var sh = go.AddComponent<Shadow>(); sh.effectColor = new Color(0f, 0f, 0f, 0.45f); sh.effectDistance = new Vector2(0f, -3f);
+        infoButton = go.GetComponent<Button>();
+        infoButton.onClick.AddListener(OpenInfo);
+        r.SetAsLastSibling();
+    }
+
+    void OpenInfo()
+    {
+        GUIManager.instan.CreatePopup<PopupMapInfo>(gameMode, map, mapIcon != null ? mapIcon.sprite : null);
     }
 
     private void OnEnable()
@@ -71,8 +99,8 @@ public class UIMapIcon : MonoBehaviour
         bossBadge.gameObject.SetActive(true);
     }
 
-    /// <summary>Round boss badge (its own ring and background are in the picture), top-left of the map picture just below the
-    /// mode label, opposite the ticket badge; under the lock overlay, so a locked mode dims it too.</summary>
+    /// <summary>Round boss badge (its own ring and background are in the picture), left side of the map picture under the
+    /// "i" button (top-left corner); under the lock overlay, so a locked mode dims it too.</summary>
     Image CreateBossBadge()
     {
         RectTransform host = mapIcon != null ? mapIcon.rectTransform : (RectTransform)transform;
@@ -80,7 +108,7 @@ public class UIMapIcon : MonoBehaviour
         go.layer = gameObject.layer;
         var r = (RectTransform)go.transform; r.SetParent(host, false);
         r.anchorMin = r.anchorMax = new Vector2(0f, 1f); r.pivot = new Vector2(0f, 1f);
-        r.sizeDelta = new Vector2(96f, 96f); r.anchoredPosition = new Vector2(6f, -40f);
+        r.sizeDelta = new Vector2(90f, 90f); r.anchoredPosition = new Vector2(4f, -100f);
         var img = go.GetComponent<Image>(); img.preserveAspect = true; img.raycastTarget = false;
         return img;
     }

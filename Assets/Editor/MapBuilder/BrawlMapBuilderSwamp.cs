@@ -284,8 +284,7 @@ public static partial class BrawlMapBuilder
         }
         Lake(-left, -90f, -90f, 90f);
         Lake(right, 90f, -90f, 90f);
-        Lake(-left, right, 24.2f, 90f);
-        Lake(-left, right, -24.2f, -90f);
+        EndLakes(Lake, left, right, 90f);   // the ends, with a floor inlet under the gate
         log += " acidLakes=" + lakes;
 
         var rnd = new Random(seed);

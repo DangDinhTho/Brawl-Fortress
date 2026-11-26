@@ -263,8 +263,7 @@ public static partial class BrawlMapBuilder
         }
         Sea(-left, -120f, -120f, 120f);
         Sea(right, 120f, -120f, 120f);
-        Sea(-left, right, 24.2f, 120f);
-        Sea(-left, right, -24.2f, -120f);
+        EndLakes(Sea, left, right, 120f);   // the ends, with a floor inlet under the gate
         log += " sea=" + seas;
         var rnd = new Random(seed);
         for (int s = -1; s <= 1; s += 2)   // mirrored, so both teams look at the same things

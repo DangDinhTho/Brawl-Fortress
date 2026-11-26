@@ -26,6 +26,10 @@ public class PopupSelectMap : PopupBase
     public bool hideEmptyTabs = true;
     public float cardStagger = 0.05f;
 
+    [Header("Map info")]
+    [Tooltip("Icon of the \"i\" button each card adds (UIMapIcon.CreateInfoButton), opening PopupMapInfo")]
+    public Sprite infoIcon;
+
     [Header("Card size")]
     [Tooltip("The map cards are zoomed so that this many columns fill the width of the list")]
     public int columns = 3;

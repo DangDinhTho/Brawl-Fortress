@@ -44,7 +44,8 @@ def build_frostgrass(seed=71, name='FrostGrass', grad='frost_grad', ws=1.0):
                 for j in range(4):
                     bm.faces.new((rings[i][j], rings[i][(j + 1) % 4], rings[i + 1][(j + 1) % 4], rings[i + 1][j]))
             for j in range(4): bm.faces.new((rings[-1][j], rings[-1][(j + 1) % 4], tip))
-            bm.faces.new(list(reversed(rings[0])))
+            # no cap at the root: it faced up at y = 0, flush with the floor, and z-fought with it (the foot of every
+            # clump flickered in the game); the open end sits on the ground and is never seen
     part(bm, make, lambda f: 0)
     ob = bm_to_obj(bm, name, C)
     me = ob.data

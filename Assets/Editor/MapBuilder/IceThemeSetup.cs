@@ -135,10 +135,9 @@ public static class IceThemeSetup
         MakeNightAssets(props, snowMat, tex, glow);
         var sandTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/SandGround.png");
         if (sandTex != null && MakeFloor(MakeMat(SandGroundMat, reference, sandTex, Color.white), "SandFloor")) made++;
-        // Egypt: the desert sun (the builder swaps these in): brighter, neutral sunlit colours, a light shade instead of the blue-grey one
+        // the desert sun (Factory, Circus, Lunar, Savanna: the builder swaps these in): brighter, neutral sunlit colours, a light shade instead of the blue-grey one
         DesertTint(Save(PropsDesertMat, new Material(props)), new Color(1.05f, 1.04f, 1.0f), new Color(0.72f, 0.69f, 0.66f));
-        var sandMat = AssetDatabase.LoadAssetAtPath<Material>(SandGroundMat);
-        if (sandMat != null) DesertTint(Save(SandDesertMat, new Material(sandMat)), new Color(1.06f, 1.05f, 1.0f), new Color(0.78f, 0.74f, 0.68f));
+        EgyptWhiteSun();
         var yardTex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/YardGround.png");
         if (yardTex != null)
         {   // Factory: the concrete yard, in the same bright neutral daylight as the desert materials
@@ -188,6 +187,54 @@ public static class IceThemeSetup
         }
         Debug.LogWarning("[IceTheme] could not write " + path + " (locked): kept the old file");
         return false;
+    }
+
+    public const string PropsEgyptMat = Root + "/IcePropsEgypt.mat";        // Egypt props: white sun (IcePaletteEgypt)
+    public const string EgyptPalette = Root + "/IcePaletteEgypt.png";
+
+    /// <summary>Palette cells (index in common.py PALETTE order) of the sand family and the share of their colour the
+    /// Egypt palette keeps (the rest goes to grey of the same brightness): khaki, bone, bone_dark, sandstone, sandstone_dark,
+    /// sand_grad. Tho found the Egypt maps too yellow: under a white sun the sandstone reads warm beige, not orange.</summary>
+    static readonly (int cell, float keep)[] EgyptCells = { (22, 0.65f), (30, 0.6f), (31, 0.65f), (48, 0.62f), (49, 0.7f), (50, 0.62f) };
+
+    /// <summary>Egypt's "white sun" look (swapped in by BrawlMapBuilder.EgyptSun on Egypt maps): IcePropsEgypt = the props
+    /// material on IcePaletteEgypt.png (the sand family toned down, every other colour as it is) in neutral light, and the
+    /// sand floor (SandGroundDesert, Egypt only) tinted from golden yellow to light cream.</summary>
+    [MenuItem("Tools/Maps/Egypt/Make White Sun Materials")]
+    public static void EgyptWhiteSun()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return;
+        string palPath = Root + "/IcePalette.png";
+        var props = AssetDatabase.LoadAssetAtPath<Material>(PropsMat);
+        if (props == null || !File.Exists(palPath)) return;
+        var src = new Texture2D(2, 2, TextureFormat.RGBA32, false); src.LoadImage(File.ReadAllBytes(palPath));
+        const int G = 8; int C = src.width / G;
+        foreach (var (cell, keep) in EgyptCells)
+        {
+            int cx = cell % G, cy = cell / G;
+            for (int y = (G - 1 - cy) * C; y < (G - cy) * C; y++)
+                for (int x = cx * C; x < (cx + 1) * C; x++)
+                {
+                    var c = src.GetPixel(x, y);
+                    float l = 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+                    var n = Color.Lerp(Color.Lerp(new Color(l, l, l), c, keep), Color.white, 0.03f); n.a = c.a;
+                    src.SetPixel(x, y, n);
+                }
+        }
+        if (WriteIfChanged(EgyptPalette, src.EncodeToPNG())) AssetDatabase.ImportAsset(EgyptPalette);
+        Object.DestroyImmediate(src);
+        if (AssetImporter.GetAtPath(EgyptPalette) is TextureImporter ti
+            && (ti.filterMode != FilterMode.Bilinear || ti.mipmapEnabled || ti.wrapMode != TextureWrapMode.Clamp || ti.textureCompression != TextureImporterCompression.Uncompressed))
+        {
+            ti.textureType = TextureImporterType.Default; ti.filterMode = FilterMode.Bilinear; ti.mipmapEnabled = false;
+            ti.wrapMode = TextureWrapMode.Clamp; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.sRGBTexture = true; ti.SaveAndReimport();
+        }
+        var pm = new Material(props);
+        pm.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(EgyptPalette);
+        DesertTint(Save(PropsEgyptMat, pm), new Color(1.04f, 1.04f, 1.07f), new Color(0.72f, 0.72f, 0.76f));
+        var sandMat = AssetDatabase.LoadAssetAtPath<Material>(SandGroundMat);
+        if (sandMat != null) DesertTint(Save(SandDesertMat, new Material(sandMat)), new Color(0.97f, 1.03f, 1.28f), new Color(0.74f, 0.75f, 0.82f));
+        AssetDatabase.SaveAssets();
     }
 
     static void DesertTint(Material m, Color lit, Color shade)

@@ -395,7 +395,7 @@ public static partial class BrawlMapBuilder
 
         SetupMode(d);
         if (d.theme == Theme.Volcano) VolcanoSky();
-        if (d.theme == Theme.Egypt || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar) EgyptSun();
+        if (d.theme == Theme.Egypt || d.theme == Theme.Factory || d.theme == Theme.Circus || d.theme == Theme.Lunar) EgyptSun(d.theme == Theme.Egypt);
         if (d.theme == Theme.Lunar) LunarSky();
         if (d.theme == Theme.Swamp) { SwampTwilight(); SwampSky(); }
         if (d.theme == Theme.Greek) { GreekSun(); GreekSky(); }
@@ -403,6 +403,7 @@ public static partial class BrawlMapBuilder
         if (d.theme == Theme.Savanna) { EgyptSun(); SavannaSky(); }   // the bright neutral desert daylight, a clear sky
         if (d.theme == Theme.Japan) { GreekSun(); JapanSky(); }       // the soft Greek daylight, a spring sky
         if (d.theme == Theme.Ocean) { OceanWater(); OceanSky(); }   // bright neutral daylight materials
+        if (d.theme >= Theme.Ice) log += ClearEndCamera();   // nothing tall behind the spawns / bomb hole in the camera's way
         Physics.SyncTransforms();
         // bushes, navmesh, path points
         EditorApplication.ExecuteMenuItem("Tools/Bush/Build Bush Areas (Active Scene)");
@@ -532,6 +533,7 @@ public static partial class BrawlMapBuilder
         if (!prefabs.TryGetValue(name, out var p)) { log += " [missing " + name + "]"; return null; }
         var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(p), scene);
         go.transform.SetParent(env, false);
+        if (IsFlushDecal(name) && Mathf.Abs(pos.y) < 0.004f) pos.y = DecalLift;   // faces flush with the floor: no z-fighting
         go.transform.position = pos;
         go.transform.rotation = Quaternion.Euler(0, rotY, 0);
         go.transform.localScale = scale3 ?? Vector3.one * s;
@@ -549,14 +551,7 @@ public static partial class BrawlMapBuilder
     static T Pick<T>(Random rnd, params T[] items) => items[rnd.Next(items.Length)];
     static float Rot90(Random rnd) => rnd.Next(4) * 90f;
 
-    /// <summary>The gate piece of a theme behind each team's spawn, where the base scene's gate arch stood (removed for
-    /// every theme but Western/Bamboo/Mix): without it the border shows a gap there (walled only by the invisible VitualWall).</summary>
-    static void PlaceGates(string prefab)
-    {
-        if (!prefabs.ContainsKey(prefab)) return;
-        Prefab(prefab, new Vector3(-0.3f, 0f, 22.5f), 180f, 0.98f, true);   // front (+Z) turned to the arena
-        Prefab(prefab, new Vector3(-0.3f, 0f, -22.5f), 0f, 0.98f, true);
-    }
+    // PlaceGates (the themed gate behind each spawn): BrawlMapBuilderGates.cs
     // per-tile Randoms are seeded with consecutive numbers, so their draws are correlated (a pick from a list skips
     // whole ranges of it). Mix() scrambles a draw (murmur3 finalizer) before it is used for a choice.
     static int Mix(int h) { unchecked { uint x = (uint)h; x ^= x >> 16; x *= 0x85ebca6b; x ^= x >> 13; x *= 0xc2b2ae35; x ^= x >> 16; return (int)(x & 0x7fffffff); } }
@@ -1132,19 +1127,9 @@ public static partial class BrawlMapBuilder
     {
         GuardUnsavedScenes();
         scene = EditorSceneManager.OpenScene("Assets/Scenes/" + id + ".unity", OpenSceneMode.Single);
-        var data = BakeNavMesh(id);
-        NavMesh.RemoveAllNavMeshData();
-        var inst = NavMesh.AddNavMeshData(data);
-        var tp = Root("TeamPos").GetComponentsInChildren<Transform>().Where(t => t.childCount == 0).ToList();
-        int off = tp.Count(t => !NavMesh.SamplePosition(t.position, out var h, 1f, NavMesh.AllAreas));
-        string path = "?";
-        var red = tp.FirstOrDefault(t => t.position.z < 0); var blue = tp.FirstOrDefault(t => t.position.z > 0);
-        if (red && blue && NavMesh.SamplePosition(red.position, out var ha, 2f, NavMesh.AllAreas) && NavMesh.SamplePosition(blue.position, out var hb, 2f, NavMesh.AllAreas))
-        { var np = new NavMeshPath(); NavMesh.CalculatePath(ha.position, hb.position, NavMesh.AllAreas, np); path = np.status.ToString(); }
-        inst.Remove();
-        int pts = BushPatrolPoints.Build(scene);
+        string r = RebakeOpenScene(id);
         EditorSceneManager.SaveScene(scene);
-        return id + ": redToBlue=" + path + " spawnsOffNav=" + off + " bushPoints=" + pts + " offNav=" + BushPatrolPoints.LastOffNav;
+        return id + ": " + r;
     }
 
     static void FixPathPoints(Def d, NavMeshData data)
@@ -1211,6 +1196,8 @@ public static partial class BrawlMapBuilder
 
     static void RenderIcon(Def d)
     {
+        // new themes: hero shot + per-map grading (MapIconStudio, Assets/Editor/MapBuilder/MapIconGrades.json)
+        if (d.theme >= Theme.Ice) { MapIconStudio.RenderAndGrade(d); return; }
         var go = new GameObject("_iconcam");
         SceneManager.MoveGameObjectToScene(go, scene);
         var cam = go.AddComponent<Camera>();

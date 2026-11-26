@@ -230,8 +230,9 @@ public static partial class BrawlMapBuilder
     }
 
     /// <summary>After everything is placed (mode objects and the rail track included): props and sand take the desert
-    /// materials (warm, bright, golden shade; made by IceThemeSetup).</summary>
-    static void EgyptSun()
+    /// materials (bright, neutral daylight; made by IceThemeSetup). Egypt maps (egypt = true) take the white-sun props
+    /// material instead (IcePropsEgypt: the sand family toned down; Tho found the golden desert look too yellow).</summary>
+    static void EgyptSun(bool egypt = false)
     {
         var swap = new System.Collections.Generic.Dictionary<Material, Material>();
         void Map(string from, string to)
@@ -239,7 +240,9 @@ public static partial class BrawlMapBuilder
             var a = AssetDatabase.LoadAssetAtPath<Material>(from); var b = AssetDatabase.LoadAssetAtPath<Material>(to);
             if (a && b) swap[a] = b;
         }
-        Map(IceThemeSetup.PropsMat, IceThemeSetup.PropsDesertMat);
+        if (egypt && AssetDatabase.LoadAssetAtPath<Material>(IceThemeSetup.PropsEgyptMat) == null) IceThemeSetup.EgyptWhiteSun();
+        Map(IceThemeSetup.PropsMat, egypt ? IceThemeSetup.PropsEgyptMat : IceThemeSetup.PropsDesertMat);
+        if (egypt) Map(IceThemeSetup.PropsDesertMat, IceThemeSetup.PropsEgyptMat);
         Map(IceThemeSetup.SandGroundMat, IceThemeSetup.SandDesertMat);
         int n = 0;
         foreach (var r in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Renderer>(true)))
@@ -249,6 +252,29 @@ public static partial class BrawlMapBuilder
             if (ch) { r.sharedMaterials = mats; n++; }
         }
         log += " desertSun=" + n;
+    }
+
+    /// <summary>The white-sun look on the existing Egypt map scenes (no rebuild): makes the materials, swaps the props to
+    /// IcePropsEgypt and saves each scene.</summary>
+    [MenuItem("Tools/Maps/Egypt/Apply White Sun To Egypt Maps")]
+    public static string ApplyEgyptWhiteSun()
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        GuardUnsavedScenes();
+        IceThemeSetup.EgyptWhiteSun();
+        var done = new System.Collections.Generic.List<string>();
+        foreach (var d in AllDefs().Where(x => x.theme == Theme.Egypt))
+        {
+            string path = "Assets/Scenes/" + d.mapEnum + ".unity";
+            if (!System.IO.File.Exists(path)) continue;
+            scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(path, UnityEditor.SceneManagement.OpenSceneMode.Single);
+            log = "";
+            EgyptSun(true);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            done.Add(d.mapEnum + log);
+        }
+        return string.Join("\n", done);
     }
 
     /// <summary>Fallen column drums, small jars and bones on the open sand (no colliders), clear of walls and spawns.</summary>
