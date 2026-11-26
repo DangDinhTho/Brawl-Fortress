@@ -755,7 +755,8 @@ public class PlayerFPSController : MonoBehaviour
 
 
         // set the desired speed to be walking or running
-        speed = runSpeed;// (State == PlayerState.Running && m_CharacterController.isGrounded) ? runSpeed : 0;
+        speed = runSpeed * BogPuddle.SpeedFactorAt(transform.position);   // Swamp maps: bog puddles slow you down
+        // (State == PlayerState.Running && m_CharacterController.isGrounded) ? runSpeed : 0;
         
         // normalize input if it exceeds 1 in combined length:
         if (inputMagnitude > 1)

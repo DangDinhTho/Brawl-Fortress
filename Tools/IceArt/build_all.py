@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -189,6 +189,32 @@ BUILDERS = {
     'Lander': props15.build_lander,
     'LaunchRocket': props15.build_launchrocket,
     'Earth': props15.build_earth,
+    # swamp theme (toxic bog, glowing mushroom wood)
+    'MossBoulderA': lambda: props16.build_mossboulder('A', 2091, 'MossBoulderA'),
+    'MossBoulderB': lambda: props16.build_mossboulder('B', 2092, 'MossBoulderB'),
+    'ShroomCluster': props16.build_shroomcluster,
+    'RootTangle': props16.build_roottangle,
+    'LogStack': props16.build_logstack,
+    'Stump': props16.build_stump,
+    'RowBoat': props16.build_rowboat,
+    'RustyDrums': props16.build_rustydrums,
+    'MoonshineStill': props16.build_moonshinestill,
+    'FallenLog': props16.build_fallenlog,
+    'GiantShroomA': lambda: props16.build_giantshroom('A', 2281, 'GiantShroomA'),
+    'GiantShroomB': lambda: props16.build_giantshroom('B', 2282, 'GiantShroomB'),
+    'SwampCypress': props16.build_swampcypress,
+    'SwampLantern': props16.build_swamplantern,
+    'BogGrass': props16.build_boggrass,
+    'ShroomPatch': props16.build_shroompatch,
+    'MossClump': props16.build_mossclump,
+    'Cattails': props16.build_cattails,
+    'SwampStones': props16.build_swampstones,
+    'SwampBankA': lambda: props16.build_swampbank('A', 2291, 'SwampBankA'),
+    'SwampBankB': lambda: props16.build_swampbank('B', 2292, 'SwampBankB'),
+    'SwampBankC': lambda: props16.build_swampbank('C', 2293, 'SwampBankC'),
+    'SwampGate': props16.build_swampgate,
+    'BigCypress': props16.build_bigcypress,
+    'StiltShack': props16.build_stiltshack,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

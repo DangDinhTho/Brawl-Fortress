@@ -141,6 +141,23 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Moon rock uses `ash` / `metal` / `stone` (the stone_* cells read bluish). Maps, one per mode: CraterBase (Comp, new layout), MoonRockRaid (CTF), TranquilityHill
   (KOTH), LunarExpress (Payload), OrbitalWorks (MvM), StardustArena (Boss, Hale), DarkSideCrater (Zombie). Menu
   `Tools/Maps/Build Lunar Maps` (2 maps per MCP call).
+- **Swamp theme** (`Theme.Swamp`, BrawlMapBuilderSwamp.cs + SwampThemeSetup.cs, props in Tools/IceArt/props16.py,
+  textures `swamp_tex.py` -> SwampGround.png / AcidFlow.png / BogMud.png): a toxic bog and glowing mushroom wood at dusk,
+  1960s-70s backwoods. `#` one family per wall: MossBoulderA/B, ShroomCluster, RootTangle, LogStack; `x` Stump / RowBoat /
+  RustyDrums / MoonshineStill, `f` FallenLog, `t` GiantShroomA (blue) / GiantShroomB (purple) / SwampCypress /
+  SwampLantern, `b` BogGrass (reeds, papyrus ramp), decor ShroomPatch / MossClump / Cattails / SwampStones. Border
+  SwampBankA/B/C (low mossy banks, B with a stilt shack, C with a cypress; grounded, not stretched, collider 6 m) with
+  `AcidLake` quads behind (BrawlFortress/Lava + AcidFlow), `SwampGate`; backdrop BigCypress, StiltShack, giant mushrooms.
+  Props kit `SKit` (per-vertex gradient faces: glowing frost_grad / ice_grad caps). Swamp props' glow slot =
+  `SwampGlow.mat` (LavaGlow shader, slow breathing). After the mode objects, `SwampTwilight` swaps IceProps ->
+  `IcePropsSwamp` and adds GlowPool (cyan) / WarmPool (lanterns) quads; sky `SwampSky.mat` (SkyGradient), green fog.
+  **Bog puddles** (`Assets/Scripts/Map/BogPuddle.cs` + `MudSlowAgent.cs`, placed by `PlaceBogPuddles`): 2 per half on
+  open floor (+1 in the middle on Competitive when free), mirrored, radius 1.35-2.1 m, slow x0.6. The local player via
+  `BogPuddle.SpeedFactorAt` in PlayerFPSController; NavMesh agents get a MudSlowAgent (keeps other scripts' agent.speed as
+  the base). No network message. Mesh made in SwampThemeSetup (vertex alpha = wet edge band, BrawlFortress/Bog shader).
+  **Not yet tested in a real match.** Maps, one per mode, all new layouts: GlowshroomBog (Comp),
+  ToadstoolRaid (CTF), MireCrown (KOTH), BayouExpress (Payload, path D), SwampMill (MvM, path C), RotwoodArena (Boss,
+  Hale), GhoulBayou (Zombie). Menu `Tools/Maps/Build Swamp Maps` (2 maps per MCP call).
 - **Circus theme** (`Theme.Circus`, BrawlMapBuilderCircus.cs, props in Tools/IceArt/props14.py, floor `circus_tex.py`
   -> FairGround.png): a 1960s-70s travelling circus and funfair on a summer field. `#` one family per wall: show wagons
   CircusWagonA (red/gold) / B (blue/yellow) along the wall, TrunkStack, HayStack; `x` StarTubs / PopcornCart /

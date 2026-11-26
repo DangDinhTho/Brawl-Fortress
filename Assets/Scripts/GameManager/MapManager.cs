@@ -200,4 +200,11 @@ public enum Map: byte
     Map_Brawl_OrbitalWorks,    // MannVsMachine, Lunar
     Map_Brawl_StardustArena,   // JungleBoss, Hale, Lunar
     Map_Brawl_DarkSideCrater,  // Zombie, Lunar
+    Map_Brawl_GlowshroomBog,   // Competitive, Swamp
+    Map_Brawl_ToadstoolRaid,  // CaptureTheFlag, Swamp
+    Map_Brawl_MireCrown,      // KingOfTheHill, Swamp
+    Map_Brawl_BayouExpress,   // Payload, Swamp
+    Map_Brawl_SwampMill,      // MannVsMachine, Swamp
+    Map_Brawl_RotwoodArena,   // JungleBoss, Hale, Swamp
+    Map_Brawl_GhoulBayou,     // Zombie, Swamp
 }
