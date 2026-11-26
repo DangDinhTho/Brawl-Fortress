@@ -193,4 +193,11 @@ public enum Map: byte
     Map_Brawl_ClockworkFair,   // MannVsMachine, Circus
     Map_Brawl_StrongmanArena,  // JungleBoss, Hale, Circus
     Map_Brawl_HauntedFair,     // Zombie, Circus
+    Map_Brawl_CraterBase,      // Competitive, Lunar
+    Map_Brawl_MoonRockRaid,    // CaptureTheFlag, Lunar
+    Map_Brawl_TranquilityHill, // KingOfTheHill, Lunar
+    Map_Brawl_LunarExpress,    // Payload, Lunar
+    Map_Brawl_OrbitalWorks,    // MannVsMachine, Lunar
+    Map_Brawl_StardustArena,   // JungleBoss, Hale, Lunar
+    Map_Brawl_DarkSideCrater,  // Zombie, Lunar
 }

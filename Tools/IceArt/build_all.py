@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -164,6 +164,31 @@ BUILDERS = {
     'BigTop': props14.build_bigtop,
     'FerrisWheel': props14.build_ferriswheel,
     'Carousel': props14.build_carousel,
+    # Lunar theme (1960s-70s Space Age)
+    'MoonBoulderA': lambda: props15.build_moonboulder('A', 1901, 'MoonBoulderA'),
+    'MoonBoulderB': lambda: props15.build_moonboulder('B', 1902, 'MoonBoulderB'),
+    'CargoStack': props15.build_cargostack,
+    'FuelTanks': props15.build_fueltanks,
+    'MoonBuggy': props15.build_moonbuggy,
+    'SupplyPods': props15.build_supplypods,
+    'RockSampler': props15.build_rocksampler,
+    'RockRidge': props15.build_rockridge,
+    'RadioDish': props15.build_radiodish,
+    'MiniRocket': props15.build_minirocket,
+    'FloodMast': props15.build_floodmast,
+    'Beacon': props15.build_beacon,
+    'StarGrass': props15.build_stargrass,
+    'SmallCrater': props15.build_smallcrater,
+    'MoonPebbles': props15.build_moonpebbles,
+    'Footprints': props15.build_footprints,
+    'CraterWallA': lambda: props15.build_craterwall('A', 2091, 'CraterWallA'),
+    'CraterWallB': lambda: props15.build_craterwall('B', 2092, 'CraterWallB'),
+    'CraterWallC': lambda: props15.build_craterwall('C', 2093, 'CraterWallC'),
+    'AirlockGate': props15.build_airlockgate,
+    'MoonDome': props15.build_moondome,
+    'Lander': props15.build_lander,
+    'LaunchRocket': props15.build_launchrocket,
+    'Earth': props15.build_earth,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),

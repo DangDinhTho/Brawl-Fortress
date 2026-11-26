@@ -130,6 +130,17 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Palette cells are hard-coded (`PWood` etc. = index in `PALETTE` of common.py). Quads: clockwise = front in Unity.
   Write meshes into an existing asset with the Mesh API (`Clear` + `Set*`): `EditorUtility.CopySerialized` left the
   editor drawing the old vertex data (no UVs: the track rendered flat green).
+- **Lunar theme** (`Theme.Lunar`, NOT the old asset-pack `Theme.Moon`; BrawlMapBuilderLunar.cs, props in
+  Tools/IceArt/props15.py, floor `lunar_tex.py` -> RegolithGround.png): a 1960s-70s Space Age moon base, original
+  retro designs (no copies of real or fictional craft). `#` one family per wall: MoonBoulderA/B, CargoStack (canister
+  rack), FuelTanks; `x` MoonBuggy / SupplyPods / RockSampler, `f` RockRidge, `t` RadioDish / MiniRocket / FloodMast /
+  Beacon, `b` StarGrass (alien fronds, frost ramp), decor SmallCrater / MoonPebbles / Footprints, floor `MoonFloor`.
+  Border CraterWallA/B/C (crater rim; B with an outpost dome, C with a landing pad; grounded, not stretched),
+  `AirlockGate`; backdrop MoonDome, Lander, LaunchRocket, `Earth` (one, high on the left side). Sky: `StarSky.mat`
+  (BrawlFortress/StarSky, procedural stars), dark-blue fog; ambient cool neutral (`LunarLook`), desert materials.
+  Moon rock uses `ash` / `metal` / `stone` (the stone_* cells read bluish). Maps, one per mode: CraterBase (Comp, new layout), MoonRockRaid (CTF), TranquilityHill
+  (KOTH), LunarExpress (Payload), OrbitalWorks (MvM), StardustArena (Boss, Hale), DarkSideCrater (Zombie). Menu
+  `Tools/Maps/Build Lunar Maps` (2 maps per MCP call).
 - **Circus theme** (`Theme.Circus`, BrawlMapBuilderCircus.cs, props in Tools/IceArt/props14.py, floor `circus_tex.py`
   -> FairGround.png): a 1960s-70s travelling circus and funfair on a summer field. `#` one family per wall: show wagons
   CircusWagonA (red/gold) / B (blue/yellow) along the wall, TrunkStack, HayStack; `x` StarTubs / PopcornCart /
@@ -137,8 +148,9 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   ramp), decor HayPile / JugglingPins / PopcornSpill, floor `FairFloor`. Border CircusWallA/B/C (striped canvas sidewall
   of the big top with poles, pennants, C9 bulb string; B with sideshow banners, C with a wagon; grounded, not stretched),
   `CircusGate` (striped towers, arched board with glowing bulbs, star); backdrop BigTop, FerrisWheel, Carousel.
-  Lighting = Egypt's. Test map: `Map_Brawl_CircusRing` (Comp, new layout). Tho asked for one map per theme for
-  Factory; Circus has its test map only so far.
+  Lighting = Egypt's. Maps, one per mode: CircusRing (Comp, new layout), BigTopRaid (CTF), RingmasterHill (KOTH),
+  CircusTrain (Payload), ClockworkFair (MvM), StrongmanArena (Boss, Hale), HauntedFair (Zombie). Factory: one map only
+  (Tho's call).
   Blender previews draw back faces, Unity culls them: a flat sheet facing away showed fine in the preview and was
   invisible in the game (the striped sidewall). Check winding / give thin sheets their own back faces.
 - **Factory theme** (`Theme.Factory`, BrawlMapBuilderFactory.cs, props in Tools/IceArt/props13.py, floor `factory_tex.py`

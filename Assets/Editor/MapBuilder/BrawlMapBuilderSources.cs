@@ -66,6 +66,7 @@ public static partial class BrawlMapBuilder
             Theme.Volcano => "Assets/Scenes/BrawlScene.unity",
             Theme.Factory => "Assets/Scenes/BrawlScene.unity",
             Theme.Circus => "Assets/Scenes/BrawlScene.unity",
+            Theme.Lunar => "Assets/Scenes/BrawlScene.unity",
         Theme.Bamboo => "Assets/Scenes/BrawlScene_2.unity",
         Theme.Cave => "Assets/Scenes/Map_Brawl_Payload.unity",
         Theme.Moon => "Assets/Scenes/Map_Brawl_ShowDown.unity",
