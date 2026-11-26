@@ -6,6 +6,8 @@ using UnityEngine;
 public class Rocket : BulletNormal
 {
     public float jumpForce;
+    /// <summary>The rocket's blast tears the grass where it blows up (a wall, a character or the end of its range).</summary>
+    protected override float BushBlastRadius => 1.8f;
 
     public override void OnTriggerEnter(Collider other)
     {

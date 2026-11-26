@@ -1,6 +1,6 @@
 // Brawl-Stars-style little effects (BrawlFx.cs): procedural particle shapes, no texture, vertex colour (the particle's
 // colour) times the shape's coverage. _Shape: 0 = soft puff (round, a little denser and lighter on top, for dust, mud,
-// bubbles and stretched speed streaks), 1 = plus sign (healing), 2 = four-point spark (hits).
+// bubbles and stretched speed streaks), 1 = plus sign (healing), 2 = four-point spark (hits), 3 = leaf (torn bushes).
 Shader "BrawlFortress/FxParticle"
 {
     Properties
@@ -46,6 +46,17 @@ Shader "BrawlFortress/FxParticle"
                     half outer = 1 - smoothstep(-aa, aa, bar - 0.14);
                     a = outer;
                     rgb = lerp(rgb * 0.35, rgb, inner);
+                }
+                else if (_Shape > 2.5)
+                {
+                    // leaf: almond outline with a darker midrib and a darker lower half (torn bush leaves)
+                    float y = p.y;
+                    half w = 0.42 * pow(saturate(1 - y * y), 0.75);
+                    half edge = abs(p.x) - w;
+                    half aa = fwidth(edge) + 0.02;
+                    a = 1 - smoothstep(-aa, aa, edge);
+                    half rib = 1 - smoothstep(0.0, 0.06, abs(p.x));
+                    rgb *= lerp(0.8, 1.08, saturate(p.x * 1.5 + 0.5)) * (1 - rib * 0.25);
                 }
                 else
                 {

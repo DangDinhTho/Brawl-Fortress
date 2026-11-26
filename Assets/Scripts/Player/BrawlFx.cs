@@ -14,7 +14,7 @@ using UnityEngine;
 public static class BrawlFx
 {
     static Transform root;
-    static ParticleSystem dust, mud, bubble, streak, heal, spark;
+    static ParticleSystem dust, mud, bubble, streak, heal, spark, leaf;
     static ParticleSystem.EmitParams ep;
 
     public static Color DustColor = new Color(1f, 0.98f, 0.94f, 0.85f);
@@ -25,6 +25,7 @@ public static class BrawlFx
         var puff = Resources.Load<Material>("Materials/FxPuff");
         var plus = Resources.Load<Material>("Materials/FxPlus");
         var star = Resources.Load<Material>("Materials/FxSpark");
+        var leafMat = Resources.Load<Material>("Materials/FxLeaf");
         if (puff == null) return false;
         root = new GameObject("BrawlFx").transform;
         dust = Make("Dust", puff, 200, false, 0f, 3.5f, Fade(0.0f, 0.4f), Grow(0.6f, 1.5f));
@@ -33,6 +34,8 @@ public static class BrawlFx
         streak = Make("Streak", puff, 120, true, 0f, 0f, Fade(0.0f, 0.4f), Grow(1f, 0.7f));
         heal = Make("Heal", plus ? plus : puff, 60, false, -0.05f, 1.5f, Fade(0.15f, 0.6f), Grow(0.6f, 1f));
         spark = Make("Spark", star ? star : puff, 120, false, 0f, 6f, Fade(0.0f, 0.45f), Grow(1.2f, 0.3f));
+        leaf = Make("Leaf", leafMat ? leafMat : puff, 300, false, 0.55f, 2.2f, Fade(0.0f, 0.7f), Grow(1f, 0.85f));
+        var rot = leaf.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-6f, 6f);   // tumbling (rad/s)
         return true;
     }
 
@@ -153,6 +156,21 @@ public static class BrawlFx
             float a = Random.Range(0f, Mathf.PI * 2f);
             Vector3 o = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(0.25f, 0.5f);
             Emit(heal, feet + o + Vector3.up * Random.Range(0.4f, 1.3f), Vector3.up * Random.Range(1.0f, 1.5f), Random.Range(0.3f, 0.38f), Random.Range(0.7f, 0.9f), new Color(0.42f, 1f, 0.45f, 1f));
+        }
+    }
+
+    /// <summary>Leaves torn out of a bush: count leaves of colour c from p, thrown up and out (strength 1 = a clump torn
+    /// apart, less = a shake), tumbling down.</summary>
+    public static void Leaves(Vector3 p, Color c, int count, float strength)
+    {
+        if (!Ready()) return;
+        for (int i = 0; i < count; i++)
+        {
+            float a = Random.Range(0f, Mathf.PI * 2f);
+            Vector3 o = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            Vector3 v = (o * Random.Range(1.2f, 3.2f) + Vector3.up * Random.Range(2.2f, 4.5f)) * strength;
+            Color k = Color.Lerp(c, c * Random.Range(0.75f, 1.15f), 0.8f); k.a = 1f;
+            Emit(leaf, p + o * Random.Range(0f, 0.35f) + Vector3.up * Random.Range(-0.3f, 0.4f), v, Random.Range(0.2f, 0.32f), Random.Range(0.8f, 1.3f), k, Random.Range(0f, 360f));
         }
     }
 

@@ -107,6 +107,30 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   (built for the old 45 deg camera, CamUp 10.4 / CamBack 10.6) is on the safe side.
 - Checked in a solo match on SunTemple: spawn, middle, side edge, enemy end. Not tried on a phone or in multiplayer.
 
+## Destructible bushes (Brawl Stars style, Nov 2026)
+- Each box of a `BushArea` is one grass clump with `BushDamage.ClumpHp` 80. Explosions (every `ExplosionDamage`:
+  grenades, sticky bombs, sentry rockets...; rockets where they blow up: `BulletNormal.BushBlastRadius`, Rocket 1.8 m)
+  and fire (`FlameDamage`, `FireFactor` 0.6 of the flame's damage every 0.2 s over its trigger's bounds) wear the clumps
+  they reach down. At 0: `BushArea.Shatter` = leaves burst out (`BrawlFx.Leaves`, leaf shape 3 of FxParticle,
+  Resources/Materials/FxLeaf), the clump renderer is hidden, `BushStubble` leaves 2-3 tufts of stalks cut off low (8-11
+  stalks packed in an 11 cm radius per tuft, taller in the middle, leaning a little outwards; 5-sided prisms 8-22 cm,
+  lighter flat cut tops, drawn with the clump's own material at the palette uvs of its leaf roots. Tho rejected the clump
+  mesh squashed flat (a cabbage) and single stalks spread evenly over the clump: he wants tufts),
+  and `BushArea.Contains` skips the clump (no more hiding there: BushStealth, bots' FieldOfView, the grass fade).
+- Any hit on a bush shakes leaves out (local only): a blast too weak to tear it, a bullet flying into it
+  (`BulletNormal.Move`), someone hiding in it being hit (`CharacterFx.OnHit`).
+- Sync: projectiles fly on every client but only the shot's owner (`DamageObject.isOwner`: the shooter, the master for
+  bots) counts the damage, tears the clumps down at once and sends them to the others: Photon event 41 (`BushEventCode`),
+  int[] {bush sibling index under "Bushes", clump index, ...}, Receivers Others (not sent offline). A player who joins
+  later does not get the bushes already torn.
+- The map grass is statically batched at runtime (its MeshFilter holds the scene's combined mesh): the stubble uvs and
+  the leaf colour come from `Resources/BushLeafColors.asset` by the clump's object name (`BushLeafColors.GrassName`:
+  "PapyrusGrass", "Grass02 (52)" -> "Grass02"), baked by `Tools/Bush/Bake Leaf Colours` (Assets/Editor/BushLeafColorBaker.cs:
+  the palette colour of the upper leaves; old themes read the World atlas). Run it after adding a grass model. The leaf
+  colour is tinted by the clump material's `_Color` at runtime (night / desert / Egypt materials).
+- Checked in a solo match on SunTemple: a scripted blast, a real rocket from the pool and the bots' own rockets / grenades
+  tore clumps, leaves burst, stubble stayed. Fire and multiplayer sync not tried.
+
 ## Attack controls (Brawl Stars style, Nov 2026)
 - The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`
   (Assets/Scripts/Player, subclass of the Joystick Pack's `Joystick`, whose `OnDrag` / `input` / `handle` / `canvas`

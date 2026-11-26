@@ -24,6 +24,15 @@ public class BushGrassFade : MonoBehaviour
     private readonly List<Renderer> done = new List<Renderer>();
     private MaterialPropertyBlock mpb;
 
+    /// <summary>Puts a faded tile back to its own materials and stops fading it (a clump torn apart: BushArea.Shatter).</summary>
+    public static void Forget(Renderer rd)
+    {
+        if (instance == null || rd == null || !instance.faded.TryGetValue(rd, out var f)) return;
+        rd.sharedMaterials = f.original;
+        rd.SetPropertyBlock(null);
+        instance.faded.Remove(rd);
+    }
+
     public static void Ensure()
     {
         if (instance != null) return;
@@ -57,7 +66,7 @@ public class BushGrassFade : MonoBehaviour
                 for (int k = 0; k < bush.renderers.Count; k++)
                 {
                     var rd = bush.renderers[k];
-                    if (rd == null || faded.ContainsKey(rd) || !Near(rd, r2)) continue;
+                    if (rd == null || !rd.enabled || faded.ContainsKey(rd) || !Near(rd, r2)) continue;
                     var f = MakeFaded(rd);
                     if (f != null) faded[rd] = f;
                 }

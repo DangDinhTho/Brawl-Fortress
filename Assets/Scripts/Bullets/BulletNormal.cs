@@ -74,7 +74,19 @@ public class BulletNormal : PoolingEntry
         }
         travelled += step;
         transform.position += direction * step;
+        // flying into a bush shakes a few leaves out of it
+        if (BushArea.All.Count > 0)
+        {
+            var bush = BushArea.Find(transform.position);
+            if (bush != null && bush != lastBush) BushDamage.Rustle(transform.position, 3);
+            lastBush = bush;
+        }
     }
+
+    BushArea lastBush;
+    bool blasted;
+    /// <summary>Radius (m) in which the projectile tears the grass where it ends (rockets); 0 = it does not.</summary>
+    protected virtual float BushBlastRadius => 0f;
 
     public override void OnCreated(params object[] args)
     {
@@ -94,6 +106,8 @@ public class BulletNormal : PoolingEntry
         //m_body.AddTorque(Vector3.forward / 5);
         travelled = 0f;
         finished = false;
+        lastBush = null;
+        blasted = false;
         maxDistance = args.Length > 2 && args[2] is float range && range > 0f ? range : 0f;
         StopAllCoroutines();
         if (maxDistance <= 0f) StartCoroutine(WaitDestroy(timeAlive)); // no range given: old time-based life
@@ -101,6 +115,11 @@ public class BulletNormal : PoolingEntry
 
     public override void OnFinish()
     {
+        if (!blasted && BushBlastRadius > 0f && damageObject != null)
+        {
+            blasted = true;
+            BushDamage.Explosion(transform.position, BushBlastRadius, damageObject.damage, damageObject.isOwner);
+        }
         base.OnFinish();
         if (!string.IsNullOrEmpty(impactFX))
             ObjectPooling.Instance.Instantiate(impactFX, transform.position, transform.rotation);

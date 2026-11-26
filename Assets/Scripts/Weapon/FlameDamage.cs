@@ -26,7 +26,20 @@ public class FlameDamage : MonoBehaviour
         Burn(other);
     }
 
-    private void LateUpdate() { if (Time.time >= nextBurnCheck) nextBurnCheck = Time.time + 0.2f; }
+    private void LateUpdate()
+    {
+        if (Time.time >= nextBurnCheck) nextBurnCheck = Time.time + 0.2f;
+        // the flame burns the grass in it down (the shooter's client counts it and tells the others)
+        if (Time.time >= nextBushBurn && damageObject != null && damageObject.isOwner)
+        {
+            nextBushBurn = Time.time + BushDamage.FireTick;
+            if (flameCollider == null) flameCollider = GetComponent<Collider>();
+            if (flameCollider != null && flameCollider.enabled) BushDamage.Fire(flameCollider.bounds, damageObject.damage);
+        }
+    }
+
+    float nextBushBurn;
+    Collider flameCollider;
 
     private void OnTriggerEnter(Collider other)
     {

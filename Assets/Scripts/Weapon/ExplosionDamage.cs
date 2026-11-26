@@ -24,6 +24,8 @@ public class ExplosionDamage : PoolingEntry
         {
             explosionRadius = (float)args[1];
         }
+        // the blast tears the grass it reaches (every client shakes leaves; the shot's owner counts the damage)
+        if (damageObject != null) BushDamage.Explosion(transform.position, explosionRadius, damageObject.damage, damageObject.isOwner);
 
         
         StartCoroutine(Finish());

@@ -66,6 +66,7 @@ public class CharacterFx : MonoBehaviour
 
     void OnHit(Vector3 dir)
     {
+        if (!Dead && stealth != null && stealth.InBush) BushDamage.Rustle(Feet + Vector3.up * 0.9f, 5);   // the bush it hides in shakes
         if (Dead || Unseen) return;
         BrawlFx.Hit(Feet + Vector3.up * 1.0f, dir);
         flash = FlashTime;
