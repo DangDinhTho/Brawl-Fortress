@@ -50,6 +50,30 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   drops it in Home (never while a solo match is starting).
 - The Find a game button is always shown; when offline it offers Retry (PopupConfirm + PopupWaitingFocus spinner).
 
+## In-match HUD (Brawl Stars style, Nov 2026)
+- Overhead bar = `OverheadBarView` (Assets/Scripts/UI), built at runtime by `HeaderUIForFun` over each character
+  prefab's old bar on its world canvas (scale 0.002: 1 unit = 2 mm). Look in `Resources/UI/OverheadBarStyle`:
+  chunky rounded bar (drop shadow, thick near-black border, dark back), saturated team fill (mine green / ally blue /
+  enemy red) with a darker lower half and a light band, cut straight at the health ratio by a RectMask2D; ruler ticks
+  every `BrawlHudKit.TickStep(max)` HP (25 for 125-200 HP, 50 for 300, 500 for a 5000 HP boss); white damage trail +
+  white hit flash; fill pulses below 25%; big bold HP number on the bar; bold name above in a light team tint; the
+  local player's orange ammo bar under it (one segment per bullet up to 8, else one bar with quarter ticks; the
+  segment being reloaded fills in pale orange; frame blinks red when empty). The whole group is scaled by `scale`
+  (1.55: at 1.0 the HP number was unreadable from the match camera).
+- `BrawlHudKit`: runtime rounded-rect sprites (drawn at 4x, `pixelsPerUnitMultiplier` 4), HUD text style (Lilita One,
+  thick dark outline + drop shadow) through ONE shared material per font + outline (`HudMaterial`; do not use TMP's
+  `outlineWidth` setter or `fontMaterial` for HUD text: they make a material per text, and a material instanced from
+  another font keeps that font's atlas = garbled glyphs).
+- Damage numbers (UltimateTextDamage, `TextDamageItem_default_stack_TMP`): restyled per pooled item in
+  `UltimateTextDamageManager.AllocateOneInstance` -> `BrawlHudKit.StyleDamageNumber` (Lilita One, red vertical
+  gradient, thick outline, 1.55x size).
+- FootRing: thicker band (0.15 m) with a dark outline on both edges (`_Outline`, `_OutlineColor` in the shader), lighter
+  inner half, soft team disc; colours come from OverheadBarStyle so ring and bar match; the reload arc is off
+  (`ShowReloadArc`): the ammo bar shows the reload.
+- Checked in a solo match (camera renders, Wild West): bars / names / ammo readable at 1280x720, rings thick and
+  outlined. The overlay damage numbers could not be screenshotted from the editor (styling checked on the live
+  items: Lilita One, HUD material, gradient). Preview image: Assets/Screenshots/hud_brawl_style.png.
+
 ## Attack controls (Brawl Stars style, Nov 2026)
 - The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`
   (Assets/Scripts/Player, subclass of the Joystick Pack's `Joystick`, whose `OnDrag` / `input` / `handle` / `canvas`

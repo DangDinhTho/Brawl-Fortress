@@ -11,8 +11,11 @@ using UnityEngine;
 ///  - The disc is a child of the character, so BushStealth hides it together with an enemy hidden in a bush.
 ///  - Spy: enemies see the ring in the team colour the model is drawn with (TF2Player.MeshTeam, set by SetMeshTeam
 ///    = a disguise), and do not see it while the Spy is cloaked (TF2Player.MeshInvisible).
-///  - Local player only: reload progress arc around the ring (Gun.ReloadProgress), glow while a Medic beam is on him
-///    or Ubercharged is set, dashed ring while hidden in a bush (BushStealth.InBush).
+///  - Local player only: glow while a Medic beam is on him or Ubercharged is set, dashed ring while hidden in a bush
+///    (BushStealth.InBush). The reload arc around the ring is off (ShowReloadArc): the ammo bar under the health bar
+///    shows the reload now (OverheadBarView).
+///  - Look (Nov 2026 HUD pass): thick band with a dark outline on both edges, lighter inner half, soft team disc; the
+///    team colours are the overhead bar's (OverheadBarStyle mine / ally / enemy) so ring and bar match.
 /// Material: Resources/Materials/FootRing.mat (shader BrawlFortress/FootRing). Tuning values are the static fields below.
 /// </summary>
 public class FootRing : MonoBehaviour
@@ -20,7 +23,12 @@ public class FootRing : MonoBehaviour
     /// <summary>Ring centre-line position in the shader's uv space (must match _RingR on the material).</summary>
     const float RingUv = 0.72f;
     /// <summary>Ring width (m), alpha, inner fill alpha.</summary>
-    public static float Width = 0.08f, Alpha = 0.9f, FillAlpha = 0.12f;
+    public static float Width = 0.15f, Alpha = 1f, FillAlpha = 0.2f;
+    /// <summary>Dark outline on each edge of the band (m).</summary>
+    public static float OutlineWidth = 0.032f;
+    public static Color OutlineColor = new Color(0.047f, 0.031f, 0.071f, 0.85f);
+    /// <summary>Reload arc around the local player's ring (off: the ammo bar shows it).</summary>
+    public static bool ShowReloadArc = false;
     /// <summary>Multiplier on the measured radius, limits (m), and the radius used until the model is measured.</summary>
     public static float RadiusScale = 1f, MinRadius = 0.35f, MaxRadius = 2f, DefaultRadius = 0.5f;
     /// <summary>true (default) = ground projection of the renderers' bounds (SkinnedMeshRenderer.bounds, Tho's choice, roomier);
@@ -66,6 +74,8 @@ public class FootRing : MonoBehaviour
     static readonly int ArcColorId = Shader.PropertyToID("_ArcColor");
     static readonly int GlowId = Shader.PropertyToID("_Glow");
     static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
+    static readonly int OutlineId = Shader.PropertyToID("_Outline");
+    static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
 
     static Medicgun[] medics = new Medicgun[0];
     static float nextMedicScan;
@@ -193,14 +203,16 @@ public class FootRing : MonoBehaviour
         var ps = transform.lossyScale;
         disc.localScale = new Vector3(2f * half / Mathf.Max(ps.x, 1e-4f), 1f / Mathf.Max(ps.y, 1e-4f), 2f * half / Mathf.Max(ps.z, 1e-4f));
 
+        var style = OverheadBarStyle.Get();
+        Color selfC = style != null ? style.mine : SelfColor, allyC = style != null ? style.ally : AllyColor, enemyC = style != null ? style.enemy : EnemyColor;
         Color c;
-        if (self) c = SelfColor;
-        else if (viewer == null) c = AllyColor;
+        if (self) c = selfC;
+        else if (viewer == null) c = allyC;
         else
         {
             Team shown = player.team;
             if (enemy && player.MeshTeam != Team.None) shown = player.MeshTeam; // disguise
-            c = shown == viewer.team ? AllyColor : EnemyColor;
+            c = shown == viewer.team ? allyC : enemyC;
         }
         c.a = Alpha * visible;
 
@@ -209,7 +221,7 @@ public class FootRing : MonoBehaviour
         if (self)
         {
             var gun = player.FPSPlayer != null ? player.FPSPlayer.currWeapon as Gun : null;
-            if (gun != null) progress = gun.ReloadProgress;
+            if (gun != null && ShowReloadArc) progress = gun.ReloadProgress;
             dashed = stealth != null && stealth.InBush;
             uber = Ubercharged;
             if (uber || IsHealed(player)) glowTarget = 1f;
@@ -222,6 +234,8 @@ public class FootRing : MonoBehaviour
         mpb.SetFloat(FillId, FillAlpha);
         mpb.SetFloat(RingRId, RingUv);
         mpb.SetFloat(WidthId, Width * (boss ? BossWidthScale : 1f) / half);
+        mpb.SetFloat(OutlineId, OutlineWidth / half);
+        mpb.SetColor(OutlineColorId, OutlineColor);
         mpb.SetFloat(DashedId, dashed ? 1f : 0f);
         mpb.SetFloat(DashCountId, boss ? BossDashCount : DashCount);
         mpb.SetFloat(ProgressId, progress);

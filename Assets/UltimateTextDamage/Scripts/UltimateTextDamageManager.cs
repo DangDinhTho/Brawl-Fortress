@@ -176,6 +176,7 @@ namespace Guirao.UltimateTextDamage
             g.transform.localScale = Vector3.one;
 
             UITextDamage td = g.GetComponent< UITextDamage >( );
+            BrawlHudKit.StyleDamageNumber( td.UsedLabel );   // Brawl Stars look: bold Lilita One, red gradient, thick outline
             td.Canvas = this.canvas;
             td.autoFaceCameraWorldSpace = autoFaceToCamera;
             td.Cam = theCamera;

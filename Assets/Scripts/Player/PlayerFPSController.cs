@@ -940,6 +940,7 @@ public class PlayerFPSController : MonoBehaviour
     private int jumpCount;
     void Move()
     {
+        if (!m_CharacterController.enabled) return;   // dead (OnDeath disables it): Move on it logged an error every physics step
         //if the player is touching the surface
         if (m_CharacterController.isGrounded)
         {
