@@ -32,13 +32,13 @@ public class Joystick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPoint
     [SerializeField] private bool snapY = false;
 
     [SerializeField] protected RectTransform background = null;
-    [SerializeField] private RectTransform handle = null;
+    [SerializeField] protected RectTransform handle = null;
     private RectTransform baseRect = null;
 
-    private Canvas canvas;
+    protected Canvas canvas;
     private Camera cam;
 
-    private Vector2 input = Vector2.zero;
+    protected Vector2 input = Vector2.zero;
 
     protected virtual void Start()
     {
@@ -62,7 +62,7 @@ public class Joystick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPoint
         OnDrag(eventData);
     }
 
-    public void OnDrag(PointerEventData eventData)
+    public virtual void OnDrag(PointerEventData eventData)
     {
         cam = null;
         if (canvas.renderMode == RenderMode.ScreenSpaceCamera)

@@ -50,6 +50,24 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   drops it in Home (never while a solo match is starting).
 - The Find a game button is always shown; when offline it offers Retry (PopupConfirm + PopupWaitingFocus spinner).
 
+## Attack controls (Brawl Stars style, Nov 2026)
+- The right-hand stick in a match (`Arena.unity`, Canvas/PlayerControllerGroup/Attack Joystick) is an `AttackJoystick`
+  (Assets/Scripts/Player, subclass of the Joystick Pack's `Joystick`, whose `OnDrag` / `input` / `handle` / `canvas`
+  were opened up for it). The drag is measured from the touch point, so a tap anywhere on the button is a tap.
+  - Tap weapons (rocket, shotgun, sniper, pistol, grenades...): tap = auto-aim (`AutoAim.FindTarget`: nearest enemy
+    within `range` + 0.5 m, not hidden in a bush, not a cloaked Spy or a Spy disguised as our team, characters before
+    buildings, targets in the open before targets behind a wall; no lead, like Brawl Stars; none = straight ahead);
+    drag + release = that way; drag back to the centre (< 0.2, where the indicator hides) + release = cancel. A tap up
+    to `tapBuffer` 0.15 s before the cooldown ends still fires; on an empty clip the indicator flashes red instead.
+  - Hold weapons (melee, minigun, flamethrower, SMG, syringe gun, medigun): fire from the moment the stick is pressed;
+    not dragged = at the auto target, followed as it moves; dragged = the stick's way; back in the centre = pause. The
+    Medigun auto-aims at the most hurt teammate in range.
+  - The player snaps to the shot's direction (no turning delay). `AimIndicator` flashes toward an auto-aimed shot and
+    draws a pulsing ring (red enemy / green teammate) under the target; its shader's stencil ref is `_StencilRef`
+    (fan 77, ring 78). `PlayerFPSController.UpdateFireLegacy` keeps the old logic for a UI without AttackJoystick.
+  - Tested in Play mode (solo, Soldier): auto-aimed rocket turned 90 deg onto the bot, shovel held = 8 swings tracking the
+    bot until it died, cancel / manual aim / rim tap behave as above. Not yet tried on a phone.
+
 ## Map selection
 - One map per art theme per mode. The old themes are Western (orange canyon), Bamboo (green), Cave (blue rock,
   crystals), Moon (purple) and Mix (orange desert floor with mixed cliffs = reads as a second desert). Hand-made old

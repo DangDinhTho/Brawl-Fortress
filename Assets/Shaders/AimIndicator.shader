@@ -6,6 +6,7 @@ Shader "BrawlFortress/AimIndicator"
     Properties
     {
         _Tint ("Tint", Color) = (1,1,1,1)
+        _StencilRef ("Stencil Ref", Float) = 77
     }
     SubShader
     {
@@ -15,7 +16,7 @@ Shader "BrawlFortress/AimIndicator"
         Offset -1, -1
         Cull Off
         Blend SrcAlpha OneMinusSrcAlpha
-        Stencil { Ref 77 Comp NotEqual Pass Replace }
+        Stencil { Ref [_StencilRef] Comp NotEqual Pass Replace }   // the auto-aim target ring uses its own ref (78)
 
         Pass
         {

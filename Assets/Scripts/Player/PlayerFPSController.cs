@@ -608,6 +608,26 @@ public class PlayerFPSController : MonoBehaviour
     private Vector3 tapAimDir;
     private float aimLockUntil;
 
+    [Header("Attack stick (Brawl Stars style)")]
+    [Tooltip("A tap made up to this long (s) before the weapon is ready again (cooldown) still fires as soon as it is")]
+    public float tapBuffer = 0.15f;
+    [Tooltip("How long (s) the aim indicator and the target ring flash after an auto-aimed tap")]
+    public float autoAimFlash = 0.3f;
+
+    private Weapon firingWeapon;        // hold weapon firing from the attack stick
+    private int shotsAtPress;
+    private Vector3 holdAimDir;         // hold weapons: where the player faces while firing (auto target or the stick)
+    private bool holdAuto;              // hold weapon firing at the auto-aim target (stick held, not dragged)
+    private HealthBase autoTarget;      // current auto-aim target
+    private float pendingTapUntil;      // tap waiting for the cooldown (tapBuffer)
+    private bool pendingTapAuto;
+    private Vector3 pendingTapDir;
+    private Vector3 flashDir;
+    private float flashUntil;
+
+    /// <summary>The Brawl Stars attack stick when the match UI has it; with the old fixed joystick the old logic runs.</summary>
+    AttackJoystick AttackStick => UICharacterInputController.instan != null ? UICharacterInputController.instan.aimingJoystick as AttackJoystick : null;
+
     /// <summary>World direction of the aim joystick (not normalized), same mapping as UpdateRotation.</summary>
     public Vector3 AimWorldDirection
     {
@@ -617,6 +637,8 @@ public class PlayerFPSController : MonoBehaviour
             return j == null ? Vector3.zero : new Vector3(j.Horizontal * teamRotate, 0, j.Vertical * teamRotate);
         }
     }
+
+    Vector3 StickToWorld(Vector2 v) => new Vector3(v.x * teamRotate, 0f, v.y * teamRotate);
 
     /// <summary>True while the aim joystick is pulled past the dead zone.</summary>
     public bool IsAiming
@@ -628,9 +650,151 @@ public class PlayerFPSController : MonoBehaviour
         }
     }
 
+    /// <summary>The enemy (or, Medigun, teammate) auto-aim is shooting at: ring under it (AimIndicator). Null when none.</summary>
+    public HealthBase AutoTarget => (holdAuto || Time.time < flashUntil) && autoTarget != null && !autoTarget.death ? autoTarget : null;
+
+    /// <summary>Aim indicator: shown while the stick is dragged, while a hold weapon fires at the auto target, and for a
+    /// moment toward an auto-aimed tap shot (it turns red on an empty clip: the tap then tells the player why nothing fired).</summary>
+    public bool IndicatorVisible(out Vector3 dir)
+    {
+        dir = Vector3.zero;
+        if (IsAiming) { dir = AimWorldDirection; return true; }
+        if (holdAuto) { dir = holdAimDir.sqrMagnitude > 1e-4f ? holdAimDir : transform.forward; return true; }
+        if (Time.time < flashUntil) { dir = flashDir; return true; }
+        return false;
+    }
+
     public void UpdateFire()
     {
         if (currWeapon == null) return;
+        var stick = AttackStick;
+        if (stick == null) { UpdateFireLegacy(); return; }
+        var release = stick.TakeRelease(out Vector2 releaseDir);
+        if (player != null && player.healthManager != null && player.healthManager.death)
+        {
+            StopHoldFire();
+            pendingTapUntil = 0f;
+            return;
+        }
+        if (currWeapon.weaponConfig.fireMode == FireMode.Hold) UpdateHoldFire(stick, release, releaseDir);
+        else UpdateTapFire(release, releaseDir);
+    }
+
+    /// <summary>Tap weapons (shotgun, rocket, sniper, grenades...): one attack per release of the stick. Tap = at the
+    /// auto-aim target (else straight ahead), drag + release = where the stick points, dragged back to the centre = cancel.</summary>
+    void UpdateTapFire(AttackJoystick.Release release, Vector2 releaseDir)
+    {
+        StopHoldFire();
+        if (release == AttackJoystick.Release.Tap || release == AttackJoystick.Release.Aim)
+        {
+            pendingTapAuto = release == AttackJoystick.Release.Tap;
+            pendingTapDir = StickToWorld(releaseDir);
+            pendingTapUntil = Time.time + Mathf.Max(0.01f, tapBuffer);
+            // empty clip: no shot, but the indicator flashes red toward where it would have gone
+            if (currWeapon is Gun g && g.bulletInClip <= 0)
+            {
+                pendingTapUntil = 0f;
+                Flash(pendingTapAuto ? AutoDirection() : pendingTapDir);
+            }
+        }
+        if (Time.time < pendingTapUntil && currWeapon.ReadyToFire)
+        {
+            pendingTapUntil = 0f;
+            Vector3 dir = pendingTapDir;
+            if (pendingTapAuto)
+            {
+                dir = AutoDirection();   // the target is picked when the shot leaves, not when a buffered tap was made
+                Flash(dir);
+            }
+            ShootOnce(dir);
+        }
+    }
+
+    /// <summary>Direction to the auto-aim target (sets autoTarget), else where the player faces.</summary>
+    Vector3 AutoDirection()
+    {
+        autoTarget = AutoAim.FindTarget(player, currWeapon);
+        return autoTarget != null ? AutoAim.DirectionTo(player, autoTarget) : transform.forward;
+    }
+
+    void Flash(Vector3 dir)
+    {
+        dir.y = 0f;
+        flashDir = dir.sqrMagnitude > 1e-4f ? dir.normalized : transform.forward;
+        flashUntil = Time.time + autoAimFlash;
+    }
+
+    /// <summary>Turns to 'dir' at once and fires one shot / swing (shots leave along the player's facing: Gun.AimForward).</summary>
+    void ShootOnce(Vector3 dir)
+    {
+        dir.y = 0f;
+        if (dir.sqrMagnitude > 1e-4f)
+        {
+            tapAimDir = dir.normalized;
+            transform.localRotation = Quaternion.LookRotation(tapAimDir);
+            aimLockUntil = Time.time + currWeapon.weaponConfig.weaponStats.delayFire + 0.3f;   // keep facing until it has left
+        }
+        currWeapon.FireOnce();
+    }
+
+    /// <summary>Hold weapons (minigun, flamethrower, SMG, syringe gun, medigun, melee): fire while the stick is held,
+    /// from the moment it is pressed. Not dragged = at the auto-aim target, followed as it moves; dragged = where the
+    /// stick points; dragged back to the centre = pause. A quick tap still gives one shot / swing.</summary>
+    void UpdateHoldFire(AttackJoystick stick, AttackJoystick.Release release, Vector2 releaseDir)
+    {
+        pendingTapUntil = 0f;
+        if (firingWeapon != null && firingWeapon != currWeapon) StopHoldFire();   // weapon switched during the press
+        bool manual = stick.Aimed;
+        bool want = stick.IsPressed && (!manual || stick.Direction.magnitude >= AimDeadZone);
+        if (want)
+        {
+            if (manual)
+            {
+                holdAuto = false;
+                holdAimDir = StickToWorld(stick.Direction);
+            }
+            else
+            {
+                holdAuto = true;
+                autoTarget = AutoAim.FindTarget(player, currWeapon, autoTarget);
+                // no target: the player keeps turning with the movement stick
+                holdAimDir = autoTarget != null ? AutoAim.DirectionTo(player, autoTarget) : Vector3.zero;
+            }
+            if (!isTouchFire)
+            {
+                if (holdAimDir.sqrMagnitude > 1e-4f) transform.localRotation = Quaternion.LookRotation(holdAimDir.normalized);
+                isTouchFire = true;
+                firingWeapon = currWeapon;
+                shotsAtPress = currWeapon.shotsFired;
+                currWeapon.BeginFire();
+            }
+            // pressed with an empty clip: firing starts once the reload is done, while the stick is still held
+            else if (!currWeapon.fire && currWeapon.ReadyToFire) currWeapon.BeginFire();
+            return;
+        }
+
+        if (!isTouchFire) return;
+        bool noShot = currWeapon.shotsFired == shotsAtPress;
+        Vector3 dir = holdAimDir.sqrMagnitude > 1e-4f ? holdAimDir : transform.forward;
+        StopHoldFire();
+        // released before the first shot / swing left (minigun spin-up, swing wind-up): a tap still attacks once
+        if (noShot && release == AttackJoystick.Release.Tap) ShootOnce(dir);
+        else if (noShot && release == AttackJoystick.Release.Aim) ShootOnce(StickToWorld(releaseDir));
+    }
+
+    void StopHoldFire()
+    {
+        // FinishFire also when the clip was empty (fire never started): the Medigun slowed the player on BeginFire
+        if (isTouchFire && firingWeapon != null && firingWeapon.gameObject.activeInHierarchy) firingWeapon.FinishFire();
+        isTouchFire = false;
+        firingWeapon = null;
+        holdAuto = false;
+        holdAimDir = Vector3.zero;
+    }
+
+    /// <summary>The old fixed aim joystick (a match UI without AttackJoystick).</summary>
+    void UpdateFireLegacy()
+    {
         float mag = UICharacterInputController.instan.aimingJoystick.Direction.magnitude;
 
         if (currWeapon.weaponConfig.fireMode == FireMode.Hold)
@@ -824,6 +988,12 @@ public class PlayerFPSController : MonoBehaviour
         if (Time.time < aimLockUntil && tapAimDir.sqrMagnitude > 1e-4f)
         {
             transform.localRotation = Quaternion.LookRotation(tapAimDir);
+            return;
+        }
+        // a hold weapon firing from the attack stick: face the auto target / the stick at once (no turning delay)
+        if (isTouchFire && holdAimDir.sqrMagnitude > 1e-4f)
+        {
+            transform.localRotation = Quaternion.LookRotation(holdAimDir.normalized);
             return;
         }
         //RotateLook(UICharacterInputController.instan.aimingJoystick.Horizontal, UICharacterInputController.instan.aimingJoystick.Vertical);
