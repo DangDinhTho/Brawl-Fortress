@@ -71,24 +71,54 @@ public class CameraController : MonoBehaviour
     [Header("Brawl Stars style view (Nov 2026)")]
     [Tooltip("Camera pitch (deg). Was 45: Brawl Stars looks down much more steeply")]
     public float pitch = 58f;
-    [Tooltip("Vertical field of view (deg). Was 40")]
-    public float fieldOfView = 38f;
-    [Tooltip("Distance from the followed point (m). Was 15: a wider view")]
-    public float cameraDistance = 19f;
+    // FOV 28 (was 38 at 19 m): less perspective stretch, same ground in view. Distance and screen Y were solved so the
+    // view still reaches 11.06 m ahead of the character and 6.12 m behind it (same depth and ground area; width at the
+    // character 30.8 m instead of 30.1 at 19.5:9, the near edge a little wider and the far edge a little narrower).
+    [Tooltip("Vertical field of view (deg). Was 40, then 38 at 19 m")]
+    public float fieldOfView = 28f;
+    [Tooltip("Distance from the followed point along the view (m). Was 15, then 19 with FOV 38")]
+    public float cameraDistance = 27.06f;
+    [Tooltip("Screen height of the followed point (FramingTransposer Screen Y: 0 top, 0.5 centre, 1 bottom). Slightly " +
+             "below the centre so the narrower lens still sees as far ahead / behind as FOV 38 did")]
+    public float screenY = 0.532f;
+    [Tooltip("The audio listener stays this far from the followed point (m), on the camera's view line: the 3D sounds " +
+             "fade linearly to 0 at 35-60 m and were tuned with the camera ~20 m away. 0 = on the camera")]
+    public float listenerDistance = 19f;
     [Tooltip("Stop the camera at the arena's edges (ArenaCameraClamp) instead of always centring the character")]
     public bool clampToArena = true;
+
+    AudioListener listener;
 
     public void InitCam(Team team)
     {
         freeLook.transform.localRotation = Quaternion.Euler(pitch, team == Team.blue ? 180f : 0f, 0f);
         var lens = freeLook.m_Lens; lens.FieldOfView = fieldOfView; freeLook.m_Lens = lens;
         var framing = freeLook.GetCinemachineComponent<CinemachineFramingTransposer>();
-        if (framing != null) framing.m_CameraDistance = cameraDistance;
+        if (framing != null) { framing.m_CameraDistance = cameraDistance; framing.m_ScreenY = screenY; }
+        PlaceListener();
         var clamp = freeLook.GetComponent<ArenaCameraClamp>();
         if (clamp == null && clampToArena) clamp = freeLook.gameObject.AddComponent<ArenaCameraClamp>();
         if (clamp != null) clamp.enabled = clampToArena;
         ArenaBounds.Reset();
         SetFreeLook(true);
+    }
+
+    /// <summary>Moves the match's audio listener from the camera to a child on its view line, listenerDistance from
+    /// the followed point, so the farther camera does not make every 3D sound quieter.</summary>
+    void PlaceListener()
+    {
+        if (freeCam == null) return;
+        float forward = listenerDistance > 0f ? Mathf.Max(0f, cameraDistance - listenerDistance) : 0f;
+        if (listener == null)
+        {
+            var onCam = freeCam.GetComponent<AudioListener>();
+            if (onCam == null) return;   // no listener in this scene: leave it alone
+            onCam.enabled = false;       // first, so two listeners are never on together
+            var go = new GameObject("AudioListener");
+            go.transform.SetParent(freeCam.transform, false);
+            listener = go.AddComponent<AudioListener>();
+        }
+        listener.transform.localPosition = Vector3.forward * forward;
     }
 
     public void SetFreeLook(bool state, Transform target = null, Transform lookAt = null)

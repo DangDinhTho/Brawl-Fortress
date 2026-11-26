@@ -93,8 +93,15 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 
 ## Match camera (Brawl Stars style, Nov 2026)
 - `TopDownCam` in Arena.unity (CinemachineVirtualCamera + FramingTransposer, Follow = the character), set up by
-  `CameraController.InitCam`: `pitch` 58 (was 45), `fieldOfView` 38 (was 40), `cameraDistance` 19 (was 15): steeper and
-  wider, about 28 m of the arena's width at 19.5:9. Blue team: yaw 180.
+  `CameraController.InitCam`: `pitch` 58 (was 45), `fieldOfView` 28, `cameraDistance` 27.06, `screenY` 0.532
+  (FramingTransposer Screen Y, 0 top / 1 bottom; tracked offset y 1). Tho asked for FOV 28 with the same view as FOV 38 at
+  19 m: distance and screen Y were solved so the ground in view is unchanged along the screen's centre line (11.06 m
+  ahead of the character, 6.12 m behind, same ground area); the width at the character is 30.8 m instead of 30.1 at
+  19.5:9 (the near edge a little wider, the far edge a little narrower: less perspective). Blue team: yaw 180.
+  The camera is ~28 m from the character (was ~20), so `PlaceListener` moves the AudioListener off FreeCamera onto a child
+  on the view line, `listenerDistance` 19 m from the character: the 3D sounds fade linearly to 0 at 35-60 m (custom
+  rolloff), at 28 m they were ~27% quieter. Shadow distance on quality High is 40 m: the far top corners are now ~39 m
+  from the camera (were ~33), so shadows fade out a little there on High (mobile default Medium has no shadows).
 - `ArenaCameraClamp` (a CinemachineExtension added to it at runtime; Assets/Scripts/GameManager/ArenaCameraClamp.cs) stops
   the camera at the arena's edges instead of always centring the character: after the Body stage it shifts the camera so
   the view's ground footprint stays inside the arena + `endMargin` 3 m (bottom of the screen, own base), `topMargin` 8 m
