@@ -214,4 +214,11 @@ public enum Map: byte
     Map_Brawl_BronzeForge,    // MannVsMachine, Greek
     Map_Brawl_TitanTerrace,   // JungleBoss, Hale, Greek
     Map_Brawl_NecropolisSteps, // Zombie, Greek
+    Map_Brawl_CandyPlaza,     // Competitive, Candy
+    Map_Brawl_CookieHeist,    // CaptureTheFlag, Candy
+    Map_Brawl_FrostingHill,   // KingOfTheHill, Candy
+    Map_Brawl_CaramelExpress, // Payload, Candy
+    Map_Brawl_ToffeeFactory,  // MannVsMachine, Candy
+    Map_Brawl_GumdropArena,   // JungleBoss, Hale, Candy
+    Map_Brawl_RottenSweets,   // Zombie, Candy
 }

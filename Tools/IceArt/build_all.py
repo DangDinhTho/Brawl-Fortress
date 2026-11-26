@@ -12,7 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from common import reset, finish, export_fbx, render_preview, OUT, PREVIEW
-import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, grass
+import props1, props2, props3, props4, props5, props6, props7, props8, props9, props10, props11, props12, props13, props14, props15, props16, props17, props18, grass
 
 # name -> builder (the latest version of each piece)
 BUILDERS = {
@@ -243,6 +243,33 @@ BUILDERS = {
     'WhiteVillage': props17.build_whitevillage,
     'Windmill': props17.build_windmill,
     'Caique': props17.build_caique,
+    # candy theme (candy kingdom)
+    'WaferBlock': props18.build_waferblock,
+    'CakeBlock': props18.build_cakeblock,
+    'ChocoBlock': props18.build_chocoblock,
+    'GumdropStack': props18.build_gumdropstack,
+    'MarshmallowStack': props18.build_marshmallowstack,
+    'Cupcake': props18.build_cupcake,
+    'GumballMachine': props18.build_gumballmachine,
+    'WrappedSweets': props18.build_wrappedsweets,
+    'DonutStack': props18.build_donutstack,
+    'StickFence': props18.build_stickfence,
+    'LollipopA': lambda: props18.build_lollipop('A', 2801, 'LollipopA'),
+    'LollipopB': lambda: props18.build_lollipop('B', 2802, 'LollipopB'),
+    'IceCreamCone': props18.build_icecreamcone,
+    'GumdropTree': props18.build_gumdroptree,
+    'GummyBear': props18.build_gummybear,
+    'SugarGrass': props18.build_sugargrass,
+    'Sprinkles': props18.build_sprinkles,
+    'WrappedCandy': props18.build_wrappedcandy,
+    'ChocoChips': props18.build_chocochips,
+    'CandyWallA': lambda: props18.build_candywall('A', 2811, 'CandyWallA'),
+    'CandyWallB': lambda: props18.build_candywall('B', 2812, 'CandyWallB'),
+    'CandyWallC': lambda: props18.build_candywall('C', 2813, 'CandyWallC'),
+    'CandyGate': props18.build_candygate,
+    'CandyCastle': props18.build_candycastle,
+    'GingerbreadHouse': props18.build_gingerbreadhouse,
+    'LayerCake': props18.build_layercake,
     # earlier ice pieces (still used as fallbacks)
     'IceCliffA': lambda: props5.build_icecliff(201, 'IceCliffA'),
     'IceCliffB': lambda: props5.build_icecliff(202, 'IceCliffB'),
@@ -274,7 +301,9 @@ def main():
     print('OUT', OUT)
     for n in names:
         reset(); ob = BUILDERS[n](); tris = finish(ob, n); export_fbx(ob, n)
-        if preview: render_preview([ob], os.path.join(PREVIEW, n + '.png'), res=320)
+        if preview:
+            if ob.get('pink_preview'): props18.pink_preview(ob)   # candy: pink slot (after the export)
+            render_preview([ob], os.path.join(PREVIEW, n + '.png'), res=320)
         d = ob.dimensions
         print('BUILT %-14s %5d tris  %.2f x %.2f x %.2f m' % (n, tris, d.x, d.y, d.z))
 

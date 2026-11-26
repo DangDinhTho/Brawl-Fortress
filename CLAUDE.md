@@ -141,6 +141,23 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   Moon rock uses `ash` / `metal` / `stone` (the stone_* cells read bluish). Maps, one per mode: CraterBase (Comp, new layout), MoonRockRaid (CTF), TranquilityHill
   (KOTH), LunarExpress (Payload), OrbitalWorks (MvM), StardustArena (Boss, Hale), DarkSideCrater (Zombie). Menu
   `Tools/Maps/Build Lunar Maps` (2 maps per MCP call).
+- **Candy theme** (`Theme.Candy`, BrawlMapBuilderCandy.cs + CandyThemeSetup.cs, props in Tools/IceArt/props18.py,
+  textures `candy_tex.py` -> CandyGround.png / ChocoFlow.png): a candy kingdom (1960s-70s sweet shop spirit). `#` one
+  family per wall: WaferBlock, CakeBlock, ChocoBlock, GumdropStack, MarshmallowStack; `x` Cupcake / GumballMachine /
+  WrappedSweets / DonutStack, `f` StickFence (peppermint sticks), `t` LollipopA (pink) / LollipopB (rainbow) /
+  IceCreamCone / GumdropTree / GummyBear, `b` SugarGrass, decor Sprinkles / WrappedCandy / ChocoChips. Border
+  CandyWallA/B/C (low layer-cake banks, B with a gingerbread cottage, C with lollipops; collider 6 m) with `ChocoLake`
+  quads behind (BrawlFortress/Lava + ChocoFlow), `CandyGate`; backdrop CandyCastle, GingerbreadHouse, LayerCake.
+  **Pink**: the palette is full and has no pink, so candy props put pink faces in material slot 1 (`CKit`: colours may
+  be `(cell, True)`; `PINK` = snow) and that slot is `CandyPink.mat` = the lit props material tinted (_Color 0.92 / 0.48
+  / 0.68), not a glow (`CandyThemeSetup.IsCandy`). SugarGrass = frost ramp leaves in the pink slot (purple -> pink).
+  Lighting: `GreekLook` + `GreekSun` + `CandySky` (pastel SkyGradient). Maps, one per mode, all new layouts:
+  CandyPlaza (Comp), CookieHeist (CTF), FrostingHill (KOTH), CaramelExpress (Payload, path A), ToffeeFactory (MvM,
+  path D), GumdropArena (Boss, Hale), RottenSweets (Zombie). Menu `Tools/Maps/Build Candy Maps` (2 maps per MCP call).
+- **Submesh order gotcha**: Unity numbers an FBX's submeshes in the order their materials first appear in the face
+  list, not by Blender slot. A prop whose first face was a glow face got its two materials swapped (Volcano
+  BasaltBouldersA/B, CooledFlow, LavaBombs, LavaRock had rock and lava swapped until Nov 2026; the candy cake banks).
+  `Kit.obj` (props8.py) now sorts glow faces last; check with a Blender re-import (first polygon's material_index == 0).
 - **Greek theme** (`Theme.Greek`, BrawlMapBuilderGreek.cs + GreekThemeSetup.cs, props in Tools/IceArt/props17.py,
   textures `greek_tex.py` -> GreekGround.png / SeaFlow.png): a Mediterranean acropolis by the sea. `#` one family per
   wall: MarbleBlocksA/B, BrokenColumns, WhiteWall (whitewashed house, blue door), StoneWall (dry stone, vine); `x`

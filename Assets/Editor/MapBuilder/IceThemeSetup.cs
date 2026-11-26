@@ -88,6 +88,7 @@ public static class IceThemeSetup
         var glow = Save(GlowMat, glowMat);
         var volcanoGlow = VolcanoThemeSetup.Glow(tex);   // Volcano props: lava glow (unlit, two-sided, shimmering)
         var swampGlow = SwampThemeSetup.Glow(tex);       // Swamp props: glowing mushrooms, lanterns (unlit, breathing)
+        var candyPink = CandyThemeSetup.Pink(props);      // Candy props: slot 1 is a pink tint (the palette has no pink), not a glow
         var gtex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/IceGround.png");
         var groundMat = MakeMat(GroundMat, reference, gtex, gtex ? Color.white : new Color(0.88f, 0.93f, 1.0f));
         var world = AssetDatabase.LoadAssetAtPath<Material>("Assets/Battle Arena - Cartoon Assets/Materials/World.mat");
@@ -116,7 +117,7 @@ public static class IceThemeSetup
             {
                 var mf = r.GetComponent<MeshFilter>();
                 int subs = mf && mf.sharedMesh ? mf.sharedMesh.subMeshCount : r.sharedMaterials.Length;
-                var g1 = volcanoGlow != null && VolcanoThemeSetup.IsVolcano(name) ? volcanoGlow : swampGlow != null && SwampThemeSetup.IsSwamp(name) ? swampGlow : glow;
+                var g1 = volcanoGlow != null && VolcanoThemeSetup.IsVolcano(name) ? volcanoGlow : swampGlow != null && SwampThemeSetup.IsSwamp(name) ? swampGlow : candyPink != null && CandyThemeSetup.IsCandy(name) ? candyPink : glow;
                 r.sharedMaterials = Enumerable.Range(0, Mathf.Max(1, subs)).Select(i => i == 1 ? g1 : props).ToArray();
             }
             AddCollider(inst, name);
@@ -160,7 +161,8 @@ public static class IceThemeSetup
         if (starSh != null) Save(StarSkyMat, new Material(starSh));
         made += VolcanoThemeSetup.Setup(reference);   // basalt floor, lava lake, eruption vent
         made += SwampThemeSetup.Setup(reference, props);   // twilight materials, swamp floor, acid lake, bog puddle
-        made += GreekThemeSetup.Setup(reference, props);          // greek floor, sea, sky
+        made += GreekThemeSetup.Setup(reference, props);
+        made += CandyThemeSetup.Setup(reference);          // candy floor, chocolate lake, sky          // greek floor, sea, sky
         AssetDatabase.SaveAssets();
         return made + " prefabs in " + PrefabDir + " (material " + (reference ? reference.shader.name : "Standard") + ")";
     }
@@ -296,7 +298,9 @@ public static class IceThemeSetup
             || name.StartsWith("MossBoulder") || name == "ShroomCluster" || name == "RootTangle" || name == "LogStack" || name == "Stump"
             || name == "RowBoat" || name == "RustyDrums" || name == "MoonshineStill" || name == "FallenLog"
             || name.StartsWith("MarbleBlocks") || name == "BrokenColumns" || name == "WhiteWall" || name == "StoneWall" || name == "FallenDrums"
-            || name == "ColumnCapital" || name == "Pithoi" || name == "OlivePress" || name == "MarbleLow")
+            || name == "ColumnCapital" || name == "Pithoi" || name == "OlivePress" || name == "MarbleLow"
+            || name == "WaferBlock" || name == "CakeBlock" || name == "ChocoBlock" || name == "GumdropStack" || name == "MarshmallowStack"
+            || name == "Cupcake" || name == "GumballMachine" || name == "WrappedSweets" || name == "DonutStack" || name == "StickFence")
         {
             // snow drips hang over the edge: keep the collider inside its 1.5 m tile so it never blocks the next one
             var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, b.center.y, 0f);
@@ -313,7 +317,8 @@ public static class IceThemeSetup
             case "FairGrass": case "HayPile": case "JugglingPins": case "PopcornSpill": case "BigTop": case "FerrisWheel": case "Carousel":
             case "StarGrass": case "SmallCrater": case "MoonPebbles": case "Footprints": case "MoonDome": case "Lander": case "LaunchRocket": case "Earth":
             case "BogGrass": case "ShroomPatch": case "MossClump": case "Cattails": case "SwampStones": case "BigCypress": case "StiltShack":
-            case "MaquisGrass": case "MarbleRubble": case "PotteryShards": case "GeraniumPot": case "GreekTemple": case "WhiteVillage": case "Windmill": case "Caique": return;   // walk through / ground decor
+            case "MaquisGrass": case "MarbleRubble": case "PotteryShards": case "GeraniumPot": case "GreekTemple": case "WhiteVillage": case "Windmill": case "Caique":
+            case "SugarGrass": case "Sprinkles": case "WrappedCandy": case "ChocoChips": case "CandyCastle": case "GingerbreadHouse": case "LayerCake": return;   // walk through / ground decor
             case "Igloo": case "SnowRock": case "IceBoulder":
                 foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true)) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
                 return;
@@ -337,6 +342,7 @@ public static class IceThemeSetup
             case "BasaltRimA": case "BasaltRimB": case "BasaltRimC":
             case "SwampBankA": case "SwampBankB": case "SwampBankC":
             case "GreekCliffA": case "GreekCliffB": case "GreekCliffC":
+            case "CandyWallA": case "CandyWallB": case "CandyWallC":
                 {   // the column body only (not the toppled columns and cracks in front, ~1 m), and tall enough that the
                     // border stays a wall above the low basalt: the lava lake behind it is out of bounds
                     var bc = go.AddComponent<BoxCollider>(); float h = Mathf.Max(b.size.y, 6f);
@@ -355,6 +361,10 @@ public static class IceThemeSetup
             case "OliveTree": Capsule(go, 0.30f, 3.0f); return;
             case "GreekCypress": Capsule(go, 0.45f, 3.8f); return;
             case "BronzeBrazier": Capsule(go, 0.30f, 2.3f); return;
+            case "LollipopA": case "LollipopB": Capsule(go, 0.18f, 3.7f); return;
+            case "IceCreamCone": Capsule(go, 0.50f, 3.6f); return;
+            case "GumdropTree": Capsule(go, 0.28f, 3.6f); return;
+            case "GummyBear": Capsule(go, 0.45f, 2.1f); return;
             case "FloodMast": Capsule(go, 0.22f, 3.1f); return;
             case "Beacon": Capsule(go, 0.20f, 2.6f); return;
             case "FireCrystal": Capsule(go, 0.55f, 2.5f); return;
@@ -362,7 +372,7 @@ public static class IceThemeSetup
             case "MagmaPillar": Capsule(go, 0.55f, 2.7f); return;
             case "BurntPine": Capsule(go, 0.30f, 3.0f); return;
             case "IceGate": case "XmasGate":
-            case "TempleGate": case "VolcanoGate": case "FactoryGate": case "CircusGate": case "AirlockGate": case "SwampGate": case "GreekGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
+            case "TempleGate": case "VolcanoGate": case "FactoryGate": case "CircusGate": case "AirlockGate": case "SwampGate": case "GreekGate": case "CandyGate": { var bc = go.AddComponent<BoxCollider>(); bc.center = new Vector3(0f, 4.5f, 0f); bc.size = new Vector3(11f, 9f, 2.4f); return; }   // the pylons only, not the sand in front
             case "PalmTree": Capsule(go, 0.25f, 3.2f); return;
             case "CatStatue": Capsule(go, 0.55f, 2.3f); return;
             case "LotusColumn": Capsule(go, 0.50f, 3.0f); return;

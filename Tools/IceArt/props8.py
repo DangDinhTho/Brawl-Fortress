@@ -38,6 +38,9 @@ class Kit:
     def obj(self, name):
         for v in self.bm.verts: v[self.seen] = 0
         bm = self.bm
+        # glow faces last: Unity numbers the submeshes in the order their materials first appear in the face list, so
+        # a mesh whose first face glowed got its two materials swapped (Volcano boulders, the candy cake banks)
+        bm.faces.sort(key=lambda f: f[self.gl]); bm.faces.index_update()
         bm.verts.layers.int.remove(self.seen)
         ob = bm_to_obj(bm, name, self.C)
         return apply_glow(ob)
