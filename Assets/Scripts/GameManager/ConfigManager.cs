@@ -383,7 +383,7 @@ public class ConfigManager
         (GameMode.KingOfTheHill, Map.Map_Brawl_TridentCrown, 5),
         (GameMode.KingOfTheHill, Map.Map_Brawl_TermiteHill, 5),
         (GameMode.KingOfTheHill, Map.Map_Brawl_PagodaHill, 5),
-        (GameMode.Payload, Map.Map_Brawl_Payload, 0),
+        (GameMode.Payload, Map.Map_Brawl_CrystalRail, 0),   // replaces the hand-made Map_Brawl_Payload (retired Nov 2026)
         (GameMode.Payload, Map.Map_Brawl_MoonRail, 0),
         (GameMode.Payload, Map.Map_Brawl_BambooLine, 0),
         (GameMode.Payload, Map.Map_Brawl_DynamiteTrail, 1),
@@ -452,7 +452,7 @@ public class ConfigManager
         // made by older clients load): Oasis, DustyCanyon, BambooTemple, MoonMaze, LunarVault, BambooShrine, MineExpress,
         // RobotRidge, HaleMesa, DustDevil, FrontierOutpost, BigfootGulch, StompingGrounds, YetiHollow, MoonlitDen,
         // GhoulMine, CryptTunnels, LastLight, DeadCrater, and the Mix-theme desert maps FrontierRuins, BorderSiege,
-        // CrossroadRuins, FrontierConvoy, LastStand (see BrawlMapBuilder.Retired)
+        // CrossroadRuins, FrontierConvoy, LastStand, and the hand-made Map_Brawl_Payload (see BrawlMapBuilder.Retired)
     };
 
     /// <summary>The boss each Boss Battle (JungleBoss) map is played against: 5 Hale maps, 5 Yeti maps.</summary>

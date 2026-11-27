@@ -1306,6 +1306,9 @@ public static partial class BrawlMapBuilder
         // Western map of their mode (Wild West, Gold Rush, Sheriff Square, Dynamite Trail, Mann vs Machine)
         "Map_Brawl_FrontierRuins", "Map_Brawl_BorderSiege", "Map_Brawl_CrossroadRuins", "Map_Brawl_FrontierConvoy",
         "Map_Brawl_LastStand",
+        // Nov 2026: the hand-made Cave Payload map crashed on a phone; Map_Brawl_CrystalRail (generated, Cave) replaces
+        // it. Its scene stays in the project: the generated Payload maps clone its cart systems, Cave maps its lighting.
+        "Map_Brawl_Payload",
     };
 
     [MenuItem("Tools/Maps/Remove Retired Map Cards")]

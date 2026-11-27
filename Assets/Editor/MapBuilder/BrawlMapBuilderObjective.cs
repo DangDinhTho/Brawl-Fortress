@@ -31,6 +31,8 @@ public static partial class BrawlMapBuilder
     static readonly Vector2[] PathC = { new Vector2(0, 16.5f), new Vector2(0, 5) };
     static readonly Vector2[] PathD = { new Vector2(0, 16.5f), new Vector2(-8, 10), new Vector2(-9, 2) };
     static readonly Vector2[] PathE = { new Vector2(-4, 16.5f), new Vector2(-4, 6), new Vector2(4, 2) };
+    // S-bend (Crystal Rail): along the left side, across to the right, back across the middle (54 m in all)
+    static readonly Vector2[] PathF = { new Vector2(-5, 16.5f), new Vector2(-5, 12), new Vector2(5, 7.5f), new Vector2(5, 2.5f) };
 
     public static readonly Def[] Payload =
     {
@@ -133,6 +135,28 @@ public static partial class BrawlMapBuilder
                 "...#...bb...bb...#...",
             },
             center = "...#.............#...",
+        },
+        // Cave Payload map that replaces the hand-made Map_Brawl_Payload (Nov 2026: it crashed on a phone; retired, its
+        // scene stays in the project as the source of the cart systems and the Cave lighting). New layout around PathF.
+        new Def {
+            mapEnum = "Map_Brawl_CrystalRail", displayName = "Crystal Rail", icon = "map_crystalrail", mode = GameMode.Payload, theme = Theme.Cave, seed = 3606, pathHalf = PathF,
+            names = new[] { "Crystal Rail", "Хрустальная колея", "รางคริสตัล", "Riel de Cristal", "Đường Ray Pha Lê" },
+            half = new[] {
+                ".....................",
+                ".....................",
+                ".....................",
+                "..##....x........##..",
+                "..#..bb.....x.....#..",
+                ".....bb..........bb..",
+                ".x.............t.bb..",
+                "....##..........##...",
+                ".bb..........#.......",
+                ".bb.........###...x..",
+                "..........bb.....bb..",
+                "..x.......bb.....bb..",
+                "....#..........##....",
+            },
+            center = "..bb.#.........#.bb..",
         },
     };
 

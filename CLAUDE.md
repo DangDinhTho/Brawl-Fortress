@@ -174,7 +174,11 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - One map per art theme per mode. The old themes are Western (orange canyon), Bamboo (green), Cave (blue rock,
   crystals), Moon (purple) and Mix (orange desert floor with mixed cliffs = reads as a second desert). Hand-made old
   maps: BrawlScene "Wild West" / Map_Brawl_MvM = Western, BrawlScene_2 / Map_Brawl_Koth = Bamboo, ShowDown /
-  Map_Brawl_CTF = Moon, Map_Brawl_Payload / ZombieYard = Cave. 24 older maps that repeated a theme are **retired**
+  Map_Brawl_CTF = Moon, ZombieYard = Cave. The hand-made Cave Payload map `Map_Brawl_Payload` crashed on a phone (cause
+  not found, no device log) and is retired since 27 Nov 2026; `Map_Brawl_CrystalRail` "Crystal Rail" (generated, Cave,
+  `PathF` S-bend track of 54 m along the left side, across, back across the middle; new layout, seed 3606) replaces it:
+  first Payload card, free, first in `DefaultTicketCosts`; checked in a solo match (loads, bots pushed the cart past the
+  middle, no errors), not on a phone. 24 older maps that repeated a theme are **retired** too
   (the 5 Mix maps FrontierRuins, BorderSiege, CrossroadRuins, FrontierConvoy, LastStand since Nov 2026): listed in
   `BrawlMapBuilder.Retired`, cards removed from `PopupSelectMap` (menu `Tools/Maps/Remove Retired Map Cards`; AddCard
   never re-adds them). Their `Map` enum values stay (the enum is sent as a byte; all clients share Photon AppVersion
@@ -240,7 +244,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   objective, features (Volcano vents, Swamp bog, Ocean currents, Savanna water holes, Japan torii paths, Xmas night,
   boss name, track for Payload / MvM, tall grass). Data: `MapInfo.cs` + generated `MapInfoTable.cs` (map -> theme;
   regenerate with `Tools/Maps/Generate Map Info Table` after adding maps; hand-made maps are listed in
-  MapInfoTableGen). Texts: Main.csv keys `theme_*`, `theme_desc_*`, `mode_title_*`, `mode_desc_*`, `feat_*`,
+  MapInfoTableGen; the Boss / Zombie maps of the old themes (`BrawlMapBuilder.BossZombie`) are not in `AllDefs()`, the
+  generator adds them itself: without that a regenerate dropped ZombieYard, HaleJungle, RedRockPit...). Texts: Main.csv keys `theme_*`, `theme_desc_*`, `mode_title_*`, `mode_desc_*`, `feat_*`,
   `map_info_*`, `boss_name_*` (5 languages). A new theme needs its row in MapIconGrades.json, `theme_<Theme>` /
   `theme_desc_<Theme>` strings, a colour in `MapInfo.ThemeColor` and, if it has special terrain, a `feat_` line.
 
@@ -347,7 +352,8 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   pusher: blue lost. Tracks run 22.6-65 m. The cart is 1.25 x (`CartScale`, still on the 0.95 m gauge) with a 2.5 m
   push zone (`CartPushRadius`, EntryFieldOfView.radius): `SizeCart` in Build(), menu `Tools/Maps/Apply Payload Cart
   Size` for the existing scenes.
-- **Map_Brawl_Payload** (hand-made; the generated maps clone its cart systems) had its `NavMeshSurface` switched off
+- **Map_Brawl_Payload** (hand-made; retired from the build 27 Nov 2026, but the scene stays: the generated Payload maps
+  clone its cart systems and the Cave maps take its lighting) had its `NavMeshSurface` switched off
   since the first commit (no NavMesh: bots stood still) and a cart path up to 2.4 m off its hand-laid rail pieces. Menu
   `Tools/Maps/Fix Payload Source Map` rebuilds the fragments through the rail pieces (under `rail`), switches the
   surface on and rebakes. `BakeNavMesh` accepts both `NavmeshSurface` (generated) and `NavMeshSurface` (hand-made).

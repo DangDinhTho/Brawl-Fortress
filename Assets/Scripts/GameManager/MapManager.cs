@@ -242,4 +242,5 @@ public enum Map: byte
     Map_Brawl_LanternWorks,   // MannVsMachine, Japan
     Map_Brawl_KomainuCourt,   // JungleBoss, Hale, Japan
     Map_Brawl_HauntedTemple,  // Zombie, Japan
+    Map_Brawl_CrystalRail,    // Payload, Cave (replaces the hand-made Map_Brawl_Payload, Nov 2026)
 }
