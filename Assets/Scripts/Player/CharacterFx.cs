@@ -98,14 +98,15 @@ public class CharacterFx : MonoBehaviour
 
         bool bog = BogPuddle.SpeedFactorAt(feet) < 0.999f;
         float current = OceanCurrent.FactorAt(feet, dir);
-        bool boost = moving && (ToriiPath.FactorAt(feet) > 1.001f || current > 1.05f);
+        bool gift = moving && SpeedBuff.Active(player);   // Xmas gift speed boost
+        bool boost = moving && (gift || ToriiPath.FactorAt(feet) > 1.001f || current > 1.05f);
         bool against = moving && current < 0.95f;
 
         // continuous: speed lines, bubbles
         if (boost && Time.time >= nextStreak)
         {
             nextStreak = Time.time + StreakInterval;
-            BrawlFx.Streak(feet, dir, current > 1.05f ? new Color(0.75f, 0.95f, 1f, 0.85f) : new Color(1f, 1f, 1f, 0.85f));
+            BrawlFx.Streak(feet, dir, gift ? new Color(1f, 0.86f, 0.35f, 0.9f) : current > 1.05f ? new Color(0.75f, 0.95f, 1f, 0.85f) : new Color(1f, 1f, 1f, 0.85f));
         }
         if ((bog || against) && Time.time >= nextBubble)
         {
@@ -122,6 +123,7 @@ public class CharacterFx : MonoBehaviour
         if (!Grounded(feet)) return;
         if (bog) BrawlFx.Mud(feet, dir);
         else if (WaterHole.IsInside(feet)) BrawlFx.Splash(feet, dir);
+        else if (SlickIce.IsOn(feet)) BrawlFx.IceSpray(feet, dir);
         else if (stealth == null || !stealth.InBush) BrawlFx.Dust(feet, dir, side);
     }
 

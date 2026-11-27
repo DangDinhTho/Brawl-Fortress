@@ -919,7 +919,7 @@ public class PlayerFPSController : MonoBehaviour
 
 
         // set the desired speed to be walking or running
-        speed = runSpeed * TerrainSpeed.FactorAt(transform.position, move);   // Swamp bog puddles, Ocean currents, Japan torii paths
+        speed = runSpeed * TerrainSpeed.FactorAt(transform.position, move) * SpeedBuff.FactorOf(player);   // Swamp bog puddles, Ocean currents, Japan torii paths, Ice slick patches; Xmas gift boost
         // (State == PlayerState.Running && m_CharacterController.isGrounded) ? runSpeed : 0;
         
         // normalize input if it exceeds 1 in combined length:
@@ -977,7 +977,15 @@ public class PlayerFPSController : MonoBehaviour
             }
         }
 
-        moveDirection = Vector3.Lerp(moveDirection, targetDirection, acceleration * Time.fixedDeltaTime);
+        float k = acceleration * Time.fixedDeltaTime;
+        float traction = m_CharacterController.isGrounded ? SlickIce.TractionAt(m_Transform.position) : 1f;
+        if (traction < 0.999f)
+        {   // Ice maps: on slick ice the horizontal speed follows the input slowly (the character slides); vertical as usual
+            float y = Mathf.Lerp(moveDirection.y, targetDirection.y, k);
+            moveDirection = Vector3.Lerp(moveDirection, targetDirection, k * traction);
+            moveDirection.y = y;
+        }
+        else moveDirection = Vector3.Lerp(moveDirection, targetDirection, k);
         //apply the movement direction in the character controller
         m_CharacterController.Move(moveDirection * Time.fixedDeltaTime);
         

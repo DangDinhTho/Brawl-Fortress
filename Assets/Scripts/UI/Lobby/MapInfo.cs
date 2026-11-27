@@ -70,7 +70,17 @@ public static class MapInfo
             case "Ocean": list.Add(new Feature(LocalizationManager.Localize("feat_current"), new Color(0.3f, 0.9f, 1f))); break;
             case "Savanna": list.Add(new Feature(LocalizationManager.Localize("feat_waterhole"), new Color(0.4f, 1f, 0.6f))); break;
             case "Japan": list.Add(new Feature(LocalizationManager.Localize("feat_torii"), new Color(1f, 0.35f, 0.3f))); break;
-            case "XmasNight": list.Add(new Feature(LocalizationManager.Localize("feat_night"), new Color(1f, 0.82f, 0.4f))); break;
+            case "XmasNight":
+                list.Add(new Feature(LocalizationManager.Localize("feat_gifts"), new Color(1f, 0.86f, 0.35f)));
+                list.Add(new Feature(LocalizationManager.Localize("feat_night"), new Color(1f, 0.82f, 0.4f)));
+                break;
+            // Nov 2026 mechanics (Assets/Scripts/Map: GiftDrop, HumanCannon, MeteorShower, SlickIce, JellyWall, DartTrap)
+            case "Xmas": list.Add(new Feature(LocalizationManager.Localize("feat_gifts"), new Color(1f, 0.86f, 0.35f))); break;
+            case "Circus": list.Add(new Feature(LocalizationManager.Localize("feat_cannon"), new Color(1f, 0.4f, 0.35f))); break;
+            case "Lunar": list.Add(new Feature(LocalizationManager.Localize("feat_meteor"), new Color(1f, 0.55f, 0.25f))); break;
+            case "Ice": list.Add(new Feature(LocalizationManager.Localize("feat_slickice"), new Color(0.6f, 0.9f, 1f))); break;
+            case "Candy": list.Add(new Feature(LocalizationManager.Localize("feat_jelly"), new Color(1f, 0.55f, 0.8f))); break;
+            case "Egypt": list.Add(new Feature(LocalizationManager.Localize("feat_darts"), new Color(1f, 0.75f, 0.35f))); break;
         }
         if (mode == GameMode.JungleBoss)
         {

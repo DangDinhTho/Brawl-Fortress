@@ -124,6 +124,19 @@ public static class BrawlFx
         }
     }
 
+    /// <summary>Ice chips and a puff of frost sprayed from the feet sliding on slick ice.</summary>
+    public static void IceSpray(Vector3 feet, Vector3 dir)
+    {
+        if (!Ready()) return;
+        Vector3 right = new Vector3(dir.z, 0f, -dir.x);
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 o = right * Random.Range(-1f, 1f);
+            Emit(mud, feet + o * 0.2f + Vector3.up * 0.06f, -dir * Random.Range(0.8f, 1.6f) + o * 0.8f + Vector3.up * Random.Range(1.2f, 2f), Random.Range(0.07f, 0.12f), 0.4f, new Color(0.88f, 0.97f, 1f, 1f));
+        }
+        Emit(dust, feet - dir * 0.2f + Vector3.up * 0.08f, -dir * 0.6f + Vector3.up * 0.2f, Random.Range(0.45f, 0.6f), 0.45f, new Color(0.9f, 0.97f, 1f, 0.7f), Random.Range(0f, 360f));
+    }
+
     /// <summary>A few bubbles rising around the feet (in a bog, or against an Ocean current).</summary>
     public static void Bubble(Vector3 feet, Color c)
     {
@@ -171,6 +184,29 @@ public static class BrawlFx
             Vector3 v = (o * Random.Range(1.2f, 3.2f) + Vector3.up * Random.Range(2.2f, 4.5f)) * strength;
             Color k = Color.Lerp(c, c * Random.Range(0.75f, 1.15f), 0.8f); k.a = 1f;
             Emit(leaf, p + o * Random.Range(0f, 0.35f) + Vector3.up * Random.Range(-0.3f, 0.4f), v, Random.Range(0.2f, 0.32f), Random.Range(0.8f, 1.3f), k, Random.Range(0f, 360f));
+        }
+    }
+
+    /// <summary>A burst of sparks in two colours, thrown up and out (a gift opening, a cannon shot, a meteor impact).</summary>
+    public static void Burst(Vector3 p, Color a, Color b, int count, float speed)
+    {
+        if (!Ready()) return;
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 v = (Rnd(1f) + Vector3.up * 0.9f).normalized * Random.Range(0.45f, 1f) * speed;
+            Emit(spark, p + Rnd(0.15f), v, Random.Range(0.26f, 0.42f), Random.Range(0.3f, 0.5f), Random.value < 0.5f ? a : b, Random.Range(0f, 90f));
+        }
+    }
+
+    /// <summary>A ring of dust thrown out flat along the ground (a landing, an impact).</summary>
+    public static void DustRing(Vector3 p, float radius, Color c, int count)
+    {
+        if (!Ready()) return;
+        for (int i = 0; i < count; i++)
+        {
+            float a = i / (float)count * Mathf.PI * 2f + Random.Range(-0.2f, 0.2f);
+            Vector3 o = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            Emit(dust, p + o * radius * 0.3f + Vector3.up * 0.15f, o * Random.Range(2f, 3.5f) + Vector3.up * 0.4f, Random.Range(0.55f, 0.8f), Random.Range(0.5f, 0.7f), c, Random.Range(0f, 360f));
         }
     }
 

@@ -8083,6 +8083,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4953766172494682514, guid: bb2f01794e4890844ab02f8bce7615bc, type: 3}
   m_PrefabInstance: {fileID: 558044095}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &565930319
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 565930320}
+  - component: {fileID: 565930321}
+  m_Layer: 0
+  m_Name: Mech_DartTrap3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &565930320
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565930319}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 11.28, y: 0, z: 9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1076633990}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &565930321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 565930319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cd5caf6f2b62f14aa057054270ab73d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DartTrap
+  id: 3
+  props: {fileID: 2100000, guid: 18466eb0995a705418cf128415b4385d, type: 2}
+  length: 8.95
+  plateDistance: 3.78
+  plateRadius: 0.7
+  armTime: 0.6
+  dartSpeed: 15
+  halfWidth: 0.65
+  damageFraction: 0.25
+  cooldown: 5
 --- !u!1001 &566939747
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17033,6 +17087,10 @@ Transform:
   - {fileID: 1258284210}
   - {fileID: 461551081}
   - {fileID: 1291245234}
+  - {fileID: 1831759347}
+  - {fileID: 1281883416}
+  - {fileID: 1683563027}
+  - {fileID: 565930320}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1079702110
@@ -19917,6 +19975,60 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   color: {r: 1, g: 0, b: 0, a: 1}
+--- !u!1 &1281883415
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1281883416}
+  - component: {fileID: 1281883417}
+  m_Layer: 0
+  m_Name: Mech_DartTrap1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1281883416
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281883415}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: -11.28, y: 0, z: -9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1076633990}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1281883417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281883415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cd5caf6f2b62f14aa057054270ab73d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DartTrap
+  id: 1
+  props: {fileID: 2100000, guid: 18466eb0995a705418cf128415b4385d, type: 2}
+  length: 8.95
+  plateDistance: 3.78
+  plateRadius: 0.7
+  armTime: 0.6
+  dartSpeed: 15
+  halfWidth: 0.65
+  damageFraction: 0.25
+  cooldown: 5
 --- !u!1001 &1291245233
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26092,6 +26204,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2378435733473288654, guid: 1210ff2616265874692d5e7b5b9d5d85, type: 3}
   m_PrefabInstance: {fileID: 1679893022}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1683563026
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1683563027}
+  - component: {fileID: 1683563028}
+  m_Layer: 0
+  m_Name: Mech_DartTrap2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1683563027
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683563026}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: -13.5, y: 0, z: 8.28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1076633990}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1683563028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683563026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cd5caf6f2b62f14aa057054270ab73d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DartTrap
+  id: 2
+  props: {fileID: 2100000, guid: 18466eb0995a705418cf128415b4385d, type: 2}
+  length: 7.45
+  plateDistance: 3.78
+  plateRadius: 0.7
+  armTime: 0.6
+  dartSpeed: 15
+  halfWidth: 0.65
+  damageFraction: 0.25
+  cooldown: 5
 --- !u!1001 &1694436068
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28569,6 +28735,60 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7445835519483944988, guid: f1aee2792e46f744c989e4b9af7417bd, type: 3}
   m_PrefabInstance: {fileID: 1831014028}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1831759346
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1831759347}
+  - component: {fileID: 1831759348}
+  m_Layer: 0
+  m_Name: Mech_DartTrap0
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1831759347
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1831759346}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 13.5, y: 0, z: -8.28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1076633990}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1831759348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1831759346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cd5caf6f2b62f14aa057054270ab73d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DartTrap
+  id: 0
+  props: {fileID: 2100000, guid: 18466eb0995a705418cf128415b4385d, type: 2}
+  length: 7.45
+  plateDistance: 3.78
+  plateRadius: 0.7
+  armTime: 0.6
+  dartSpeed: 15
+  halfWidth: 0.65
+  damageFraction: 0.25
+  cooldown: 5
 --- !u!1001 &1832427134
 PrefabInstance:
   m_ObjectHideFlags: 0

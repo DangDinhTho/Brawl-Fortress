@@ -403,6 +403,7 @@ public static partial class BrawlMapBuilder
         if (d.theme == Theme.Savanna) { EgyptSun(); SavannaSky(); }   // the bright neutral desert daylight, a clear sky
         if (d.theme == Theme.Japan) { GreekSun(); JapanSky(); }       // the soft Greek daylight, a spring sky
         if (d.theme == Theme.Ocean) { OceanWater(); OceanSky(); }   // bright neutral daylight materials
+        PlaceMechanics(d);   // gifts, cannons, meteors, slick ice, jelly walls, dart traps (BrawlMapBuilderMechanics.cs)
         if (d.theme >= Theme.Ice) log += ClearEndCamera();   // nothing tall behind the spawns / bomb hole in the camera's way
         Physics.SyncTransforms();
         // bushes, navmesh, path points
@@ -1101,7 +1102,7 @@ public static partial class BrawlMapBuilder
             if (BushAreaGenerator.IsBushRenderer(rr)) markups.Add(new NavMeshBuildMarkup { root = rr.transform, ignoreFromBuild = true });
         // Volcano: the lava lakes and the eruption vents (fountain, warning disc) are not ground to walk on or obstacles
         foreach (var t in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true)))
-            if (t.name.StartsWith("LavaLake") || t.GetComponent<EruptionVent>() || t.name.StartsWith("AcidLake") || t.name.StartsWith("SeaWater") || t.name.StartsWith("ChocoLake") || t.name.StartsWith("Caustics") || t.GetComponent<OceanCurrent>() || t.GetComponent<WaterHole>() || t.GetComponent<ToriiPath>() || t.name.StartsWith("GlowPool") || t.name.StartsWith("WarmPool") || t.GetComponent<BogPuddle>()) markups.Add(new NavMeshBuildMarkup { root = t, ignoreFromBuild = true });
+            if (t.name.StartsWith("LavaLake") || t.GetComponent<EruptionVent>() || t.name.StartsWith("AcidLake") || t.name.StartsWith("SeaWater") || t.name.StartsWith("ChocoLake") || t.name.StartsWith("Caustics") || t.GetComponent<OceanCurrent>() || t.GetComponent<WaterHole>() || t.GetComponent<ToriiPath>() || t.name.StartsWith("GlowPool") || t.name.StartsWith("WarmPool") || t.GetComponent<BogPuddle>() || t.name.StartsWith(MechPrefix)) markups.Add(new NavMeshBuildMarkup { root = t, ignoreFromBuild = true });
         foreach (var root in scene.GetRootGameObjects())
         {
             var tmp = new List<NavMeshBuildSource>();

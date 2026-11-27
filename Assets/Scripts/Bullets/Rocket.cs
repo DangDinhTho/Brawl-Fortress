@@ -12,6 +12,7 @@ public class Rocket : BulletNormal
     public override void OnTriggerEnter(Collider other)
     {
         if (!ready) return;
+        if (TryBounce(other)) return;   // Candy maps: off a jelly wall
         ready = false;
         if (other.CompareTag("HitBox"))
         {

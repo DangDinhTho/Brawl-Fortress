@@ -153,6 +153,7 @@ public class BushStealth : MonoBehaviour
         if (target.RevealedByAttack) return false; // attacking from a bush gives the position away
         if (target.Team == observerTeam) return false;
         Vector3 tp = target.Position;
+        if (LightPool.Lit(tp)) return false;   // Xmas night: the lamps light up the grass around them
         if (RevealDistance > 0f && FlatSqr(observerPos - tp) <= RevealDistance * RevealDistance) return false;
         float r2 = RevealRadius * RevealRadius;
         for (int i = 0; i < AllStealth.Count; i++)

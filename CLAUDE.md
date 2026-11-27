@@ -249,6 +249,57 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   `map_info_*`, `boss_name_*` (5 languages). A new theme needs its row in MapIconGrades.json, `theme_<Theme>` /
   `theme_desc_<Theme>` strings, a colour in `MapInfo.ThemeColor` and, if it has special terrain, a `feat_` line.
 
+## Themed map mechanics of the newer themes (Nov 2026)
+- Before: Volcano vents, Swamp bogs, Ocean currents, Savanna water holes, Japan torii paths. Added for the themes that
+  had none (Tho picked 6 of 8; Greek toppling columns and Factory conveyor belts were proposed, not made):
+  - **Xmas: gifts** (`GiftDrop`): 3-4 per map (middle + mirrored), bobbing / spinning GiftBox x0.8 with gold sparkles
+    over a gold ring; first to touch it: below 75% HP heal 40% (`HealthBase.Buff`), else speed x1.3 for 6 s
+    (`SpeedBuff`, PlayerFPSController + TerrainSpeedAgent; gold speed lines in CharacterFx); back after 25 s (the ring
+    fills). The master decides (Photon event 42 `MapMechanics.GiftEvent` {id, view id, kind, clock time back}), the
+    owner heals. Bots only take a gift they walk over (no AI for it). The pickup gift looked like the decorative parcels
+    at x0.55: hence bigger, higher, sparkling.
+  - **Xmas night: light pools** (`LightPool` on the WarmPool quads in the arena, radius 0.36 x pool size): a hidden
+    character inside one is seen (`BushStealth.IsHiddenFrom`, also bots' FieldOfView). LanternEve: 8 of 208 clumps lit.
+  - **Circus: human cannons** (`HumanCannon`): 2 per half, mirrored; walk-through CircusCannon (model fires along local
+    -X) on an open tile of the back rows, landing target (red / white rings) 9-16 m ahead in the mid rows, preferring
+    walls in between; fuse 0.45 s, arc (peak 3.8 m + 8% of the distance) at 13 m/s, rest 0.8 s; players and bots
+    (state Teleport + CharacterController off; bots: agent.updatePosition off, Warp at the end); arc drawn near it.
+  - **Lunar: meteor shower** (`MeteorShower`, one per map): every 18 s 2 mirrored pairs of meteors on open floor (spots
+    baked by the builder, picked per wave from a seed of the clock: no network), VentWarn disc 1.8 s (MeteorWarn.mat),
+    rock (MoonBoulderA x0.3) with a TrailRenderer (MeteorTrail.mat, Legacy Particles/Additive) in the last 0.5 s,
+    30% max HP within 1.6 m (`MapMechanics.HurtArea`, like the vents; not bosses), tears bushes (master), crater glow.
+  - **Ice: slick ice** (`SlickIce`): 2 mirrored pairs (+1 middle on Competitive), r 1.4-2.3 m, mesh built at runtime
+    (`MechMesh.Patch`, BrawlFortress/SlickIce); on it the horizontal speed follows the input at 0.28 of the acceleration
+    (stops in ~0.9 s instead of ~0.25) and top speed x1.12; agents get 0.28 of their acceleration; ice-chip steps.
+  - **Candy: jelly walls** (`JellyWall` on the GumdropStack wall tiles, not static so they wobble): bullets and rockets
+    bounce off once (`BulletNormal.TryBounce` / Rocket: reflection off the hit face, range continues); grenades,
+    stickies, melee, flames not. Maps with < 4 gumdrop walls get the wall group nearest the middle (and its mirror)
+    turned into gumdrops (CookieHeist, FrostingHill, RottenSweets).
+  - **Egypt: dart traps** (`DartTrap`): 2 per half, mirrored; carved stele set in a '#' wall, pressure plate 2-3 tiles
+    out along an open run of >= 4 tiles; standing on it arms it (0.6 s: plate sinks and glows, red stripe fills along
+    the path), then 3 darts fly at 15 m/s: 25% max HP to everyone in the path (0.65 m half width), rest 5 s. Master
+    decides (Photon event 43 `MapMechanics.TrapEvent` {id, clock time of the volley}); owners take the damage. Plate,
+    stele, darts are runtime meshes on the map's palette material (`props`).
+- Shared: `MapMechanics` (clock, `Running`, `Authority`, `Characters()` = players + bots, not robots / bosses, `Hurt` /
+  `HurtArea`, event channel 42 / 43), `MechMesh` (runtime ground marks), shader BrawlFortress/MechDecal (rings,
+  targets, stripes, craters; `_Fill` over uv.x, `_Pulse`), materials in Resources/Materials (MechDecal, SlickIce,
+  MeteorWarn, MeteorTrail; `Tools/Maps/Mechanics/Setup Materials`). A MonoBehaviour must live in a file of its own
+  name: LightPool first sat in MapMechanics.cs and was saved as a missing script (fixed, `RemoveMechanics` cleans it).
+- Builder: `BrawlMapBuilderMechanics.cs`. `Build()` calls `PlaceMechanics(d)` after the theme's material swaps; the
+  NavMesh bake ignores "Mech_" objects. Existing scenes: `ApplyMechanicsBatch(start, count, theme)` / menu
+  `Tools/Maps/Mechanics/Apply To All Maps` (removes the old "Mech_" objects first; ~2 s per map; one or two themes per
+  MCP call). All 49 maps of the 6 themes have them. Map info lines `feat_gifts`, `feat_night` (rewritten: lamps light
+  the grass), `feat_cannon`, `feat_meteor`, `feat_slickice`, `feat_jelly`, `feat_darts`.
+- Mobile shader check passed for MechDecal and SlickIce (Metal, GLES3, Vulkan).
+- Tested in solo matches (editor): JingleSquare gifts (taken by walking in; heal 100 -> 168 with bots shooting; the speed
+  event gives x1.3); CircusRing cannon (flew 12 m, landed on the target, CharacterController / state restored); in the
+  same match test objects: slick ice (traction 0.28, x1.12), dart trap (armed, 50 HP per volley, re-armed after the
+  rest), meteor shower (warning discs, 60 HP impact), jelly reflection (0.58 / 0.82 -> 0.58 / -0.82 off the wall face,
+  flies on, a second hit stops it). In an unfocused editor the frames are long and a bullet can tunnel through a test
+  wall: the bounce was checked by calling OnTriggerEnter. Not tested: multiplayer (events 42 / 43, remote flights),
+  bots using cannons on purpose (they do not), on a phone. Placement checked on top views of SunTemple, FrostPeak,
+  CircusRing, JingleSquare.
+
 ## Map builder (Assets/Editor/MapBuilder)
 - `BrawlMapBuilder.cs`: maps defined as ASCII half-layouts (`Def`: half rows + center, mirrored for the other team).
   Tiles: `#` wall, `x` small obstacle, `f` fence, `t` tall prop, `b` bush (4 clumps per tile), `.` floor/decor.

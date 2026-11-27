@@ -20,6 +20,7 @@ public class BulletNormal : PoolingEntry
     public virtual void OnTriggerEnter(Collider other)
     {
         if (!ready || finished) return;
+        if (TryBounce(other)) return;
         ready = false;
         finished = true;
         if (other.CompareTag("HitBox"))
@@ -84,7 +85,20 @@ public class BulletNormal : PoolingEntry
     }
 
     BushArea lastBush;
-    bool blasted;
+    bool blasted, bounced;
+
+    /// <summary>Candy maps: a bullet / rocket hitting a jelly wall bounces off it once (JellyWall) and flies on.</summary>
+    protected bool TryBounce(Collider other)
+    {
+        if (bounced || JellyWall.Count == 0 || other.CompareTag("HitBox")) return false;
+        Vector3 pos = transform.position, dir = direction;
+        if (!JellyWall.Reflect(other, ref pos, ref dir)) return false;
+        bounced = true;
+        direction = dir;
+        transform.position = pos;
+        transform.forward = dir;
+        return true;
+    }
     /// <summary>Radius (m) in which the projectile tears the grass where it ends (rockets); 0 = it does not.</summary>
     protected virtual float BushBlastRadius => 0f;
 
@@ -108,6 +122,7 @@ public class BulletNormal : PoolingEntry
         finished = false;
         lastBush = null;
         blasted = false;
+        bounced = false;
         maxDistance = args.Length > 2 && args[2] is float range && range > 0f ? range : 0f;
         StopAllCoroutines();
         if (maxDistance <= 0f) StartCoroutine(WaitDestroy(timeAlive)); // no range given: old time-based life
