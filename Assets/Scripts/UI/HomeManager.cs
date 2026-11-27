@@ -175,7 +175,7 @@ public class HomeManager : MonoBehaviour
     public void CreateCharacter()
     {
         if (remotePlayer != null) Destroy(remotePlayer.gameObject);
-        remotePlayer = Instantiate(Resources.Load<GameObject>($"Characters/TPS/TPS_{characterPref.tF2Class}"), characterContainer).GetComponent<RemotePlayer>();
+        remotePlayer = Instantiate(ToyCharacters.LoadTps(characterPref.tF2Class), characterContainer).GetComponent<RemotePlayer>();
         remotePlayer.transform.localPosition = Vector3.zero;
         remotePlayer.SetMeshTeam(team);
         if (characterPref.itemLoadOut != null)

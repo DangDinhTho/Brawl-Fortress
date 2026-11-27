@@ -42,6 +42,9 @@ public class AlignBones : MonoBehaviour
 
         bones = copyFromRootBone.GetComponentsInChildren<Transform>();
         ownBones = m_bone.transform.GetComponentsInChildren<Transform>();
+        // toy characters scale their bones every frame (ToyProportions): an item bone only inherits that scale,
+        // copying it as well would apply it twice (and only when the item is equipped after the first frame)
+        bool toy = copyFromRootBone.GetComponentInParent<ToyProportions>() != null;
         foreach (Transform t in ownBones)
         {
             Transform found = FindInArray(t.gameObject.name);
@@ -54,7 +57,7 @@ public class AlignBones : MonoBehaviour
                 t.parent = found;
                 t.localPosition = Vector3.zero;
                 t.localRotation = Quaternion.Euler(0, 0, 0);
-                t.localScale = found.transform.localScale;
+                t.localScale = toy ? Vector3.one : found.transform.localScale;
             }
         }
         //gameObject.SetActive(true);

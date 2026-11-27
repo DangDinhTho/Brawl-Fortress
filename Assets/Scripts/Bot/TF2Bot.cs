@@ -30,7 +30,7 @@ public class TF2Bot : TF2Player
         // }
         agent.speed = characterConfig.characterStats.speed * 0.9f;
 
-        remotePlayer = Instantiate(Resources.Load<GameObject>($"Characters/TPS/TPS_{tF2Class}"), transform).GetComponent<RemotePlayer>();
+        remotePlayer = Instantiate(ToyCharacters.LoadTps(tF2Class), transform).GetComponent<RemotePlayer>();
         //fPSReferences = Instantiate(Resources.Load<GameObject>($"Characters/FPS/FPS_{tF2Class}"), transform).GetComponent<FPSReferences>();
         remotePlayer.transform.localPosition = Vector3.zero;
         //fPSReferences.transform.localPosition = Vector3.zero;
