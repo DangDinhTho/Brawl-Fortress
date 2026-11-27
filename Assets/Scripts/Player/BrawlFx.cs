@@ -161,15 +161,25 @@ public static class BrawlFx
     }
 
     /// <summary>Green "+" signs rising around a character healed by a water hole.</summary>
-    public static void Heal(Vector3 feet)
+    public static void Heal(Vector3 feet) => Heal(feet, new Color(0.42f, 1f, 0.45f, 1f));
+
+    /// <summary>"+" signs of colour c rising around a healed character (gold on a Greek sanctuary).</summary>
+    public static void Heal(Vector3 feet, Color c)
     {
         if (!Ready()) return;
         for (int i = 0; i < 3; i++)
         {
             float a = Random.Range(0f, Mathf.PI * 2f);
             Vector3 o = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(0.25f, 0.5f);
-            Emit(heal, feet + o + Vector3.up * Random.Range(0.4f, 1.3f), Vector3.up * Random.Range(1.0f, 1.5f), Random.Range(0.3f, 0.38f), Random.Range(0.7f, 0.9f), new Color(0.42f, 1f, 0.45f, 1f));
+            Emit(heal, feet + o + Vector3.up * Random.Range(0.4f, 1.3f), Vector3.up * Random.Range(1.0f, 1.5f), Random.Range(0.3f, 0.38f), Random.Range(0.7f, 0.9f), c);
         }
+    }
+
+    /// <summary>A small glowing mote drifting up from p (over a Greek sanctuary).</summary>
+    public static void Mote(Vector3 p, Color c)
+    {
+        if (!Ready()) return;
+        Emit(bubble, p, new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(0.9f, 1.5f), Random.Range(-0.15f, 0.15f)), Random.Range(0.08f, 0.15f), Random.Range(1.3f, 1.9f), c);
     }
 
     /// <summary>Leaves torn out of a bush: count leaves of colour c from p, thrown up and out (strength 1 = a clump torn

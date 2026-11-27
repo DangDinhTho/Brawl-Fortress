@@ -251,7 +251,7 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 
 ## Themed map mechanics of the newer themes (Nov 2026)
 - Before: Volcano vents, Swamp bogs, Ocean currents, Savanna water holes, Japan torii paths. Added for the themes that
-  had none (Tho picked 6 of 8; Greek toppling columns and Factory conveyor belts were proposed, not made):
+  had none (Tho picked 6 of 8 proposals, then a healing sanctuary for Greek; Factory conveyor belts not made):
   - **Xmas: gifts** (`GiftDrop`): 3-4 per map (middle + mirrored), bobbing / spinning GiftBox x0.8 with gold sparkles
     over a gold ring; first to touch it: below 75% HP heal 40% (`HealthBase.Buff`), else speed x1.3 for 6 s
     (`SpeedBuff`, PlayerFPSController + TerrainSpeedAgent; gold speed lines in CharacterFx); back after 25 s (the ring
@@ -280,6 +280,21 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
     the path), then 3 darts fly at 15 m/s: 25% max HP to everyone in the path (0.65 m half width), rest 5 s. Master
     decides (Photon event 43 `MapMechanics.TrapEvent` {id, clock time of the volley}); owners take the damage. Plate,
     stele, darts are runtime meshes on the map's palette material (`props`).
+  - **Greek: sanctuary** (`Sanctuary`, Tho's ask; then "more ancient Greek": rebuilt as a small ruined tholos): heals
+    whoever stands on its platform like the Savanna water holes (0.06 x max HP per s, ticks of 0.5 s, owner heals, not
+    bosses / robots). In the middle (AmphoraHeist, TitanTerrace, NecropolisSteps: r 2.2 m); where the middle is taken
+    two mirrored ones on the centre row, the second turned 180 deg: MarbleAgora (central columns) x +-4.5, OracleHill
+    (the KOTH point) x +-6, HarborLine (track zigzags through the middle, bushes) x +-6 r 1.6; BronzeForge (track)
+    (-6, -3) / (6, 3). Stone parts are scene objects `SanctuaryStructure<i>` (wall layer, static, in the NavMesh; meshes
+    made by `SanctuaryArt` into Assets/Art/Mechanics): a krepidoma of two 7 cm steps (MeshCollider; its top is submesh 1
+    with BrawlFortress/Sanctuary: laurel wreath on a pebble mosaic around the altar, two rings of marble slabs with
+    joints, black band with a terracotta key like a red-figure vase, firelight flicker, soft gold healing rings),
+    fluted Doric column stumps with broken tops on the rim (6 at r >= 2.1: the 1.75 m ones at +-x, left / right of the
+    camera's view; 4 at r >= 1.8; 2 below; capsule colliders: cover), the altar (bomos, 0.8 m, plinth, terracotta frieze
+    with a black key band, cornice, corner horns, bronze fire bowl; box collider below the bullets' height) and the
+    sacred flame (crossed tongues on lava_grad, VolcanoGlow, flickers and sways in `Sanctuary`, embers and gold motes
+    via `BrawlFx.Mote`, gold "+" on a healed character). The first version (flat decal + light column) was dropped.
+    Applying it rebakes the NavMesh (`RebakeOpenScene`): red-to-blue paths complete on all 7. Map info `feat_sanctuary`.
 - Shared: `MapMechanics` (clock, `Running`, `Authority`, `Characters()` = players + bots, not robots / bosses, `Hurt` /
   `HurtArea`, event channel 42 / 43), `MechMesh` (runtime ground marks), shader BrawlFortress/MechDecal (rings,
   targets, stripes, craters; `_Fill` over uv.x, `_Pulse`), materials in Resources/Materials (MechDecal, SlickIce,
@@ -288,7 +303,7 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
 - Builder: `BrawlMapBuilderMechanics.cs`. `Build()` calls `PlaceMechanics(d)` after the theme's material swaps; the
   NavMesh bake ignores "Mech_" objects. Existing scenes: `ApplyMechanicsBatch(start, count, theme)` / menu
   `Tools/Maps/Mechanics/Apply To All Maps` (removes the old "Mech_" objects first; ~2 s per map; one or two themes per
-  MCP call). All 49 maps of the 6 themes have them. Map info lines `feat_gifts`, `feat_night` (rewritten: lamps light
+  MCP call). All 56 maps of the 7 themes have them. Map info lines `feat_gifts`, `feat_night` (rewritten: lamps light
   the grass), `feat_cannon`, `feat_meteor`, `feat_slickice`, `feat_jelly`, `feat_darts`.
 - Mobile shader check passed for MechDecal and SlickIce (Metal, GLES3, Vulkan).
 - Tested in solo matches (editor): JingleSquare gifts (taken by walking in; heal 100 -> 168 with bots shooting; the speed

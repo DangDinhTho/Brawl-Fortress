@@ -81,6 +81,7 @@ public static class MapInfo
             case "Ice": list.Add(new Feature(LocalizationManager.Localize("feat_slickice"), new Color(0.6f, 0.9f, 1f))); break;
             case "Candy": list.Add(new Feature(LocalizationManager.Localize("feat_jelly"), new Color(1f, 0.55f, 0.8f))); break;
             case "Egypt": list.Add(new Feature(LocalizationManager.Localize("feat_darts"), new Color(1f, 0.75f, 0.35f))); break;
+            case "Greek": list.Add(new Feature(LocalizationManager.Localize("feat_sanctuary"), new Color(1f, 0.84f, 0.38f))); break;   // Sanctuary.cs
         }
         if (mode == GameMode.JungleBoss)
         {

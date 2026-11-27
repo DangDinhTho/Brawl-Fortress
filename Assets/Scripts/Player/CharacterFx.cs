@@ -77,6 +77,7 @@ public class CharacterFx : MonoBehaviour
         int prev = lastHp; lastHp = cur;
         if (prev < 0 || cur <= prev || Dead || Unseen) return;
         if (WaterHole.IsInside(Feet)) BrawlFx.Heal(Feet);   // healed by a water hole
+        else if (Sanctuary.IsInside(Feet)) BrawlFx.Heal(Feet, Sanctuary.Gold);   // healed on a Greek sanctuary
     }
 
     void LateUpdate()

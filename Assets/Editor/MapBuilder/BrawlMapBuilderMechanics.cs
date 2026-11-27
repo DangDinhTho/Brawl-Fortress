@@ -19,7 +19,7 @@ public static partial class BrawlMapBuilder
     const string MechPrefix = "Mech_";
     const string MatDir = "Assets/Resources/Materials";
 
-    static readonly Theme[] MechThemes = { Theme.Xmas, Theme.Circus, Theme.Lunar, Theme.Ice, Theme.Candy, Theme.Egypt };
+    static readonly Theme[] MechThemes = { Theme.Xmas, Theme.Circus, Theme.Lunar, Theme.Ice, Theme.Candy, Theme.Egypt, Theme.Greek };
 
     // ------------------------------------------------------------------ materials
     [MenuItem("Tools/Maps/Mechanics/Setup Materials")]
@@ -41,6 +41,7 @@ public static partial class BrawlMapBuilder
         }
         Mat("MechDecal", "BrawlFortress/MechDecal", m => { });
         Mat("SlickIce", "BrawlFortress/SlickIce", m => { });
+        Mat("Sanctuary", "BrawlFortress/Sanctuary", m => { });
         Mat("MeteorWarn", "BrawlFortress/VentWarn", m => { m.SetColor("_Color", new Color(1f, 0.32f, 0.1f, 1f)); m.SetColor("_Edge", new Color(1f, 0.9f, 0.45f, 1f)); });
         Mat("MeteorTrail", "Legacy Shaders/Particles/Additive", m =>
         {
@@ -84,6 +85,7 @@ public static partial class BrawlMapBuilder
         PrePlace(d);   // the payload / robot path (the spawns were moved off it when the map was built)
         Physics.SyncTransforms();
         PlaceMechanics(d);
+        if (d.theme == Theme.Greek) log += " " + RebakeOpenScene(d.mapEnum);   // the sanctuary's columns and altar stand in the way
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         return d.mapEnum + ":" + log;
@@ -103,13 +105,14 @@ public static partial class BrawlMapBuilder
             case Theme.Ice: PlaceSlickIce(d); break;
             case Theme.Candy: PlaceJellyWalls(); break;
             case Theme.Egypt: PlaceDartTraps(d); break;
+            case Theme.Greek: PlaceSanctuary(d); break;
         }
     }
 
     static void RemoveMechanics()
     {
         foreach (Transform t in env.Cast<Transform>().ToList())
-            if (t.name.StartsWith(MechPrefix)) Object.DestroyImmediate(t.gameObject);
+            if (t.name.StartsWith(MechPrefix) || t.name.StartsWith(SanctuaryStructure)) Object.DestroyImmediate(t.gameObject);
         foreach (var c in env.GetComponentsInChildren<LightPool>(true)) Object.DestroyImmediate(c);
         foreach (Transform t in env)   // a first try saved LightPool from a file of another name: missing scripts
             if (t.name.StartsWith("WarmPool")) GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
@@ -432,6 +435,119 @@ public static partial class BrawlMapBuilder
         var src = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
         return src && src.name == "GumdropStack" && t.GetComponentsInChildren<Collider>(true).Any(c => c.enabled);
     });
+
+    // ------------------------------------------------------------------ Greek: sanctuary
+    /// <summary>One healing sanctuary in the middle; when the middle is taken (a central monument, the King of the Hill
+    /// point, a payload / robot track) two mirrored ones beside it, on the centre row first (the same distance from
+    /// both teams).</summary>
+    static void PlaceSanctuary(Def d)
+    {
+        var g = FullGrid(d);
+        float bushMargin = 0.6f;
+        bool BushNear(Vector3 p, float r)
+        {
+            for (int row = 0; row < ROWS; row++)
+                for (int c = 0; c < COLS; c++)
+                    if (g[row, c] == 'b' && Flat(TilePos(row, c) - p) < r + bushMargin) return true;
+            return false;
+        }
+        bool Fits(Vector3 p, float r) => ClearAt(p, r * 0.8f) && !BushNear(p, r) && OffPath(p, r + 1f) && FarFromSpawns(p, r + 3f)
+                                         && (d.mode != GameMode.KingOfTheHill || Flat(p) >= r + 3f);
+        var list = new List<(Vector3 p, float r)>();
+        foreach (float r in new[] { 2.2f, 2.0f, 1.8f })
+            if (Fits(Vector3.zero, r)) { list.Add((Vector3.zero, r)); break; }
+        // pairs: 2 m and 1.8 m close to the middle, then (a track zigzagging through the middle, bushes beside it) 1.6 m
+        // a little further out with less room kept to the grass
+        if (list.Count == 0)
+            foreach (var (r, rowMin, far, margin) in new[] { (2.0f, 11, 9f, 0.6f), (1.8f, 11, 9f, 0.6f), (1.6f, 10, 11f, 0.25f) })
+            {
+                bushMargin = margin;
+                var best = Vector3.zero; float bestS = float.MaxValue;
+                for (int row = rowMin; row <= 13; row++)
+                    for (int c = 1; c < COLS - 1; c++)
+                    {
+                        if (row == 13 && c >= 10) continue;   // the centre row's mirror is on it
+                        var p = TilePos(row, c);
+                        if (Flat(p) < r + 0.6f || Flat(p) > far || !Fits(p, r) || !Fits(-p, r)) continue;
+                        float s = Flat(p) + (row == 13 ? 0f : 1.5f);
+                        if (s < bestS) { bestS = s; best = p; }
+                    }
+                if (bestS < float.MaxValue) { list.Add((best, r)); list.Add((-best, r)); break; }
+            }
+        int i = 0, decor = 0;
+        foreach (var (p, r) in list)
+        {
+            // the second of a mirrored pair is the first turned half round: point symmetry, fair for both teams
+            var rot = Quaternion.Euler(0f, p.z > 0.01f || (Mathf.Abs(p.z) <= 0.01f && p.x > 0.01f) ? 180f : 0f, 0f);
+            decor += ClearDecor(p, r + 0.3f, new[] { "MarbleRubble", "PotteryShards", "GeraniumPot" });
+            var flame = BuildSanctuary(i, p, rot, r);
+            var go = MechObject("Sanctuary" + i++, p, rot);
+            var s = go.AddComponent<Sanctuary>();
+            s.radius = r;
+            s.floorY = SanctuaryArt.StepH * 2f;
+            flame.SetParent(go.transform, false);
+            s.flame = flame;
+        }
+        log += " sanctuaries=" + i + (list.Count > 0 ? " at " + string.Join(" ", list.Select(x => x.p.ToString("F1") + " r" + x.r)) : "") + " decorCleared=" + decor;
+    }
+
+    const string SanctuaryStructure = "SanctuaryStructure";
+
+    /// <summary>The stone parts of a sanctuary (scene objects on the wall layer, static, in the NavMesh): the stepped
+    /// platform (MeshCollider: characters walk up its 7 cm steps), fluted column stumps on its rim (capsule colliders,
+    /// the tall ones left and right of the camera's view), the altar in the middle (box collider, 0.8 m: shots pass over
+    /// it). Returns the flame (unparented; the Sanctuary object animates it).</summary>
+    static Transform BuildSanctuary(int index, Vector3 p, Quaternion rot, float r)
+    {
+        var props = AssetDatabase.LoadAssetAtPath<Material>(IceThemeSetup.Root + "/IcePropsGreek.mat") ?? AssetDatabase.LoadAssetAtPath<Material>(IceThemeSetup.Root + "/IceProps.mat");
+        var floorMat = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/Sanctuary.mat");
+        var glow = AssetDatabase.LoadAssetAtPath<Material>(IceThemeSetup.Root + "/VolcanoGlow.mat");
+        var root = new GameObject(SanctuaryStructure + index);
+        SceneManager.MoveGameObjectToScene(root, scene);
+        root.transform.SetParent(env, true);
+        root.transform.SetPositionAndRotation(p, rot);
+        GameObject Part(string name, Mesh m, Material[] mats, Vector3 local)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(root.transform, false);
+            go.transform.localPosition = local;
+            go.AddComponent<MeshFilter>().sharedMesh = m;
+            var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterials = mats;
+            return go;
+        }
+        float top = SanctuaryArt.StepH * 2f;
+        var plat = Part("Platform", SanctuaryArt.Platform(r), new[] { props, floorMat }, Vector3.zero);
+        plat.AddComponent<MeshCollider>().sharedMesh = plat.GetComponent<MeshFilter>().sharedMesh;
+        // column stumps: 6 on a big platform, 4 on a middle one, 2 on a small one; heights and broken tops point-symmetric
+        float rc = r - SanctuaryArt.StepW - 0.32f;
+        var cols = r >= 2.1f ? new[] { (0f, 1.75f, 11), (60f, 0.75f, 12), (120f, 1.15f, 13), (180f, 1.75f, 11), (240f, 0.75f, 12), (300f, 1.15f, 13) }
+                 : r >= 1.8f ? new[] { (45f, 1.5f, 21), (135f, 0.85f, 22), (225f, 1.5f, 21), (315f, 0.85f, 22) }
+                 : new[] { (0f, 1.4f, 31), (180f, 1.4f, 31) };
+        foreach (var (a, h, sd) in cols)
+        {
+            float rad = a * Mathf.Deg2Rad;
+            var go = Part("Column", SanctuaryArt.Stump(h, sd), new[] { props }, new Vector3(Mathf.Cos(rad) * rc, top, Mathf.Sin(rad) * rc));
+            go.transform.localRotation = Quaternion.Euler(0f, sd * 37f % 360f + a, 0f);
+            var cap = go.AddComponent<CapsuleCollider>(); cap.radius = 0.28f; cap.height = h; cap.center = new Vector3(0f, h * 0.5f, 0f);
+        }
+        float s = r >= 2.1f ? 0.8f : r >= 1.8f ? 0.7f : 0.6f;
+        var altar = Part("Altar", SanctuaryArt.Altar(s), new[] { props }, new Vector3(0f, top, 0f));
+        var box = altar.AddComponent<BoxCollider>(); box.size = new Vector3(s, 0.8f * s, s); box.center = new Vector3(0f, 0.4f * s, 0f);
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            t.gameObject.layer = WallLayer;
+            GameObjectUtility.SetStaticEditorFlags(t.gameObject, (StaticEditorFlags)int.MaxValue);
+        }
+        // the flame: not static (it flickers), default layer, no collider
+        var fl = new GameObject("SacredFlame");
+        SceneManager.MoveGameObjectToScene(fl, scene);
+        fl.transform.localPosition = new Vector3(0f, top + 0.8f * s, 0f);
+        fl.transform.localScale = Vector3.one * (s / 0.8f);
+        fl.AddComponent<MeshFilter>().sharedMesh = SanctuaryArt.Flame();
+        var fr = fl.AddComponent<MeshRenderer>(); fr.sharedMaterial = glow;
+        fr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return fl.transform;
+    }
 
     // ------------------------------------------------------------------ Egypt: dart traps
     static void PlaceDartTraps(Def d)
