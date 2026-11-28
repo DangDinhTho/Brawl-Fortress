@@ -154,6 +154,11 @@ public class ToyProportions : MonoBehaviour
     public string[] gripClips;
     public Vector3[] gripClipOnWeapon;
     public Vector3[] gripClipDown;
+    [Tooltip("How the old character's left hand was turned against the grip bone on each of those clips. With 'Handle Grip' the toy hand takes this turn, so its fingers lie on the handle the way the old hand's did.")]
+    public Quaternion[] gripClipHandRot;
+    [Tooltip("Clips whose name contains one of these are never two-handed, whatever the table says (the Heavy's boxing stance holds the fists as close together as a gun clip).")]
+    public string[] gripIgnoreTags;
+    private Quaternion gripRotNow; private bool gripRotKnown;
     [System.NonSerialized] public AnimationClip clipHint;
     [Tooltip("Fallback for the menu clip (selectionmenu_idle) when the per-clip table has no entry. Used while 'Showcase' is on.")]
     public Vector3 gripOnWeaponMenu;
@@ -179,6 +184,47 @@ public class ToyProportions : MonoBehaviour
     public Quaternion rightHandRest = Quaternion.identity;
     [Tooltip("0 = the wrist bend of the clip, 1 = wrist straight. The gun clips bend the right wrist about 90 degrees, and the hand and the cuff are rigid pieces: the faces between them stretch into streaks.")]
     [Range(0f, 1f)] public float showcaseWrist = 0f;
+
+    [Tooltip("On: the left hand is only brought to the gun on clips that are in the per-clip table; on any other clip it stays where the clip has it. The Heavy's running boxing guard holds the fists as close together as a gun clip does: the left fist was pulled to the minigun's handle, which lies inside his head on that clip. Off (the Demoman): such clips use 'Grip On Weapon'.")]
+    public bool gripKnownClipsOnly = false;
+
+    [Header("Hands on the gun's handles")]
+    [Tooltip("0 = off (the Demoman). 1 = the gun is moved in the right hand so the place the old character's fingers closed on (its handle) lies under the toy hand's fingers, and the left hand goes to its handle the same way. The toy hand is much wider than the old one and sits to one side of the hand bone: without this the Heavy's minigun handles ended beside his hands.")]
+    [Range(0f, 1f)] public float handleGrip = 0f;
+    [Tooltip("Middle of the first finger joints in the hand bone's space: of the toy mesh and of the old character's mesh, right hand (hold) and left hand (grip). Measured by ToyCharacterBuilder.")]
+    public Vector3 holdGripMesh;
+    public Vector3 holdGripOld;
+    public Vector3 gripGripMesh;
+    public Vector3 gripGripOld;
+    [Tooltip("Correction by hand, in the hand bone's space, added to the toy mesh's point.")]
+    public Vector3 holdGripTweak;
+    public Vector3 gripGripTweak;
+
+    [Tooltip("Handles the left hand closes on from above, by clip: a clip whose name contains the tag puts the middle of the left hand's first finger joints at the point (grip bone's space, in thousandths of the hand's unit, before the gun's own scale), palm down, fingers across the bar. The Heavy's old clips hold the minigun's carry handle by its side post; Tho wants the hand on the bar.")]
+    public string[] handleClipTags;
+    public Vector3[] handlePoints;
+    [Tooltip("The left hand's turn against the grip bone for such a handle: fingers along the bone's +Z, the hand's width along X, palm down (-Y). Set by ToyCharacterBuilder.")]
+    public Quaternion handleHandRot = Quaternion.identity;
+    [Tooltip("The left hand's width (index -> ring knuckle) in the hand bone's space. Set by ToyCharacterBuilder.")]
+    public Vector3 handAcross = Vector3.right;
+    [Tooltip("Extra turn of that hand about the bar, degrees (+ = wrist lower).")]
+    public float handleTilt = 0f;
+    [Tooltip("Wrist limit while the hand is on such a handle (the usual 'Wrist Max' turned the hand back off the bar: the wrist is placed for the hand's turn on the handle).")]
+    [Range(0f, 120f)] public float handleWristMax = 90f;
+    [Tooltip("When the left arm cannot reach the handle, the right arm brings the gun closer by this share of what is missing.")]
+    [Range(0f, 1f)] public float handlePull = 1f;
+    [Tooltip("0 = the gun points where the clip points it. 1 = level. The clips hold the Heavy's minigun muzzle up; on the short toy body that lifts its carry handle to the chin. The gun is turned about the grip bone (the right hand stays).")]
+    [Range(0f, 1f)] public float weaponLevel = 0f;
+    [Tooltip("Tho, 28 Nov 2026: the arms keep the clip's pose and the GUN is turned instead. 1 = on a clip with a handle (Handle Clip Tags) the gun is turned about the right hand's grip so its handle point lies on the line to the left hand's fingers.")]
+    [Range(0f, 1f)] public float weaponTurnToHand = 0f;
+    [Tooltip("After that turn the handle is still short of (or past) the left hand along that line: this share of the rest is closed by sliding the gun (the right hand's handle then leaves the right hand by as much).")]
+    [Range(0f, 1f)] public float weaponSlideToHand = 0f;
+    [Tooltip("And the gun is rolled about that line so the handle's bar (the grip bone's X) lies across the left hand, up to this many degrees.")]
+    [Range(0f, 90f)] public float weaponRollToHand = 0f;
+    [System.NonSerialized] public float lastHandleGap;
+    private float turnSmooth = -1f;
+    private Quaternion[] weaponTurnWritten; private Quaternion[] weaponTurnSource;
+    private bool handleNow; private Vector3 handlePointNow;
 
     private Vector3 gripDownNow;
     private float gripSmooth = -1f;
@@ -274,8 +320,15 @@ public class ToyProportions : MonoBehaviour
                 lastGripDistance = d;
                 gripHandRotation = gripHand.rotation;
                 gripDownNow = Vector3.zero;
-                Vector3 fromClips, downFromClips;
-                if (GripOfPlayingClips(out fromClips, out downFromClips)) { gripLocal = fromClips; gripDownNow = downFromClips; }
+                Vector3 fromClips, downFromClips; float known;
+                bool inTable = GripOfPlayingClips(out fromClips, out downFromClips, out known);
+                if (gripKnownClipsOnly && known >= 0f) gripWeight *= known;
+                if (inTable)
+                {
+                    gripLocal = fromClips; gripDownNow = downFromClips;
+                    if (handleGrip > 0f && gripRotKnown) gripHandRotation = Quaternion.Slerp(gripHandRotation, weaponPivot.rotation * gripRotNow, handleGrip);
+                    if (handleNow) gripHandRotation = weaponPivot.rotation * Quaternion.AngleAxis(handleTilt, Vector3.right) * handleHandRot;
+                }
                 else if (showcase && gripOnWeaponMenu.sqrMagnitude > 0f) { gripLocal = gripOnWeaponMenu; gripDownNow = gripDownMenu; }
                 else if (gripOnWeapon.sqrMagnitude > 0f) { gripLocal = gripOnWeapon; gripDownNow = gripDown; }
             }
@@ -292,6 +345,12 @@ public class ToyProportions : MonoBehaviour
         }
 
         lastGripWeight = gripWeight;
+        if (weaponTurnToHand > 0f && leftHandGrip <= 0f)
+        {
+            handleNow = false;
+            string playingName = PlayingClipName();
+            if (playingName != null) FindHandle(playingName);
+        }
         ApplyWeaponScale();
 
         int k = keepOrientation != null ? keepOrientation.Length : 0;
@@ -327,11 +386,12 @@ public class ToyProportions : MonoBehaviour
             if (showcase && showcasePose) ShowcasePose(gripLocal, gripWeight);
             else TwoHandStance(gripLocal, gripUnit, gripHandRotation, gripWeight);
         }
-        if (wristMax < 90f && gripHand != null && leftArmRest != null && leftArmRest.Length >= 3)
+        float wristLimit = handleNow && gripWeight > 0.001f ? Mathf.Lerp(wristMax, Mathf.Max(wristMax, handleWristMax), gripWeight) : wristMax;
+        if (wristLimit < 90f && gripHand != null && leftArmRest != null && leftArmRest.Length >= 3)
         {
             Quaternion bend = Quaternion.Inverse(leftArmRest[2]) * gripHand.localRotation;
             float angle = Quaternion.Angle(Quaternion.identity, bend);
-            if (angle > wristMax) gripHand.localRotation = leftArmRest[2] * Quaternion.Slerp(Quaternion.identity, bend, wristMax / angle);
+            if (angle > wristLimit) gripHand.localRotation = leftArmRest[2] * Quaternion.Slerp(Quaternion.identity, bend, wristLimit / angle);
         }
     }
 
@@ -417,6 +477,39 @@ public class ToyProportions : MonoBehaviour
         Vector3 onGun = (gripLocal - gripDownNow) * (1f + handForward) + gripDownNow * gripDrop;
         Vector3 palmAt = weaponPivot.position + weaponPivot.rotation * onGun * (gripUnit * weaponScale);
         palmAt = Vector3.Lerp(gripHand.position, palmAt, weight);
+        // the wrist goes where the toy hand's fingers lie on the handle the old hand's fingers held
+        if (handleNow)
+        {
+            Vector3 onBar = weaponPivot.position + weaponPivot.rotation * handlePointNow * (0.001f * gripUnit * weaponScale);
+            Vector3 wristAt = onBar - leftHandRotation * (gripGripMesh + gripGripTweak) * gripHand.lossyScale.x;
+            if (handlePull > 0f && holdUpperArm != null && holdLowerArm != null && holdHand != null)
+            {
+                Vector3 from = gripUpperArm.position;
+                float can = ((gripLowerArm.position - from).magnitude + (gripHand.position - gripLowerArm.position).magnitude) * Mathf.Max(1f, armStretch) * reachBend;
+                float far = (wristAt - from).magnitude;
+                if (far > can && far > 1e-5f)
+                {
+                    Vector3 was = holdHand.position; Quaternion turned = holdHand.rotation;
+                    // the gun slides level towards the left shoulder (it keeps its height: pulled straight at the
+                    // shoulder it ended up against the chest, under the chin)
+                    Vector3 away = wristAt - from;
+                    Vector3 upAxis = transform.up;
+                    float rise = Vector3.Dot(away, upAxis);
+                    Vector3 level = away - upAxis * rise;
+                    float flat = level.magnitude;
+                    Vector3 slide = can > Mathf.Abs(rise) && flat > 1e-5f
+                        ? level * (1f - Mathf.Sqrt(can * can - rise * rise) / flat)
+                        : away * (1f - can / far);
+                    Vector3 to = was - slide * (handlePull * weight);
+                    Reach(holdUpperArm, holdLowerArm, holdHand, to, to);
+                    holdHand.rotation = turned;
+                    wristAt += holdHand.position - was;
+                }
+            }
+            palmAt = Vector3.Lerp(gripHand.position, wristAt, weight);
+        }
+        else if (handleGrip > 0f && gripGripMesh.sqrMagnitude > 0f)
+            palmAt += leftHandRotation * (gripGripOld * (gripUnit * weaponScale) - (gripGripMesh + gripGripTweak) * gripHand.lossyScale.x) * (handleGrip * weight);
         if (shoulderPush > 0f && gripCollar != null)
         {
             Vector3 reach = gripUpperArm.position - gripCollar.position;
@@ -531,37 +624,63 @@ public class ToyProportions : MonoBehaviour
     private readonly System.Collections.Generic.List<AnimatorClipInfo> playing = new System.Collections.Generic.List<AnimatorClipInfo>(8);
 
     /// <summary>Where the left hand holds the gun on the clips playing now (layer 0), blended by their weights.</summary>
-    private bool GripOfPlayingClips(out Vector3 onWeapon, out Vector3 down)
+    /// <param name="known">Share of the playing clips (by weight) that are in the table; -1 when that cannot be told
+    /// (no table, no animator playing).</param>
+    private bool GripOfPlayingClips(out Vector3 onWeapon, out Vector3 down, out float known)
     {
-        onWeapon = Vector3.zero; down = Vector3.zero;
+        onWeapon = Vector3.zero; down = Vector3.zero; known = -1f; gripRotKnown = false; handleNow = false;
         if (gripClips == null || gripClipOnWeapon == null || gripClipDown == null || gripClips.Length == 0) return false;
         if (gripClipIndex == null)
         {
             gripClipIndex = new System.Collections.Generic.Dictionary<string, int>();
-            for (int i = 0; i < gripClips.Length && i < gripClipOnWeapon.Length && i < gripClipDown.Length; i++) gripClipIndex[gripClips[i]] = i;
+            for (int i = 0; i < gripClips.Length && i < gripClipOnWeapon.Length && i < gripClipDown.Length; i++)
+            {
+                bool ignored = false;
+                if (gripIgnoreTags != null)
+                    for (int t = 0; t < gripIgnoreTags.Length && !ignored; t++)
+                        ignored = !string.IsNullOrEmpty(gripIgnoreTags[t]) && gripClips[i].IndexOf(gripIgnoreTags[t], System.StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!ignored) gripClipIndex[gripClips[i]] = i;
+            }
         }
         int index;
         if (clipHint != null)
         {
-            if (!gripClipIndex.TryGetValue(clipHint.name, out index)) return false;
-            onWeapon = gripClipOnWeapon[index]; down = gripClipDown[index];
+            if (!gripClipIndex.TryGetValue(clipHint.name, out index)) { known = 0f; return false; }
+            onWeapon = gripClipOnWeapon[index]; down = gripClipDown[index]; known = 1f;
+            if (gripClipHandRot != null && index < gripClipHandRot.Length) { gripRotNow = gripClipHandRot[index]; gripRotKnown = true; }
+            FindHandle(clipHint.name);
             return true;
         }
         if (!animatorLooked) { animator = GetComponent<Animator>(); animatorLooked = true; }
         if (animator == null || !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null || !Application.isPlaying) return false;
         playing.Clear();
         animator.GetCurrentAnimatorClipInfo(0, playing);
-        float total = 0f;
+        float total = 0f, all = 0f, heaviest = 0f; string heaviestName = null;
         for (int i = 0; i < playing.Count; i++)
         {
             AnimationClip clip = playing[i].clip;
-            if (clip == null || !gripClipIndex.TryGetValue(clip.name, out index)) continue;
             float w = playing[i].weight;
+            all += w;
+            if (clip == null || !gripClipIndex.TryGetValue(clip.name, out index)) continue;
             onWeapon += gripClipOnWeapon[index] * w; down += gripClipDown[index] * w; total += w;
+            if (w > heaviest && gripClipHandRot != null && index < gripClipHandRot.Length) { heaviest = w; gripRotNow = gripClipHandRot[index]; gripRotKnown = true; heaviestName = clip.name; }
         }
+        if (all > 1e-4f) known = Mathf.Clamp01(total / all);
         if (total < 0.05f) return false;
+        if (heaviestName != null) FindHandle(heaviestName);
         onWeapon /= total; down /= total;
         return true;
+    }
+
+    private void FindHandle(string clipName)
+    {
+        if (handleClipTags == null || handlePoints == null) return;
+        for (int i = 0; i < handleClipTags.Length && i < handlePoints.Length; i++)
+        {
+            if (string.IsNullOrEmpty(handleClipTags[i]) || clipName.IndexOf(handleClipTags[i], System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+            handleNow = true; handlePointNow = handlePoints[i];
+            return;
+        }
     }
 
     private void ApplyOffsets()
@@ -607,14 +726,102 @@ public class ToyProportions : MonoBehaviour
             if (p == weaponWritten[i]) p = weaponSource[i]; else weaponSource[i] = p;
             if (b == weaponPivot) pivot = p;
         }
+        // the handle (where the old fingers closed, scaled with the gun about the grip bone) under the toy fingers
+        Vector3 shift = Vector3.zero;
+        if (handleGrip > 0f && holdGripMesh.sqrMagnitude > 0f && weaponPivot.parent == holdHand)
+            shift = (holdGripMesh + holdGripTweak - pivot - (holdGripOld - pivot) * weaponScale) * handleGrip;
         for (int i = 0; i < n; i++)
         {
             Transform b = weaponBones[i];
             if (b == null) continue;
-            Vector3 p = pivot + (weaponSource[i] - pivot) * weaponScale;
+            Vector3 p = pivot + (weaponSource[i] - pivot) * weaponScale + shift;
             b.localPosition = p; weaponWritten[i] = p;
             b.localScale = size;
         }
+        bool toHand = weaponTurnToHand > 0f && handleNow && gripHand != null && holdHand != null && gripGripMesh.sqrMagnitude > 0f && holdGripMesh.sqrMagnitude > 0f;
+        if (weaponLevel <= 0f && !toHand) { turnSmooth = -1f; return; }
+        // same guard as the positions: a bone no clip turned this frame still holds last frame's turn
+        if (weaponTurnWritten == null || weaponTurnWritten.Length != n) { weaponTurnWritten = new Quaternion[n]; weaponTurnSource = new Quaternion[n]; for (int i = 0; i < n; i++) weaponTurnWritten[i] = new Quaternion(0, 0, 0, 0); }
+        for (int i = 0; i < n; i++)
+        {
+            Transform b = weaponBones[i];
+            if (b == null) continue;
+            if (b.localRotation == weaponTurnWritten[i]) b.localRotation = weaponTurnSource[i]; else weaponTurnSource[i] = b.localRotation;
+        }
+        Vector3 upAxis = transform.up;
+        if (weaponLevel > 0f)
+        {
+            Vector3 barrel = weaponPivot.rotation * Vector3.forward;
+            Vector3 axis = Vector3.Cross(barrel, upAxis);
+            if (axis.sqrMagnitude > 1e-8f)
+            {
+                float pitch = Mathf.Asin(Mathf.Clamp(Vector3.Dot(barrel, upAxis), -1f, 1f)) * Mathf.Rad2Deg;
+                TurnWeapon(Quaternion.AngleAxis(-pitch * weaponLevel, axis.normalized), weaponPivot.position, Vector3.zero);
+            }
+        }
+        if (toHand)
+        {
+            float unit = weaponPivot.parent.lossyScale.x;
+            // only while the clip holds the gun with both hands (the left hand near the grip bone)
+            float d = unit > 1e-6f ? (gripHand.position - weaponPivot.position).magnitude / unit : 99f;
+            float w = weaponTurnToHand * Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(gripNear * 1.15f, gripFar * 1.3f, d));
+            if (Application.isPlaying && gripBlendSpeed > 0f) { turnSmooth = turnSmooth < 0f ? w : Mathf.MoveTowards(turnSmooth, w, Time.deltaTime * gripBlendSpeed); w = turnSmooth; }
+            lastHandleGap = -1f;
+            if (w > 0.001f)
+            {
+                Vector3 right = holdHand.TransformPoint(holdGripMesh + holdGripTweak);
+                Vector3 left = gripHand.TransformPoint(gripGripMesh + gripGripTweak);
+                Vector3 handle = weaponPivot.position + weaponPivot.rotation * handlePointNow * (0.001f * unit * weaponScale);
+                Vector3 toHandle = handle - right, toLeft = left - right;
+                if (toHandle.sqrMagnitude > 1e-10f && toLeft.sqrMagnitude > 1e-10f)
+                {
+                    Quaternion turn = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(toHandle, toLeft), w);
+                    Vector3 line = toLeft.normalized;
+                    if (weaponRollToHand > 0f)
+                    {
+                        Vector3 bar = Vector3.ProjectOnPlane(turn * (weaponPivot.rotation * Vector3.right), line);
+                        Vector3 across = Vector3.ProjectOnPlane(gripHand.rotation * handAcross, line);
+                        if (bar.sqrMagnitude > 1e-8f && across.sqrMagnitude > 1e-8f)
+                        {
+                            float roll = Vector3.SignedAngle(bar, across, line);
+                            if (roll > 90f) roll -= 180f; else if (roll < -90f) roll += 180f;
+                            turn = Quaternion.AngleAxis(Mathf.Clamp(roll, -weaponRollToHand, weaponRollToHand) * w, line) * turn;
+                        }
+                    }
+                    float miss = toLeft.magnitude - toHandle.magnitude;
+                    lastHandleGap = Mathf.Abs(miss) * (1f - weaponSlideToHand);
+                    TurnWeapon(turn, right, line * (miss * weaponSlideToHand * w));
+                }
+            }
+        }
+        for (int i = 0; i < n; i++)
+        {
+            Transform b = weaponBones[i];
+            if (b == null) continue;
+            weaponWritten[i] = b.localPosition; weaponTurnWritten[i] = b.localRotation;
+        }
+    }
+
+    private void TurnWeapon(Quaternion turn, Vector3 about, Vector3 slide)
+    {
+        for (int i = 0; i < weaponBones.Length; i++)
+        {
+            Transform b = weaponBones[i];
+            if (b != null) b.SetPositionAndRotation(about + turn * (b.position - about) + slide, turn * b.rotation);
+        }
+    }
+
+    private string PlayingClipName()
+    {
+        if (clipHint != null) return clipHint.name;
+        if (!animatorLooked) { animator = GetComponent<Animator>(); animatorLooked = true; }
+        if (animator == null || !animator.isActiveAndEnabled || animator.runtimeAnimatorController == null || !Application.isPlaying) return null;
+        playing.Clear();
+        animator.GetCurrentAnimatorClipInfo(0, playing);
+        string best = null; float weight = 0f;
+        for (int i = 0; i < playing.Count; i++)
+            if (playing[i].clip != null && playing[i].weight > weight) { weight = playing[i].weight; best = playing[i].clip.name; }
+        return best;
     }
 
     private static void Relax(Transform[] list, Quaternion[] rest, float amount)

@@ -52,8 +52,19 @@ Balance and switches live in Title Data; the code has fallbacks. Keys in use (no
   with Map_Brawl_Payload + Map_Brawl_MoonRail hidden).
 - **Do not add new mode / weapon / map ids to Title Data until a store build that parses Title Data leniently is out**
   (old builds choke on unknown enum names). This includes `Map_Brawl_FrostPeak` and the Yeti boss maps.
-- Changes Tho still has to make on PlayFab: `weapon_stats` Sniperrifle `interval` 2.75 -> 1.75, Minigun `interval`
-  0.1 -> 0.0833; `battle_map_times`: Payload maps 210 (Map_Brawl_Payload 240), MvM maps 360.
+- Changes Tho still has to make on PlayFab: `battle_map_times`: Payload maps 210 (Map_Brawl_Payload 240), MvM maps 360
+  (`weapon_stats` Sniperrifle `interval` 1.75 and Minigun `interval` 0.083 are live since Nov 2026).
+- **Reload** (28 Nov 2026): the times are ONLY in `weapon_stats` (`delayReload`, `timeReload` per bullet, `delayFinishReload`;
+  no code fallback; bots and MvM robots read the same stats). A reload starts when the clip is empty and locks the gun for
+  `delayReload` + clip x `timeReload` (when > 0) + `delayFinishReload`; the reload pose (animator `UpperState` 2) lasts the
+  first two terms. Guns with `inventorySize` 0 (Sniperrifle, Minigun, Flamethrower, MedicGun) never reload. Proposed to
+  Tho (delayReload / timeReload / delayFinishReload, fitted to the TPS reload clips; not yet on PlayFab when written):
+  GrenadeLauncher 0.3 / 0.35 / 0.2 (5.15 -> 2.6 s, clip 2.41 s), StickybombLauncher 0.3 / 0.4 / 0.3 (6.45 -> 3.8),
+  Shotgun 0.3 / 0.38 / 0.2 (5.45 -> 2.78), Scattergun 0.3 / 0.33 / 0.2 (5.45 -> 2.48), Pistol 0.85 / 0 / 0.3 (1.55 ->
+  1.15), Revolver and Smg 1.25 / 0 / 0.2 (1.55 -> 1.45, their 1.67 s clip was cut at 0.75 s), BlackBox 0.5 / 0.5 / 0.3;
+  RocketLauncher (2.8 s) and SyringeGun (0.8 s) unchanged. Controllers changed for it: Engineer Primary reload state speed
+  1.2 (3.125 s clip -> 2.6 s), Scout Primary reload uses the per-shell loop clip (the start clip froze on its last frame),
+  Pyro Secondary reload leaves on `UpperState` != 2 (was `BodyState` != 2: it restarted all the time). Not seen in a match.
 
 ## Networking notes
 - Connect only through `LobbyManager.ConnectTo(region)` (ConnectUsingSettings with a copied AppSettings +

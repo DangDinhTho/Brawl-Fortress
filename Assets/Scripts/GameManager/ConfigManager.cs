@@ -528,19 +528,18 @@ public class ConfigManager
     public static int scorePerLevel = 50;
 
     /// <summary>Level at which each game mode unlocks (ModeUnlock). Competitive is always open.
-    /// Defaults with scorePerLevel 50 (about 20-25 points a match for a new player): CTF Lv 2 = about 3 matches,
-    /// then one mode every ~10 matches (~250 points = 5 levels): KOTH Lv 7, Payload Lv 12, MvM Lv 17.
-    /// Overridable from PlayFab Title Data key "mode_unlock_level", e.g. {"CaptureTheFlag":2,"KingOfTheHill":7,"Payload":12,"MannVsMachine":17,"JungleBoss":22,"Zombie":27}.</summary>
+    /// Defaults (Nov 2026, Tho) with scorePerLevel 50 (about 20-25 points a match for a new player, 1 level = ~2 matches):
+    /// CTF Lv 2, KOTH Lv 3, Payload Lv 5, MvM Lv 8, Boss Battle Lv 15, Zombie Lv 20.
+    /// Overridable from PlayFab Title Data key "mode_unlock_level", e.g. {"CaptureTheFlag":2,"KingOfTheHill":3,"Payload":5,"MannVsMachine":8,"JungleBoss":15,"Zombie":20}.</summary>
     public static Dictionary<GameMode, int> modeUnlockLevels = new Dictionary<GameMode, int>
     {
         { GameMode.Competitive, 1 },
         { GameMode.CaptureTheFlag, 2 },
-        { GameMode.KingOfTheHill, 7 },
-        { GameMode.Payload, 12 },
-        { GameMode.MannVsMachine, 17 },
-        // one mode every ~10 matches (~5 levels) after MvM
-        { GameMode.JungleBoss, 22 },
-        { GameMode.Zombie, 27 },
+        { GameMode.KingOfTheHill, 3 },
+        { GameMode.Payload, 5 },
+        { GameMode.MannVsMachine, 8 },
+        { GameMode.JungleBoss, 15 },
+        { GameMode.Zombie, 20 },
     };
 
     /// <summary>Level from a rank score; level 1 at 0 points.</summary>

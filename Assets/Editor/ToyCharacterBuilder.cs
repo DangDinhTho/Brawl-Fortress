@@ -24,6 +24,13 @@ public static class ToyCharacterBuilder
             "TPS_Demoman_Toy", new[] { "ToyGrenades", "ToyShoes" }));
     }
 
+    [MenuItem("Tools/Characters/Build Toy Heavy")]
+    public static void BuildHeavy()
+    {
+        Debug.Log(Build("ToyHeavy", "Assets/Resources/Characters/TPS/TPS_Heavy.prefab", "heavy_morphs_low",
+            "TPS_Heavy_Toy", new[] { "ToyHands" }));
+    }
+
     const string SwitchMenu = "Tools/Characters/Use Toy Characters In Play Mode";
 
     [MenuItem(SwitchMenu)]
@@ -127,7 +134,10 @@ public static class ToyCharacterBuilder
             var toy = root.GetComponent<ToyProportions>() ?? root.AddComponent<ToyProportions>();
             Transform skeleton = refSmr.rootBone.parent;
             toy.skeletonRoot = skeleton;
-            toy.skeletonRootScale = skeleton.localScale * RootScale;
+            // every character's json may carry its own whole-skeleton scale (the Heavy's mesh is 155 units tall so the old
+            // pelvis sits at the new hips; the Demoman's is 188 with the default)
+            float rootScale = data["root_scale"] != null ? (float)data["root_scale"] : RootScale;
+            toy.skeletonRootScale = skeleton.localScale * rootScale;
             var all = root.GetComponentsInChildren<Transform>(true);
             var tb = new List<Transform>(); var ts = new List<float>();
             foreach (var kv in (JObject)data["scales"])
@@ -215,6 +225,39 @@ public static class ToyCharacterBuilder
             toy.keepOrientation = new[] { "bip_upperArm_L", "bip_upperArm_R" }
                 .Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
 
+            // per-character values of ToyProportions fields (Tools/CharArt/export/<name>.tuning.json, field name -> value)
+            // on top of the script's defaults, which are the Demoman's: the Heavy holds the minigun's carry handle from
+            // above, so the palm-up / hand-forward tuning of the Demoman's launcher is switched off for him
+            string tuningPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Tools/CharArt/export/" + name + ".tuning.json");
+            if (File.Exists(tuningPath)) JsonUtility.FromJsonOverwrite(File.ReadAllText(tuningPath), toy);
+
+            // where the fingers close: the middle of the first finger joints, on the old meshes and on the new ones
+            var oldMeshes = oldRenderers.Where(x => x.sharedMesh != null).Select(x => (x.sharedMesh, x.bones)).ToList();
+            var newMeshes = newRenderers.OfType<SkinnedMeshRenderer>().Select(x => (x.sharedMesh, x.bones)).ToList();
+            // the new meshes are measured as the toy skeleton poses them (scales and offsets on): their rest space is
+            // the old hand's by construction
+            GripCentre(oldMeshes, "R", false, out toy.holdGripOld); GripCentre(oldMeshes, "L", false, out toy.gripGripOld);
+            for (int i = 0; i < toy.offsetBones.Length; i++) toy.offsetBones[i].localPosition += toy.offsets[i];
+            GripCentre(newMeshes, "R", true, out toy.holdGripMesh); GripCentre(newMeshes, "L", true, out toy.gripGripMesh);
+            // the left hand's own axes from its knuckles (index -> ring = across the hand, wrist -> knuckles = along it)
+            {
+                Transform ix = all.FirstOrDefault(x => x.name == "bip_index_0_L"), rg = all.FirstOrDefault(x => x.name == "bip_ring_0_L"), md = all.FirstOrDefault(x => x.name == "bip_middle_0_L");
+                if (ix != null && rg != null && md != null && toy.gripHand != null)
+                {
+                    Vector3 across = (rg.localPosition - ix.localPosition).normalized;
+                    toy.handAcross = across;
+                    Vector3 along = Vector3.ProjectOnPlane(toy.gripGripMesh, across).normalized;
+                    Quaternion handAxes = Quaternion.LookRotation(along, Vector3.Cross(along, -across)); // z = fingers, x = -across... see below
+                    // target: fingers +Z, across -X  ->  up = Z x (-X) = -Y... the hand's "up" (cross(along, -across)) goes to cross(Z, X) = +Y
+                    toy.handleHandRot = Quaternion.LookRotation(Vector3.forward, Vector3.Cross(Vector3.forward, Vector3.right)) * Quaternion.Inverse(handAxes);
+                    Debug.Log("[ToyCharacterBuilder] handle grip: palm goes to " + (toy.handleHandRot * toy.palmLocal).ToString("F2") + " (wanted about (0, -1, 0)), across to " + (toy.handleHandRot * across).ToString("F2"));
+                }
+            }
+            for (int i = 0; i < toy.offsetBones.Length; i++) toy.offsetBones[i].localPosition -= toy.offsets[i];
+
+            // the distances that tell "left hand on the gun" from "free hand" depend on the rig: measured on this one
+            FitGripThresholds(root, toy);
+
             string outPath = OutDir + "/" + outPrefab + ".prefab";
             PrefabUtility.SaveAsPrefabAsset(root, outPath);
             AssetDatabase.SaveAssets();
@@ -228,13 +271,45 @@ public static class ToyCharacterBuilder
 
     /// <summary>Where the old character's left hand holds the two-handed weapon: left hand in the grip bone's space, in
     /// the right hand's units, on its stand clip.</summary>
+    /// <summary>Sets the hold thresholds from the distance left hand - grip bone that this rig's two-handed stand clip
+    /// gives (hand units), keeping the ratios tuned on the Demoman (0.0073 -> near 0.0095, far 0.0115, ...).</summary>
+    static void FitGripThresholds(GameObject root, ToyProportions toy)
+    {
+        var go = UnityEngine.Object.Instantiate(root);
+        go.hideFlags = HideFlags.HideAndDontSave;
+        try
+        {
+            var animator = go.GetComponent<Animator>();
+            var t = go.GetComponent<ToyProportions>();
+            if (animator == null || animator.runtimeAnimatorController == null || t == null || t.weaponPivot == null || t.gripHand == null) return;
+            var clips = animator.runtimeAnimatorController.animationClips;
+            var clip = clips.FirstOrDefault(c => c.name.IndexOf("stand_PRIMARY", StringComparison.OrdinalIgnoreCase) >= 0)
+                ?? clips.FirstOrDefault(c => c.name.IndexOf("stand_SECONDARY", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (clip == null) return;
+            clip.SampleAnimation(go, 0f);
+            t.leftHandGrip = 0f; t.Apply();
+            float unit = t.weaponPivot.parent.lossyScale.x;
+            if (unit <= 1e-6f) return;
+            float d = (t.gripHand.position - t.weaponPivot.position).magnitude / unit;
+            if (d < 0.0005f) return;
+            toy.gripAt = d * 0.97f;
+            toy.gripWindow = d * 0.08f;
+            toy.gripFade = d * 0.11f;
+            toy.gripNear = d * 1.3f;
+            toy.gripFar = d * 1.57f;
+            toy.gripStill = d * 0.82f;
+            Debug.Log("[ToyCharacterBuilder] two-handed distance on this rig " + d.ToString("F4") + " (" + clip.name + ")");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
     /// <summary>The left hand's place on the gun for every clip of the old character that holds a weapon with both hands
     /// (hands as close as on the two-handed stand clip, give or take a third).</summary>
     static void MeasureGripPerClip(string sourcePrefab, ToyProportions toy)
     {
         var go = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePrefab));
         go.hideFlags = HideFlags.HideAndDontSave;
-        var names = new List<string>(); var on = new List<Vector3>(); var downs = new List<Vector3>();
+        var names = new List<string>(); var on = new List<Vector3>(); var downs = new List<Vector3>(); var rots = new List<Quaternion>();
         try
         {
             var animator = go.GetComponent<Animator>();
@@ -252,11 +327,12 @@ public static class ToyCharacterBuilder
                 Vector3 local = Quaternion.Inverse(pivot.rotation) * world / unit;
                 if (local.magnitude < 0.0005f || reference <= 0f || local.magnitude > reference * 1.33f || local.magnitude < reference * 0.67f) continue;
                 Vector3 up = go.transform.up;
+                rots.Add(Quaternion.Inverse(pivot.rotation) * left.rotation);
                 names.Add(clip.name); on.Add(local); downs.Add(Quaternion.Inverse(pivot.rotation) * (up * Vector3.Dot(world, up)) / unit);
             }
         }
         finally { UnityEngine.Object.DestroyImmediate(go); }
-        toy.gripClips = names.ToArray(); toy.gripClipOnWeapon = on.ToArray(); toy.gripClipDown = downs.ToArray();
+        toy.gripClips = names.ToArray(); toy.gripClipOnWeapon = on.ToArray(); toy.gripClipDown = downs.ToArray(); toy.gripClipHandRot = rots.ToArray();
     }
 
     static Vector3 MeasureGrip(string sourcePrefab, string clipName, out Vector3 down)
@@ -281,6 +357,42 @@ public static class ToyCharacterBuilder
             return Quaternion.Inverse(pivot.rotation) * world / unit;
         }
         finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
+    static bool GripCentre(List<(Mesh mesh, Transform[] bones)> meshes, string side, bool posed, out Vector3 centre)
+    {
+        centre = Vector3.zero; int count = 0;
+        var fingers = new[] { "bip_index_0_", "bip_middle_0_", "bip_ring_0_", "bip_pinky_0_" }.Select(x => x + side).ToArray();
+        foreach (var (mesh, bones) in meshes)
+        {
+            int hand = Array.FindIndex(bones, b => b != null && b.name == "bip_hand_" + side);
+            if (hand < 0) continue;
+            var isFinger = bones.Select(b => b != null && fingers.Contains(b.name)).ToArray();
+            if (!isFinger.Any(x => x)) continue;
+            var binds = mesh.bindposes;
+            Matrix4x4 toHand = binds[hand];
+            var vs = mesh.vertices; var bw = mesh.boneWeights;
+            Matrix4x4[] skin = null;
+            if (posed)
+            {
+                Matrix4x4 handInv = bones[hand].worldToLocalMatrix;
+                skin = new Matrix4x4[bones.Length];
+                for (int b = 0; b < bones.Length; b++) if (bones[b] != null) skin[b] = handInv * bones[b].localToWorldMatrix * binds[b];
+            }
+            for (int i = 0; i < vs.Length; i++)
+            {
+                float w = (isFinger[bw[i].boneIndex0] ? bw[i].weight0 : 0f) + (isFinger[bw[i].boneIndex1] ? bw[i].weight1 : 0f)
+                        + (isFinger[bw[i].boneIndex2] ? bw[i].weight2 : 0f) + (isFinger[bw[i].boneIndex3] ? bw[i].weight3 : 0f);
+                if (w < 0.5f) continue;
+                if (!posed) centre += toHand.MultiplyPoint3x4(vs[i]);
+                else centre += skin[bw[i].boneIndex0].MultiplyPoint3x4(vs[i]) * bw[i].weight0 + skin[bw[i].boneIndex1].MultiplyPoint3x4(vs[i]) * bw[i].weight1
+                             + skin[bw[i].boneIndex2].MultiplyPoint3x4(vs[i]) * bw[i].weight2 + skin[bw[i].boneIndex3].MultiplyPoint3x4(vs[i]) * bw[i].weight3;
+                count++;
+            }
+        }
+        if (count == 0) return false;
+        centre /= count;
+        return true;
     }
 
     static Material MakeMaterial(Material source, Texture2D tex, string path)
@@ -503,6 +615,402 @@ public static class ToyCharacterBuilder
             if (rt != null) rt.Release();
             if (item != null) UnityEngine.Object.DestroyImmediate(item);
             UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Retargeted rig (trial, 28 Nov 2026): the bones sit where they are on the model (no scale table), the clips
+    // are baked for that skeleton in Blender (Tools/CharArt/toy_retarget.py) and arrive as bone matrices per frame.
+
+    [MenuItem("Tools/Characters/Build Toy Heavy (retargeted rig)")]
+    public static void BuildHeavyRig()
+    {
+        Debug.Log(BuildRig("ToyHeavyRig", "ToyHeavy", "Assets/Resources/Characters/TPS/TPS_Heavy.prefab", "heavy_morphs_low",
+            "TPS_Heavy_Toy", new[] { "ToyHands" }));
+    }
+
+    /// <summary>Indices of the keys to keep: first, last, and every key the straight line between its kept
+    /// neighbours would miss (off(a, m, z): is key m off the line a - z?).</summary>
+    static List<int> Thin(int count, Func<int, int, int, bool> off)
+    {
+        var keep = new List<int> { 0 };
+        if (count < 2) return keep;
+        int a = 0;
+        while (a < count - 1)
+        {
+            int z = a + 1;
+            // push the far end as long as every key in between stays on the line
+            while (z + 1 < count)
+            {
+                bool ok = true;
+                for (int m = a + 1; m <= z && ok; m++) ok = !off(a, m, z + 1);
+                if (!ok) break;
+                z++;
+            }
+            keep.Add(z); a = z;
+        }
+        return keep;
+    }
+
+    static AnimationCurve LinearCurve(List<int> keep, float fps, Func<int, float> value)
+    {
+        var keys = new Keyframe[keep.Count];
+        for (int i = 0; i < keep.Count; i++) keys[i] = new Keyframe(keep[i] / fps, value(keep[i]));
+        var curve = new AnimationCurve(keys);
+        for (int i = 0; i < keys.Length; i++)
+        {
+            AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+            AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.Linear);
+        }
+        return curve;
+    }
+
+    /// <summary>The take's name of a clip: "heavy.qc_skeleton|stand_PRIMARY" and "demo.qc_skeleton_stand_PRIMARY"
+    /// (a clip copied out of its FBX) are both "stand_PRIMARY".</summary>
+    static string ClipKey(string clipName)
+    {
+        int bar = clipName.LastIndexOf('|');
+        if (bar >= 0) return clipName.Substring(bar + 1);
+        int at = clipName.IndexOf("qc_skeleton_", StringComparison.Ordinal);
+        return at >= 0 ? clipName.Substring(at + "qc_skeleton_".Length) : clipName;
+    }
+
+    static Matrix4x4 ReadMatrix(JToken t)
+    {
+        var a = (JArray)t; var m = Matrix4x4.identity;
+        for (int r = 0; r < 4; r++) for (int col = 0; col < 4; col++) m[r, col] = (float)a[r * 4 + col];
+        return m;
+    }
+
+    [MenuItem("Tools/Characters/Build Toy Demoman (retargeted rig)")]
+    public static void BuildDemomanRig()
+    {
+        Debug.Log(BuildRig("ToyDemomanRig", "ToyDemoman", "Assets/Resources/Characters/TPS/TPS_Demoman.prefab", "demo_morphs_low",
+            "TPS_Demoman_Toy", new[] { "ToyGrenades", "ToyShoes" }));
+    }
+
+    static Matrix4x4 Rot3(Matrix4x4 m)
+    {
+        var r = Matrix4x4.identity;
+        for (int col = 0; col < 3; col++)
+        {
+            Vector3 v = m.GetColumn(col); v.Normalize();
+            r.SetColumn(col, new Vector4(v.x, v.y, v.z, 0));
+        }
+        return r;
+    }
+
+    static void SetLocal(Transform t, Matrix4x4 local)
+    {
+        Matrix4x4 r = Rot3(local);
+        t.localPosition = local.GetColumn(3);
+        t.localRotation = Quaternion.LookRotation(r.GetColumn(2), r.GetColumn(1));
+        t.localScale = Vector3.one;
+    }
+
+    public static string BuildRig(string name, string textureName, string sourcePrefab, string refRenderer, string outPrefab, string[] bodyElementParts)
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        string jsonPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Tools/CharArt/export/" + name + ".json");
+        JObject data = JObject.Parse(File.ReadAllText(jsonPath));
+        GameObject root = PrefabUtility.LoadPrefabContents(sourcePrefab);
+        try
+        {
+            var oldRenderers = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            var refSmr = oldRenderers.First(s => s.name == refRenderer);
+            Transform[] bones = refSmr.bones;
+            Matrix4x4[] bindOld = refSmr.sharedMesh.bindposes;
+            var boneIndex = new Dictionary<string, int>();
+            for (int i = 0; i < bones.Length; i++) if (bones[i] != null) boneIndex[bones[i].name] = i;
+
+            // Blender armature space -> the old mesh's space, fitted on the bones' rest positions
+            var xs = new List<double[]>(); var ys = new List<Vector3>();
+            foreach (var kv in (JObject)data["bones_rest"])
+            {
+                if (!boneIndex.TryGetValue(kv.Key, out int bi)) continue;
+                var a = (JArray)kv.Value;
+                xs.Add(new[] { (double)a[0], (double)a[1], (double)a[2], 1.0 });
+                ys.Add(bindOld[bi].inverse.GetColumn(3));
+            }
+            double[,] A = FitAffine(xs, ys, out double residual);
+            var L = new Matrix4x4();
+            for (int r = 0; r < 3; r++) for (int col = 0; col < 4; col++) L[r, col] = (float)A[r, col];
+            L[3, 3] = 1;
+            var L3 = new Matrix4x4(L.GetColumn(0), L.GetColumn(1), L.GetColumn(2), new Vector4(0, 0, 0, 1));
+            float det = L3.determinant;
+            float unit = Mathf.Pow(Mathf.Abs(det), 1f / 3f);
+            var L3n = Matrix4x4.identity;
+            for (int col = 0; col < 3; col++) L3n.SetColumn(col, L3.GetColumn(col) / unit);
+
+            // every transform of the skeleton by name; its rest frame in the renderer's space, from the prefab's own pose
+            Transform skeleton = refSmr.rootBone.parent;
+            var all = skeleton.GetComponentsInChildren<Transform>(true).Where(t => t != skeleton).GroupBy(t => t.name).ToDictionary(g => g.Key, g => g.First());
+            // the old prefabs may carry a saved bone scale (TPS_Demoman: bip_spine_1 at 1.5, the old "big chest"); the
+            // retargeted rig has the model's own proportions and its clips key no scale, so it would stay for good
+            foreach (Transform t in all.Values) if (t.name.StartsWith("bip_")) t.localScale = Vector3.one;
+            Matrix4x4 toModel = refSmr.transform.worldToLocalMatrix;
+            var oldRest = (JObject)data["old_rest"]; var rigRest = (JObject)data["rig_rest"];
+            var corr = new Dictionary<string, Matrix4x4>();
+            float poseDeviation = 0f;
+            foreach (var kv in all)
+            {
+                if (oldRest[kv.Key] == null) continue;
+                Matrix4x4 u = toModel * kv.Value.localToWorldMatrix;
+                if (boneIndex.TryGetValue(kv.Key, out int bi))
+                {
+                    Matrix4x4 fromBind = bindOld[bi].inverse;
+                    poseDeviation = Mathf.Max(poseDeviation, Quaternion.Angle(Quaternion.LookRotation(Rot3(u).GetColumn(2), Rot3(u).GetColumn(1)), Quaternion.LookRotation(Rot3(fromBind).GetColumn(2), Rot3(fromBind).GetColumn(1))));
+                    u = fromBind;
+                }
+                // bone frame in Unity = (L * Blender frame) * corr, a constant per bone
+                corr[kv.Key] = (L3n * Rot3(ReadMatrix(oldRest[kv.Key]))).inverse * Rot3(u);
+            }
+            Func<string, Matrix4x4, Matrix4x4> conv = (bone, n) =>
+            {
+                Matrix4x4 m = L3n * Rot3(n) * corr[bone];
+                Vector3 pos = L.MultiplyPoint3x4(n.GetColumn(3));
+                m.SetColumn(3, new Vector4(pos.x, pos.y, pos.z, 1));
+                return m;
+            };
+
+            // check: the old skeleton's raw pose of the stand clip, converted, against what Unity plays
+            string check = "";
+            if (data["check_old"] is JObject checkOld)
+            {
+                var probe = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePrefab));
+                probe.hideFlags = HideFlags.HideAndDontSave;
+                try
+                {
+                    var pa = probe.GetComponent<Animator>();
+                    string checkClip = data["check_clip"] != null ? (string)data["check_clip"] : "stand_PRIMARY";
+                    var pc = pa.runtimeAnimatorController.animationClips.First(x => string.Equals(ClipKey(x.name), checkClip, StringComparison.OrdinalIgnoreCase));
+                    pc.SampleAnimation(probe, 0f);
+                    var pr = probe.GetComponentsInChildren<SkinnedMeshRenderer>(true).First(x => x.name == refRenderer);
+                    foreach (var kv in checkOld)
+                    {
+                        var t = probe.GetComponentsInChildren<Transform>(true).FirstOrDefault(x => x.name == kv.Key);
+                        if (t == null || !corr.ContainsKey(kv.Key)) continue;
+                        Matrix4x4 played = pr.transform.worldToLocalMatrix * t.localToWorldMatrix;
+                        Matrix4x4 mine = conv(kv.Key, ReadMatrix(kv.Value));
+                        float ang = Quaternion.Angle(Quaternion.LookRotation(Rot3(played).GetColumn(2), Rot3(played).GetColumn(1)), Quaternion.LookRotation(mine.GetColumn(2), mine.GetColumn(1)));
+                        check += $" {kv.Key} {((Vector3)played.GetColumn(3) - (Vector3)mine.GetColumn(3)).magnitude / unit:F2}u/{ang:F1}deg";
+                    }
+                }
+                finally { UnityEngine.Object.DestroyImmediate(probe); }
+            }
+
+            // new rest frames and bind poses
+            var rest = new Dictionary<string, Matrix4x4>();
+            foreach (var kv in rigRest) if (corr.ContainsKey(kv.Key)) rest[kv.Key] = conv(kv.Key, ReadMatrix(kv.Value));
+            var bind = new Matrix4x4[bones.Length];
+            for (int i = 0; i < bones.Length; i++)
+                bind[i] = bones[i] != null && rest.TryGetValue(bones[i].name, out Matrix4x4 rm) ? rm.inverse : bindOld[i];
+
+            Texture2D texRed = AssetDatabase.LoadAssetAtPath<Texture2D>(OutDir + "/" + textureName + "_red.png");
+            Texture2D texBlue = AssetDatabase.LoadAssetAtPath<Texture2D>(OutDir + "/" + textureName + "_blue.png");
+            Material red = MakeMaterial(refSmr.sharedMaterials[0], texRed, OutDir + "/" + textureName + "_red.mat");
+            Material blue = MakeMaterial(refSmr.sharedMaterials[0], texBlue, OutDir + "/" + textureName + "_blue.mat");
+            foreach (var old in oldRenderers) old.gameObject.SetActive(false);
+
+            var made = new Dictionary<string, GameObject>();
+            var newRenderers = new List<Renderer>();
+            int totalVerts = 0;
+            foreach (JObject part in (JArray)data["parts"])
+            {
+                string pn = (string)part["name"];
+                string meshPath = OutDir + "/" + name + "_" + pn + ".asset";
+                Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+                bool isNew = mesh == null;
+                if (isNew) mesh = new Mesh();
+                BuildMesh(mesh, part, L, det < 0, boneIndex, bones, bind);
+                mesh.name = name + "_" + pn;
+                if (isNew) AssetDatabase.CreateAsset(mesh, meshPath); else EditorUtility.SetDirty(mesh);
+                totalVerts += mesh.vertexCount;
+                var go = new GameObject(pn);
+                go.transform.SetParent(refSmr.transform.parent, false);
+                go.transform.localPosition = refSmr.transform.localPosition;
+                go.transform.localRotation = refSmr.transform.localRotation;
+                go.transform.localScale = refSmr.transform.localScale;
+                go.layer = refSmr.gameObject.layer;
+                var smr = go.AddComponent<SkinnedMeshRenderer>();
+                smr.sharedMesh = mesh; smr.bones = bones; smr.rootBone = refSmr.rootBone;
+                smr.sharedMaterials = new[] { red };
+                smr.updateWhenOffscreen = true;
+                smr.shadowCastingMode = refSmr.shadowCastingMode; smr.receiveShadows = refSmr.receiveShadows;
+                var mdc = go.AddComponent<MeshDynamicColor>();
+                mdc.skinMesh = smr; mdc.redMats = new[] { red }; mdc.blueMats = new[] { blue };
+                made[pn] = go; newRenderers.Add(smr);
+            }
+            var lodGroup = root.GetComponent<LODGroup>();
+            var rp = root.GetComponent<RemotePlayer>();
+            rp.spine1 = null;
+            for (int i = 0; i < bodyElementParts.Length && i < rp.bodyElements.Length; i++)
+                rp.bodyElements[i].lods = new[] { made[bodyElementParts[i]] };
+
+            // local frames: against the parent bone, or against whatever the root bone hangs under
+            var parents = (JObject)data["parents"];
+            Func<string, Dictionary<string, Matrix4x4>, Matrix4x4> local = (bone, frames) =>
+            {
+                string parent = (string)parents[bone];
+                if (!string.IsNullOrEmpty(parent) && frames.TryGetValue(parent, out Matrix4x4 pm)) return pm.inverse * frames[bone];
+                return (toModel * all[bone].parent.localToWorldMatrix).inverse * frames[bone];
+            };
+            // the root's parent matrix must be read before any bone moves
+            var rootParent = new Dictionary<string, Matrix4x4>();
+            foreach (var kv in rest) { string par = (string)parents[kv.Key]; if (string.IsNullOrEmpty(par) || !rest.ContainsKey(par)) rootParent[kv.Key] = (toModel * all[kv.Key].parent.localToWorldMatrix).inverse; }
+            Func<string, Dictionary<string, Matrix4x4>, Matrix4x4> localOf = (bone, frames) =>
+                rootParent.TryGetValue(bone, out Matrix4x4 rpm) ? rpm * frames[bone] : frames[(string)parents[bone]].inverse * frames[bone];
+
+            var restLocal = rest.Keys.ToDictionary(k => k, k => localOf(k, rest));
+            foreach (var kv in restLocal) SetLocal(all[kv.Key], kv.Value);
+            if (lodGroup != null) { lodGroup.SetLODs(new[] { new LOD(0f, newRenderers.ToArray()) }); lodGroup.RecalculateBounds(); }
+
+            // clips: <name>.clips.json lists them, <name>.clips.bin holds a 3x4 matrix per frame and bone (float32)
+            string clipBase = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Tools/CharArt/export/" + name);
+            JObject index = JObject.Parse(File.ReadAllText(clipBase + ".clips.json"));
+            byte[] raw = File.ReadAllBytes(clipBase + ".clips.bin");
+            var clipBones = ((JArray)index["bones"]).Select(x => (string)x).ToArray();
+            float fps = (float)index["fps"];
+            var paths = clipBones.ToDictionary(b => b, b => all.ContainsKey(b) ? AnimationUtility.CalculateTransformPath(all[b], root.transform) : null);
+            var animator = root.GetComponent<Animator>();
+            var baseController = animator.runtimeAnimatorController;
+            while (baseController is AnimatorOverrideController oc) baseController = oc.runtimeAnimatorController;
+            string overridePath = OutDir + "/" + name + ".overrideController";
+            var over = AssetDatabase.LoadAssetAtPath<AnimatorOverrideController>(overridePath);
+            if (over == null) { over = new AnimatorOverrideController(baseController); AssetDatabase.CreateAsset(over, overridePath); }
+            else over.runtimeAnimatorController = baseController;
+            string clipDir = OutDir + "/" + name + "_Clips";
+            if (!AssetDatabase.IsValidFolder(clipDir)) AssetDatabase.CreateFolder(OutDir, name + "_Clips");
+            var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+            int clipCount = 0; long keysKept = 0, keysAll = 0;
+            var used = clipBones.Where(b => paths[b] != null && corr.ContainsKey(b)).ToArray();
+            var boneAt = clipBones.Select((b, bi) => new { b, bi }).ToDictionary(x => x.b, x => x.bi);
+            string[] props = { "localPosition.x", "localPosition.y", "localPosition.z", "localRotation.x", "localRotation.y", "localRotation.z", "localRotation.w" };
+            var row = new float[clipBones.Length * 12];
+            foreach (JObject entry in (JArray)index["clips"])
+            {
+                string clipName = (string)entry["name"];
+                AnimationClip original = baseController.animationClips.FirstOrDefault(x => string.Equals(ClipKey(x.name), clipName, StringComparison.OrdinalIgnoreCase));
+                if (original == null) continue; // a take the controller does not use
+                int frameCount = (int)entry["frames"]; long offset = (long)entry["offset"];
+                var posKeys = used.ToDictionary(b => b, b => new Vector3[frameCount]);
+                var rotKeys = used.ToDictionary(b => b, b => new Quaternion[frameCount]);
+                var world = new Dictionary<string, Matrix4x4>();
+                for (int f = 0; f < frameCount; f++)
+                {
+                    Buffer.BlockCopy(raw, (int)((offset + (long)f * row.Length) * 4), row, 0, row.Length * 4);
+                    world.Clear();
+                    foreach (string b in clipBones)
+                    {
+                        if (!corr.ContainsKey(b)) continue;
+                        int at = boneAt[b] * 12;
+                        var m = Matrix4x4.identity;
+                        for (int r = 0; r < 3; r++) for (int col = 0; col < 4; col++) m[r, col] = row[at + r * 4 + col];
+                        world[b] = conv(b, m);
+                    }
+                    foreach (string b in used)
+                    {
+                        Matrix4x4 lm = localOf(b, world);
+                        Matrix4x4 lr = Rot3(lm);
+                        Quaternion q = Quaternion.LookRotation(lr.GetColumn(2), lr.GetColumn(1));
+                        if (f > 0 && Quaternion.Dot(rotKeys[b][f - 1], q) < 0f) q = new Quaternion(-q.x, -q.y, -q.z, -q.w);
+                        posKeys[b][f] = lm.GetColumn(3); rotKeys[b][f] = q;
+                    }
+                }
+                string clipPath = clipDir + "/" + name + "_" + clipName + ".anim";
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
+                if (clip == null) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, clipPath); }
+                clip.ClearCurves();
+                clip.frameRate = fps;
+                foreach (string b in used)
+                {
+                    // a key is kept only where dropping it would move the bone: straight-line keys between the kept ones
+                    Vector3[] pk = posKeys[b]; Quaternion[] rk = rotKeys[b];
+                    float posTolerance = 0.0005f * Mathf.Max(restLocal[b].GetColumn(3).magnitude, 0.0001f) + 1e-7f;
+                    var keepPos = Thin(frameCount, (a, m2, z) => (pk[m2] - Vector3.Lerp(pk[a], pk[z], (m2 - a) / (float)(z - a))).magnitude > posTolerance);
+                    var keepRot = Thin(frameCount, (a, m2, z) => Quaternion.Angle(rk[m2], Quaternion.Slerp(rk[a], rk[z], (m2 - a) / (float)(z - a))) > 0.25f);
+                    keysAll += frameCount * 7L; keysKept += keepPos.Count * 3L + keepRot.Count * 4L;
+                    for (int i = 0; i < 3; i++)
+                    {
+                        int axis = i;
+                        clip.SetCurve(paths[b], typeof(Transform), props[i], LinearCurve(keepPos, fps, k => pk[k][axis]));
+                    }
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int axis = i;
+                        clip.SetCurve(paths[b], typeof(Transform), props[3 + i], LinearCurve(keepRot, fps, k => rk[k][axis]));
+                    }
+                }
+                var settings = AnimationUtility.GetAnimationClipSettings(clip);
+                var originalSettings = AnimationUtility.GetAnimationClipSettings(original);
+                settings.loopTime = originalSettings.loopTime; settings.loopBlend = originalSettings.loopBlend;
+                AnimationUtility.SetAnimationClipSettings(clip, settings);
+                AnimationUtility.SetAnimationEvents(clip, AnimationUtility.GetAnimationEvents(original));
+                clip.name = name + "_" + clipName;
+                EditorUtility.SetDirty(clip);
+                pairs.Add(new KeyValuePair<AnimationClip, AnimationClip>(original, clip));
+                clipCount++;
+            }
+            // clips of the controller that no take was baked for keep playing the OLD skeleton's offsets: they must be listed
+            var baked = new HashSet<AnimationClip>(pairs.Select(x => x.Key));
+            string unmatched = string.Join(", ", baseController.animationClips.Where(x => x != null && !baked.Contains(x)).Select(x => x.name).Distinct());
+            if (unmatched.Length > 0) Debug.LogWarning("[ToyCharacterBuilder] " + name + ": no retargeted clip for " + unmatched);
+            over.ApplyOverrides(pairs);
+            EditorUtility.SetDirty(over);
+            animator.runtimeAnimatorController = over;
+
+            // runtime: no scale table, no posture or hand corrections; the whole skeleton's scale and the gun's size stay
+            var toy = root.GetComponent<ToyProportions>() ?? root.AddComponent<ToyProportions>();
+            toy.skeletonRoot = skeleton;
+            float rootScale = data["root_scale"] != null ? (float)data["root_scale"] : RootScale;
+            toy.skeletonRootScale = skeleton.localScale * rootScale;
+            toy.bones = new Transform[0]; toy.scales = new float[0];
+            toy.offsetBones = new Transform[0]; toy.offsets = new Vector3[0];
+            // posture as on the scaled rig (less hunch at the waist, head up); the arms are NOT kept in place while the
+            // torso is straightened: both hands and the gun turn with the chest as one piece
+            toy.upright = 0f; toy.spineRelax = 0f; toy.shoulderRelax = 0f; toy.kneeRelax = 0f;
+            toy.keepOrientation = new Transform[0];
+            Func<string, Transform> bone = n => all.TryGetValue(n, out Transform found) ? found : null;
+            toy.pelvisBone = bone("bip_pelvis"); toy.headBone = bone("bip_head"); toy.neckBone = bone("bip_neck");
+            toy.uprightBone = bone("bip_spine_0"); toy.uprightTo = toy.neckBone;
+            if (toy.pelvisBone != null && toy.headBone != null)
+            {
+                // the prefab now stands in its rest pose: "up" is the line pelvis - head
+                Vector3 upWorld = (toy.headBone.position - toy.pelvisBone.position).normalized;
+                toy.headUpLocal = toy.headBone.InverseTransformDirection(upWorld).normalized;
+                toy.pelvisUpLocal = toy.pelvisBone.InverseTransformDirection(upWorld).normalized;
+            }
+            toy.hipBones = new[] { bone("bip_hip_L"), bone("bip_hip_R") }.Where(x => x != null).ToArray();
+            toy.waistBones = new[] { bone("bip_spine_0"), bone("bip_spine_1") }.Where(x => x != null).ToArray();
+            toy.waistRest = toy.waistBones.Select(x => x.localRotation).ToArray();
+            toy.spineBones = new Transform[0]; toy.spineRest = new Quaternion[0];
+            toy.collarBones = new Transform[0]; toy.collarRest = new Quaternion[0];
+            toy.kneeBones = new Transform[0]; toy.kneeRest = new Quaternion[0];
+            toy.upperBackBone = bone("bip_spine_2");
+            if (toy.neckBone != null) toy.neckRest = toy.neckBone.localRotation;
+            toy.gripUpperArm = null; toy.gripLowerArm = null; toy.gripHand = bone("bip_hand_L"); toy.gripCollar = null;
+            toy.holdUpperArm = null; toy.holdLowerArm = null; toy.holdHand = bone("bip_hand_R");
+            toy.leftArmRest = new Quaternion[0];
+            string tuningPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Tools/CharArt/export/" + name + ".tuning.json");
+            if (File.Exists(tuningPath)) JsonUtility.FromJsonOverwrite(File.ReadAllText(tuningPath), toy);
+            toy.leftHandGrip = 0f; toy.wristMax = 90f; toy.handleGrip = 0f; toy.weaponLevel = 0f; toy.weaponTurnToHand = 0f;
+            toy.weaponScale = data["gun_scale"] != null ? (float)data["gun_scale"] : 1f;
+            toy.weaponPivot = all.ContainsKey("weapon_bone") ? all["weapon_bone"] : null;
+            // the clips place every weapon bone themselves: only the size is set here
+            toy.weaponBones = new Transform[0];
+            toy.weaponBonesOther = all.Values.Where(x => x.name.StartsWith("weapon_bone") && !x.name.EndsWith("_end") || x.name == "weapon_targe").ToArray();
+            toy.blinkRenderer = made.TryGetValue("ToyBody", out GameObject bodyGo) ? bodyGo.GetComponent<SkinnedMeshRenderer>() : null;
+
+            string outPath = OutDir + "/" + outPrefab + ".prefab";
+            // again right before saving: the scale saved in the old prefab comes back while the clips are written
+            foreach (Transform t in all.Values) if (t.name.StartsWith("bip_")) t.localScale = Vector3.one;
+            PrefabUtility.SaveAsPrefabAsset(root, outPath);
+            AssetDatabase.SaveAssets();
+            return $"built {outPath}: {totalVerts} verts, {rest.Count} bones, {clipCount} clips, NOT retargeted: [{unmatched}], keys {keysKept} of {keysAll}, fit residual {residual:E2}, unit {unit:F4}, prefab pose vs bind {poseDeviation:F1} deg, clip check:{check}";
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
         }
     }
 }
