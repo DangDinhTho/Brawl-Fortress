@@ -539,7 +539,8 @@ public static class ToyCharacterBuilder
     /// <summary>Renders the toy prefab in a pose of one of its clips, optionally holding a workshop item, to a PNG.
     /// Nothing is left in the scene.</summary>
     public static string Preview(string prefabPath, string clipContains, float normalizedTime, bool blueTeam, string itemId, string outPng,
-        float yaw = 205f, int size = 900, float pitch = 12f, string[] ignoreItemBones = null)
+        float yaw = 205f, int size = 900, float pitch = 12f, string[] ignoreItemBones = null,
+        string baseState = null, string armState = null, float armTime = 0f)
     {
         if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
@@ -555,6 +556,15 @@ public static class ToyCharacterBuilder
             if (clip != null) { clip.SampleAnimation(go, clip.length * normalizedTime); log += "clip " + clip.name; }
             else if (string.IsNullOrEmpty(clipContains)) log += "rest pose";
             else log += "no clip '" + clipContains + "' among: " + string.Join(", ", clips.Select(c => c.name).Distinct().Take(40));
+            if (!string.IsNullOrEmpty(baseState))
+            {
+                // the animator itself: a base state plus a state of the additive arm layer (firing, reloading)
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; animator.Rebind();
+                animator.Play(baseState, 0, normalizedTime);
+                if (!string.IsNullOrEmpty(armState)) animator.Play(armState, 1, armTime);
+                animator.Update(0.0001f);
+                log += " states " + baseState + " + " + armState;
+            }
             var toy = go.GetComponent<ToyProportions>();
             if (toy != null) { toy.clipHint = clip; toy.Apply(); }
             var rp = go.GetComponent<RemotePlayer>();
