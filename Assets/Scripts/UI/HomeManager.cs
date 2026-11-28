@@ -176,6 +176,8 @@ public class HomeManager : MonoBehaviour
     {
         if (remotePlayer != null) Destroy(remotePlayer.gameObject);
         remotePlayer = Instantiate(ToyCharacters.LoadTps(characterPref.tF2Class), characterContainer).GetComponent<RemotePlayer>();
+        var toyProportions = remotePlayer.GetComponent<ToyProportions>();
+        if (toyProportions != null) toyProportions.showcase = true; // shown close up in the menu: blinking (and the one-handed pose when ToyProportions.showcasePose is on)
         remotePlayer.transform.localPosition = Vector3.zero;
         remotePlayer.SetMeshTeam(team);
         if (characterPref.itemLoadOut != null)

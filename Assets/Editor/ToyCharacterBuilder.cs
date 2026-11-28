@@ -146,6 +146,22 @@ public static class ToyCharacterBuilder
             }
             toy.bones = tb.ToArray(); toy.scales = ts.ToArray();
             for (int i = 0; i < tb.Count; i++) tb[i].localScale = Vector3.one * ts[i];
+            // hip offsets: given in Blender armature space (the posed figure), stored in the parent bone's space
+            var ob = new List<Transform>(); var ov = new List<Vector3>();
+            if (data["offsets"] is JObject offs)
+            {
+                foreach (var kv in offs)
+                {
+                    var t = all.FirstOrDefault(x => x.name == kv.Key);
+                    if (t == null || t.parent == null || !boneIndex.TryGetValue(t.parent.name, out int pi2)) continue;
+                    var a = (JArray)kv.Value;
+                    Vector3 d = L.MultiplyVector(new Vector3((float)a[0], (float)a[1], (float)a[2]));
+                    float parentScale = 1f;
+                    for (Transform q = t.parent; q != null && q != skeleton; q = q.parent) { int qi = tb.IndexOf(q); if (qi >= 0) parentScale *= ts[qi]; }
+                    ob.Add(t); ov.Add(bind[pi2].MultiplyVector(d) / parentScale);
+                }
+            }
+            toy.offsetBones = ob.ToArray(); toy.offsets = ov.ToArray();
             toy.uprightBone = all.FirstOrDefault(x => x.name == "bip_spine_0");
             toy.uprightTo = all.FirstOrDefault(x => x.name == "bip_neck");
             toy.neckBone = toy.uprightTo;
@@ -155,6 +171,9 @@ public static class ToyCharacterBuilder
                 Vector3 up = ((Vector3)restHead.GetColumn(3) - (Vector3)bind[pi].inverse.GetColumn(3)).normalized;
                 toy.headBone = bones[hi];
                 toy.headUpLocal = restHead.inverse.MultiplyVector(up).normalized;
+                toy.pelvisBone = bones[pi];
+                toy.pelvisUpLocal = bind[pi].MultiplyVector(up).normalized;
+                toy.hipBones = new[] { "bip_hip_L", "bip_hip_R" }.Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
             }
             // the prefab's own transforms are the rest pose: what "upright" means for this figure
             if (toy.uprightBone != null && toy.uprightTo != null)
@@ -162,20 +181,37 @@ public static class ToyCharacterBuilder
             // rest local rotations straight from the prefab (its stored pose is the rest pose)
             var spines = new[] { "bip_spine_1", "bip_spine_2", "bip_spine_3" }.Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
             toy.spineBones = spines; toy.spineRest = spines.Select(x => x.localRotation).ToArray();
+            var waist = new[] { "bip_spine_0", "bip_spine_1" }.Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
+            toy.waistBones = waist; toy.waistRest = waist.Select(x => x.localRotation).ToArray();
+            toy.upperBackBone = all.FirstOrDefault(x => x.name == "bip_spine_2");
+            toy.palmLocal = Vector3.zero;
+            if (data["hand_axes"] is JObject axes && axes["bip_hand_L"] is JObject leftHand && boneIndex.TryGetValue("bip_hand_L", out int lhi))
+            {
+                var pv = (JArray)leftHand["palm"];
+                toy.palmLocal = bind[lhi].MultiplyVector(L.MultiplyVector(new Vector3((float)pv[0], (float)pv[1], (float)pv[2]))).normalized;
+            }
+            toy.blinkRenderer = made.TryGetValue("ToyBody", out GameObject bodyGo) ? bodyGo.GetComponent<SkinnedMeshRenderer>() : null;
             if (toy.neckBone != null) toy.neckRest = toy.neckBone.localRotation;
             var collars = new[] { "bip_collar_L", "bip_collar_R" }.Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
             toy.collarBones = collars; toy.collarRest = collars.Select(x => x.localRotation).ToArray();
+            var knees = new[] { "bip_knee_L", "bip_knee_R" }.Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
+            toy.kneeBones = knees; toy.kneeRest = knees.Select(x => x.localRotation).ToArray();
             toy.weaponPivot = all.FirstOrDefault(x => x.name == "weapon_bone");
             if (toy.weaponPivot != null)
                 toy.weaponBones = all.Where(x => x.parent == toy.weaponPivot.parent && x.name.StartsWith("weapon_bone")).ToArray();
             toy.weaponBonesOther = all.Where(x => x.name == "weapon_bone_L" || x.name == "weapon_targe").ToArray();
-            toy.gripOnWeapon = MeasureGrip(sourcePrefab);
+            toy.gripOnWeapon = MeasureGrip(sourcePrefab, "stand_PRIMARY", out toy.gripDown);
+            toy.gripOnWeaponMenu = MeasureGrip(sourcePrefab, "selectionmenu_idle", out toy.gripDownMenu);
+            MeasureGripPerClip(sourcePrefab, toy);
             toy.gripUpperArm = all.FirstOrDefault(x => x.name == "bip_upperArm_L");
+            toy.gripCollar = all.FirstOrDefault(x => x.name == "bip_collar_L");
             toy.gripLowerArm = all.FirstOrDefault(x => x.name == "bip_lowerArm_L");
             toy.gripHand = all.FirstOrDefault(x => x.name == "bip_hand_L");
             toy.holdUpperArm = all.FirstOrDefault(x => x.name == "bip_upperArm_R");
             toy.holdLowerArm = all.FirstOrDefault(x => x.name == "bip_lowerArm_R");
             toy.holdHand = all.FirstOrDefault(x => x.name == "bip_hand_R");
+            if (toy.holdHand != null) toy.rightHandRest = toy.holdHand.localRotation;
+            toy.leftArmRest = new[] { toy.gripUpperArm, toy.gripLowerArm, toy.gripHand }.Select(x => x != null ? x.localRotation : Quaternion.identity).ToArray();
             toy.keepOrientation = new[] { "bip_upperArm_L", "bip_upperArm_R" }
                 .Select(n => all.FirstOrDefault(x => x.name == n)).Where(x => x != null).ToArray();
 
@@ -192,21 +228,57 @@ public static class ToyCharacterBuilder
 
     /// <summary>Where the old character's left hand holds the two-handed weapon: left hand in the grip bone's space, in
     /// the right hand's units, on its stand clip.</summary>
-    static Vector3 MeasureGrip(string sourcePrefab)
+    /// <summary>The left hand's place on the gun for every clip of the old character that holds a weapon with both hands
+    /// (hands as close as on the two-handed stand clip, give or take a third).</summary>
+    static void MeasureGripPerClip(string sourcePrefab, ToyProportions toy)
     {
+        var go = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePrefab));
+        go.hideFlags = HideFlags.HideAndDontSave;
+        var names = new List<string>(); var on = new List<Vector3>(); var downs = new List<Vector3>();
+        try
+        {
+            var animator = go.GetComponent<Animator>();
+            var all = go.GetComponentsInChildren<Transform>(true);
+            var pivot = all.FirstOrDefault(x => x.name == "weapon_bone"); var left = all.FirstOrDefault(x => x.name == "bip_hand_L");
+            if (animator == null || animator.runtimeAnimatorController == null || pivot == null || left == null || pivot.parent == null) return;
+            float reference = toy.gripOnWeapon.magnitude;
+            foreach (var clip in animator.runtimeAnimatorController.animationClips.Distinct())
+            {
+                if (clip == null || names.Contains(clip.name)) continue;
+                clip.SampleAnimation(go, 0f);
+                float unit = pivot.parent.lossyScale.x;
+                if (unit <= 1e-6f) continue;
+                Vector3 world = left.position - pivot.position;
+                Vector3 local = Quaternion.Inverse(pivot.rotation) * world / unit;
+                if (local.magnitude < 0.0005f || reference <= 0f || local.magnitude > reference * 1.33f || local.magnitude < reference * 0.67f) continue;
+                Vector3 up = go.transform.up;
+                names.Add(clip.name); on.Add(local); downs.Add(Quaternion.Inverse(pivot.rotation) * (up * Vector3.Dot(world, up)) / unit);
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+        toy.gripClips = names.ToArray(); toy.gripClipOnWeapon = on.ToArray(); toy.gripClipDown = downs.ToArray();
+    }
+
+    static Vector3 MeasureGrip(string sourcePrefab, string clipName, out Vector3 down)
+    {
+        down = Vector3.zero;
         var go = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(sourcePrefab));
         go.hideFlags = HideFlags.HideAndDontSave;
         try
         {
             var animator = go.GetComponent<Animator>();
             var clip = animator != null && animator.runtimeAnimatorController != null
-                ? animator.runtimeAnimatorController.animationClips.FirstOrDefault(c => c.name.IndexOf("stand_PRIMARY", StringComparison.OrdinalIgnoreCase) >= 0) : null;
+                ? animator.runtimeAnimatorController.animationClips.FirstOrDefault(c => c.name.IndexOf(clipName, StringComparison.OrdinalIgnoreCase) >= 0) : null;
             var all = go.GetComponentsInChildren<Transform>(true);
             var pivot = all.FirstOrDefault(x => x.name == "weapon_bone"); var left = all.FirstOrDefault(x => x.name == "bip_hand_L");
             if (clip == null || pivot == null || left == null || pivot.parent == null) return Vector3.zero;
             clip.SampleAnimation(go, 0f);
             float unit = pivot.parent.lossyScale.x;
-            return unit > 1e-6f ? Quaternion.Inverse(pivot.rotation) * (left.position - pivot.position) / unit : Vector3.zero;
+            if (unit <= 1e-6f) return Vector3.zero;
+            Vector3 world = left.position - pivot.position;
+            Vector3 up = go.transform.up;
+            down = Quaternion.Inverse(pivot.rotation) * (up * Vector3.Dot(world, up)) / unit;
+            return Quaternion.Inverse(pivot.rotation) * world / unit;
         }
         finally { UnityEngine.Object.DestroyImmediate(go); }
     }
@@ -273,6 +345,17 @@ public static class ToyCharacterBuilder
         mesh.indexFormat = n > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
         mesh.vertices = verts; mesh.normals = normals; mesh.uv = uvs; mesh.triangles = tri;
         mesh.boneWeights = bw; mesh.bindposes = bind;
+        if (part["shapes"] is JObject shapes)
+        {
+            foreach (var kv in shapes)
+            {
+                int[] idx = kv.Value["idx"].Select(v => (int)v).ToArray();
+                float[] d = kv.Value["d"].Select(v => (float)v).ToArray();
+                var deltas = new Vector3[n];
+                for (int i = 0; i < idx.Length; i++) deltas[idx[i]] = L.MultiplyVector(new Vector3(d[i * 3], d[i * 3 + 1], d[i * 3 + 2]));
+                mesh.AddBlendShapeFrame(kv.Key, 100f, deltas, null, null);
+            }
+        }
         mesh.RecalculateBounds();
     }
 
@@ -325,6 +408,22 @@ public static class ToyCharacterBuilder
         return inv;
     }
 
+    /// <summary>Rebuilds the toy Demoman and renders the standard set of check poses to Tools/CharArt/preview/d3/&lt;prefix&gt;_N.png.</summary>
+    public static string DemomanCheck(string prefix, bool rebuild = true)
+    {
+        if (!Application.dataPath.Contains("Brawl Fortress")) return "wrong project";
+        string log = rebuild ? Build("ToyDemoman", "Assets/Resources/Characters/TPS/TPS_Demoman.prefab", "demo_morphs_low", "TPS_Demoman_Toy", new[] { "ToyGrenades", "ToyShoes" }) : "";
+        string p = OutDir + "/TPS_Demoman_Toy.prefab";
+        string dir = Directory.GetParent(Application.dataPath).FullName + "/Tools/CharArt/preview/d3/";
+        string[] clips = { "stand_PRIMARY", "stand_PRIMARY", "stand_PRIMARY", "stand_SECONDARY", "stand_MELEE", "runN_PRIMARY", "runN_PRIMARY", "runN_PRIMARY", "runN_PRIMARY", "selectionmenu_idle", "selectionmenu_idle", "jumpfloat_PRIMARY" };
+        float[] t = { 0f, 0f, 0f, 0f, 0f, 0f, 0.25f, 0.5f, 0.75f, 0f, 0f, 0.5f };
+        float[] yaw = { 270f, 215f, 180f, 215f, 215f, 270f, 270f, 215f, 180f, 215f, 270f, 215f };
+        string[] item = { "GrenadeLauncher", "GrenadeLauncher", "GrenadeLauncher", "StickybombLauncher", "Bottle", null, null, null, null, "GrenadeLauncher", null, null };
+        for (int i = 0; i < clips.Length; i++)
+            Preview(p, clips[i], t[i], false, item[i], dir + prefix + "_" + i + ".png", yaw[i], 800, 3f);
+        return log;
+    }
+
     /// <summary>Renders the toy prefab in a pose of one of its clips, optionally holding a workshop item, to a PNG.
     /// Nothing is left in the scene.</summary>
     public static string Preview(string prefabPath, string clipContains, float normalizedTime, bool blueTeam, string itemId, string outPng,
@@ -345,7 +444,7 @@ public static class ToyCharacterBuilder
             else if (string.IsNullOrEmpty(clipContains)) log += "rest pose";
             else log += "no clip '" + clipContains + "' among: " + string.Join(", ", clips.Select(c => c.name).Distinct().Take(40));
             var toy = go.GetComponent<ToyProportions>();
-            if (toy != null) toy.Apply();
+            if (toy != null) { toy.clipHint = clip; toy.Apply(); }
             var rp = go.GetComponent<RemotePlayer>();
             if (rp != null && rp.spine1 != null && toy == null) rp.spine1.localScale = Vector3.one * 1.5f;
             Team team = blueTeam ? Team.blue : Team.red;
